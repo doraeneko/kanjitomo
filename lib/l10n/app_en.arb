@@ -1,0 +1,686 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "kanjitomo",
+  "@appTitle": { "description": "App title shown in MaterialApp and Help screen" },
+
+  "failedToLoadAppData": "Failed to load app data: {error}",
+  "@failedToLoadAppData": {
+    "description": "Error message on startup",
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "lookupTitle": "漢字とも",
+  "@lookupTitle": { "description": "AppBar title on lookup screen" },
+
+  "lookupWords": "Words",
+  "@lookupWords": { "description": "Tab label for word lookup" },
+
+  "lookupLearn": "Learn",
+  "@lookupLearn": { "description": "AppBar button label for learning" },
+
+  "lookupBrowse": "Browse",
+  "@lookupBrowse": { "description": "AppBar button label for kanji browser" },
+
+  "lookupHelp": "Help",
+  "@lookupHelp": { "description": "AppBar button label for help" },
+
+  "lookupHeading": "Kanji",
+  "@lookupHeading": { "description": "Tab label for kanji lookup" },
+
+  "lookupClearDrawing": "Clear drawing",
+  "@lookupClearDrawing": { "description": "Button to clear the drawing canvas" },
+
+  "lookupRecognizing": "Recognizing...",
+  "@lookupRecognizing": { "description": "Shown while recognizer is running" },
+
+  "lookupLoadingModel": "Loading model...",
+  "@lookupLoadingModel": { "description": "Shown while ONNX model is loading" },
+
+  "lookupModelFailed": "Model failed to load: {error}",
+  "@lookupModelFailed": {
+    "description": "Error when model fails to load",
+    "placeholders": { "error": { "type": "String" } }
+  },
+
+  "lookupBestMatch": "Best match:",
+  "@lookupBestMatch": { "description": "Label when only one confident match" },
+
+  "lookupTopN": "Top {count}:",
+  "@lookupTopN": {
+    "description": "Label showing number of top candidates",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "lookupInCustomReview": "In custom review",
+  "@lookupInCustomReview": { "description": "Button label when kanji already added to custom set" },
+
+  "lookupAddToCustomReview": "Add to custom review",
+  "@lookupAddToCustomReview": { "description": "Button label to add kanji to custom set" },
+
+  "wordLookupTitle": "Word lookup",
+  "@wordLookupTitle": { "description": "AppBar title for word lookup screen" },
+
+  "wordLookupDrawInstruction": "Draw a kanji or kana character to add it to the word:",
+  "@wordLookupDrawInstruction": { "description": "Instruction text on word lookup screen" },
+
+  "wordLookupWordLabel": "Word",
+  "@wordLookupWordLabel": { "description": "Label for the word text field" },
+
+  "wordLookupClear": "Clear",
+  "@wordLookupClear": { "description": "Clear button on word lookup" },
+
+  "wordLookupNoEntry": "No JMdict entry for this exact word.",
+  "@wordLookupNoEntry": { "description": "Shown when no dictionary entry found" },
+
+  "wordLookupCopied": "Copied \"{word}\" to clipboard",
+  "@wordLookupCopied": {
+    "description": "Snackbar when word copied to clipboard",
+    "placeholders": { "word": { "type": "String" } }
+  },
+
+  "copyToClipboard": "Copy to clipboard",
+  "@copyToClipboard": { "description": "Tooltip for copy button" },
+
+  "learningTitle": "Learning",
+  "@learningTitle": { "description": "AppBar title for learning screen" },
+
+  "learningJlpt": "JLPT mode",
+  "@learningJlpt": { "description": "Section title for JLPT mode" },
+
+  "learningCustom": "Custom mode",
+  "@learningCustom": { "description": "Section title for custom mode" },
+
+  "learningReview": "Review",
+  "@learningReview": { "description": "Button label for review" },
+
+  "learningSelect": "Select",
+  "@learningSelect": { "description": "Button label for edit/select" },
+
+  "learningStatistics": "Statistics",
+  "@learningStatistics": { "description": "Button label for statistics" },
+
+  "helpTitle": "Help",
+  "@helpTitle": { "description": "AppBar title for help screen" },
+
+  "helpIntro": "kanjitomo helps you learn to read and write Japanese kanji: draw a character to look it up, then track your progress in Learning.",
+  "@helpIntro": { "description": "Introduction paragraph on help screen" },
+
+  "helpLearningTitle": "Learning",
+  "@helpLearningTitle": { "description": "Section title on help screen" },
+
+  "helpLearningDescription": "Pick JLPT or Custom, then Review, Edit, or check Statistics. A kanji turns green once both its reading (kanji recognition) and writing (draw from meaning) have been passed at least once. Composita/sentence testing (reading and drawing kanji within real words) is tracked separately and doesn't affect that green status.",
+  "@helpLearningDescription": { "description": "Learning section description on help screen" },
+
+  "helpReviewTitle": "Review",
+  "@helpReviewTitle": { "description": "Section title on help screen" },
+
+  "helpReviewDescription": "New kanji are introduced in RTK (Remembering the Kanji) order, starting with numbers and basic radicals, then building progressively on shared components. You can set how many new kanji to introduce per day on the review start screen.",
+  "@helpReviewDescription": { "description": "Review section description on help screen" },
+
+  "helpOpenSourceLicenses": "Open source licenses",
+  "@helpOpenSourceLicenses": { "description": "Button to open licenses page" },
+
+  "jlptEditTitle": "Edit JLPT scope",
+  "@jlptEditTitle": { "description": "AppBar title for JLPT edit screen" },
+
+  "jlptEditLevels": "JLPT level(s)",
+  "@jlptEditLevels": { "description": "Section title for level selection" },
+
+  "jlptEditKanjiInScope": "{count} kanji in scope",
+  "@jlptEditKanjiInScope": {
+    "description": "Count of kanji matching current scope",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "jlptEditCompositaCeiling": "Composita/sentence ceiling",
+  "@jlptEditCompositaCeiling": { "description": "Section title for composita ceiling" },
+
+  "jlptEditCompositaCeilingDescription": "The hardest level a composita word is allowed to be, independent of the kanji level(s) selected above. Leave off to skip composita/sentence testing entirely for this scope.",
+  "@jlptEditCompositaCeilingDescription": { "description": "Explanation of composita ceiling" },
+
+  "jlptEditCeilingOff": "Off",
+  "@jlptEditCeilingOff": { "description": "Label for composita ceiling off" },
+
+  "customEditTitle": "Edit custom set",
+  "@customEditTitle": { "description": "AppBar title for custom edit screen" },
+
+  "customEditClear": "Clear",
+  "@customEditClear": { "description": "Clear button in app bar" },
+
+  "customEditDrawInstruction": "Draw a kanji to add it to your set:",
+  "@customEditDrawInstruction": { "description": "Instruction for drawing" },
+
+  "customEditSetEmpty": "Your custom set is empty.",
+  "@customEditSetEmpty": { "description": "Shown when custom set has no kanji" },
+
+  "customEditSetInstruction": "Your custom set (tap to edit, hold to remove):",
+  "@customEditSetInstruction": { "description": "Shown above custom set grid" },
+
+  "customEditIsKana": "{char} is kana, not a kanji",
+  "@customEditIsKana": {
+    "description": "Snackbar when user draws kana",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "customEditAlreadyInSet": "{char} is already in your set",
+  "@customEditAlreadyInSet": {
+    "description": "Snackbar when kanji already in set",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "customEditAdded": "Added {char} to your set",
+  "@customEditAdded": {
+    "description": "Snackbar confirming kanji added",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "customEditRemoveDialogTitle": "Remove {char}?",
+  "@customEditRemoveDialogTitle": {
+    "description": "Dialog title for removing a single kanji from custom set",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "customEditRemoveDialogContent": "Remove {char} from your custom set?",
+  "@customEditRemoveDialogContent": {
+    "description": "Dialog content for removing a single kanji",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "dialogRemove": "Remove",
+  "@dialogRemove": { "description": "Remove button in confirmation dialogs" },
+
+  "customEditClearDialogTitle": "Clear custom set?",
+  "@customEditClearDialogTitle": { "description": "Dialog title for clearing custom set" },
+
+  "customEditClearDialogContent": "This removes all {count} kanji from your custom set. This cannot be undone.",
+  "@customEditClearDialogContent": {
+    "description": "Dialog content for clearing custom set",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "dialogCancel": "Cancel",
+  "@dialogCancel": { "description": "Cancel button in dialogs" },
+
+  "dialogClear": "Clear",
+  "@dialogClear": { "description": "Clear button in confirmation dialogs" },
+
+  "compositaPickerTitle": "{character}: Composita for testing",
+  "@compositaPickerTitle": {
+    "description": "Title of the composita picker",
+    "placeholders": { "character": { "type": "String" } }
+  },
+
+  "compositaPickerDescription": "Only words checked here are used for composita/sentence testing — unlike JLPT mode, custom mode has no level ceiling, so nothing is tested until you pick words below.",
+  "@compositaPickerDescription": { "description": "Explanation text in composita picker" },
+
+  "compositaPickerEmpty": "No composita found for this kanji.",
+  "@compositaPickerEmpty": { "description": "Shown when kanji has no composita" },
+
+  "customEditAddByKanji": "By kanji",
+  "@customEditAddByKanji": { "description": "Segment label for adding single kanji to custom set" },
+
+  "customEditAddByWord": "By word",
+  "@customEditAddByWord": { "description": "Segment label for adding words/composita to custom set" },
+
+  "compositaPickerSearchHint": "Search JMdict for a word...",
+  "@compositaPickerSearchHint": { "description": "Hint text for composita picker search field" },
+
+  "compositaPickerAdd": "Add",
+  "@compositaPickerAdd": { "description": "Button to add a word from JMdict search" },
+
+  "compositaPickerAdded": "Added {word}",
+  "@compositaPickerAdded": {
+    "description": "Shown when word was added via JMdict search",
+    "placeholders": { "word": { "type": "String" } }
+  },
+
+  "compositaPickerNoResults": "No matching word found.",
+  "@compositaPickerNoResults": { "description": "Shown when JMdict search has no results" },
+
+  "compositaPickerWordNotForChar": "This word doesn't contain {char}",
+  "@compositaPickerWordNotForChar": {
+    "description": "Shown when searched word doesn't contain the picker's kanji",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "wordLookupAddToReview": "Add to review",
+  "@wordLookupAddToReview": { "description": "Button to add a word from word lookup to review" },
+
+  "wordLookupAddedToReview": "Added {word} for review",
+  "@wordLookupAddedToReview": {
+    "description": "Snackbar when word added to review from word lookup",
+    "placeholders": { "word": { "type": "String" } }
+  },
+
+  "wordLookupPickKanjiTitle": "Add {word} for which kanji?",
+  "@wordLookupPickKanjiTitle": {
+    "description": "Dialog title asking which kanji to add a word for",
+    "placeholders": { "word": { "type": "String" } }
+  },
+
+  "wordLookupPickKanjiConfirm": "Add",
+  "@wordLookupPickKanjiConfirm": { "description": "Confirm button in kanji picker dialog" },
+
+  "kanjiBrowserTitle": "Kanji browser",
+  "@kanjiBrowserTitle": { "description": "AppBar title for kanji browser" },
+
+  "kanjiBrowserSearchLabel": "Search by reading, meaning, or stroke count",
+  "@kanjiBrowserSearchLabel": { "description": "Search field label" },
+
+  "kanjiBrowserNoMatch": "No matching kanji.",
+  "@kanjiBrowserNoMatch": { "description": "Shown when search has no results" },
+
+  "kanjiBrowserColumnKanji": "Kanji",
+  "@kanjiBrowserColumnKanji": { "description": "Table header for kanji column" },
+
+  "kanjiBrowserColumnMeaning": "Meaning",
+  "@kanjiBrowserColumnMeaning": { "description": "Table header for meaning column" },
+
+  "kanjiBrowserColumnKeyword": "Keyword",
+  "@kanjiBrowserColumnKeyword": { "description": "Table header for keyword column" },
+
+  "kanjiBrowserColumnReadings": "Readings",
+  "@kanjiBrowserColumnReadings": { "description": "Table header for readings column" },
+
+  "kanjiBrowserColumnStrokes": "Strokes",
+  "@kanjiBrowserColumnStrokes": { "description": "Table header for strokes column" },
+
+  "kanjiDetailNoDictionaryEntry": "No dictionary entry (kana aren't covered by the kanji dictionary this app bundles).",
+  "@kanjiDetailNoDictionaryEntry": { "description": "Shown for kana characters" },
+
+  "kanjiDetailOnyomi": "On'yomi",
+  "@kanjiDetailOnyomi": { "description": "Label for on'yomi readings" },
+
+  "kanjiDetailKunyomi": "Kun'yomi",
+  "@kanjiDetailKunyomi": { "description": "Label for kun'yomi readings" },
+
+  "kanjiDetailMeaning": "Meaning",
+  "@kanjiDetailMeaning": { "description": "Label for kanji meaning" },
+
+  "kanjiDetailStrokeOrder": "Stroke order",
+  "@kanjiDetailStrokeOrder": { "description": "Section title for stroke order" },
+
+  "kanjiDetailKeyword": "Keyword",
+  "@kanjiDetailKeyword": { "description": "Section title for keyword" },
+
+  "kanjiDetailKeywordHint": "A short recall cue (shown before you draw)...",
+  "@kanjiDetailKeywordHint": { "description": "Hint text for keyword field" },
+
+  "kanjiDetailStory": "Story",
+  "@kanjiDetailStory": { "description": "Section title for story" },
+
+  "kanjiDetailStoryHint": "Write your own mnemonic or story for this kanji...",
+  "@kanjiDetailStoryHint": { "description": "Hint text for story field" },
+
+  "kanjiDetailComposita": "Composita",
+  "@kanjiDetailComposita": { "description": "Section title for composita" },
+
+  "kanjiDetailExampleSentences": "Example sentences",
+  "@kanjiDetailExampleSentences": { "description": "Section title for example sentences" },
+
+  "kanjiDetailCopied": "Copied \"{character}\" to clipboard",
+  "@kanjiDetailCopied": {
+    "description": "Snackbar when character copied",
+    "placeholders": { "character": { "type": "String" } }
+  },
+
+  "reviewTitle": "Review",
+  "@reviewTitle": { "description": "AppBar title for review screens" },
+
+  "reviewHeader": "Review ({current}/{total})",
+  "@reviewHeader": {
+    "description": "AppBar title during review with progress",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "reviewHeaderNew": "Review ({current}/{total}) — New",
+  "@reviewHeaderNew": {
+    "description": "AppBar title during review for a new card",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "reviewNoCardsDue": "No cards due right now.",
+  "@reviewNoCardsDue": { "description": "Shown when queue is exhausted" },
+
+  "reviewLearnMore": "Learn {count} more",
+  "@reviewLearnMore": {
+    "description": "Button to introduce more cards",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewMoreAvailable": "{count} more available",
+  "@reviewMoreAvailable": {
+    "description": "Shows how many more new kanji remain in scope",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewLearnMoreButton": "Learn more",
+  "@reviewLearnMoreButton": { "description": "Button to introduce more new kanji" },
+
+  "reviewReturnButton": "Return",
+  "@reviewReturnButton": { "description": "Button to leave the review session" },
+
+  "reviewCorrect": "Correct!",
+  "@reviewCorrect": { "description": "Feedback heading when answer is correct" },
+
+  "reviewAnswer": "Answer: {character}",
+  "@reviewAnswer": {
+    "description": "Shows the correct answer",
+    "placeholders": { "character": { "type": "String" } }
+  },
+
+  "reviewYouPicked": "You picked: {character}",
+  "@reviewYouPicked": {
+    "description": "Shows what the user picked",
+    "placeholders": { "character": { "type": "String" } }
+  },
+
+  "reviewContinue": "Continue",
+  "@reviewContinue": { "description": "Button to continue after feedback" },
+
+  "reviewOnyomi": "On'yomi: {readings}",
+  "@reviewOnyomi": {
+    "description": "On'yomi reading line in review",
+    "placeholders": { "readings": { "type": "String" } }
+  },
+
+  "reviewKunyomi": "Kun'yomi: {readings}",
+  "@reviewKunyomi": {
+    "description": "Kun'yomi reading line in review",
+    "placeholders": { "readings": { "type": "String" } }
+  },
+
+  "reviewMeaning": "Meaning: {meanings}",
+  "@reviewMeaning": {
+    "description": "Meaning line in review",
+    "placeholders": { "meanings": { "type": "String" } }
+  },
+
+  "reviewKeyword": "Keyword: {keyword}",
+  "@reviewKeyword": {
+    "description": "Story keyword hint in review",
+    "placeholders": { "keyword": { "type": "String" } }
+  },
+
+  "reviewDrawFromMeaningPrompt": "Draw this kanji from memory:",
+  "@reviewDrawFromMeaningPrompt": { "description": "Prompt for draw from meaning card" },
+
+  "reviewDontKnow": "Don't know",
+  "@reviewDontKnow": { "description": "Button when user doesn't know the answer" },
+
+  "reviewKanjiRecognitionPrompt": "What is the reading and meaning of this kanji?",
+  "@reviewKanjiRecognitionPrompt": { "description": "Prompt for kanji recognition card" },
+
+  "reviewReveal": "Reveal",
+  "@reviewReveal": { "description": "Button to reveal the answer" },
+
+  "reviewAgain": "Again",
+  "@reviewAgain": { "description": "Grade button for failed recall" },
+
+  "reviewGood": "Good",
+  "@reviewGood": { "description": "Grade button for successful recall" },
+
+  "reviewShowTranslation": "Show translation",
+  "@reviewShowTranslation": { "description": "Toggle to show sentence translation" },
+
+  "reviewHideTranslation": "Hide translation",
+  "@reviewHideTranslation": { "description": "Toggle to hide sentence translation" },
+
+  "reviewReadingClozePrompt": "What is the reading of the highlighted word?",
+  "@reviewReadingClozePrompt": { "description": "Prompt for reading cloze card" },
+
+  "reviewSlideshowTitle": "New kanji ({current}/{total})",
+  "@reviewSlideshowTitle": {
+    "description": "AppBar title during new kanji slideshow",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "reviewSlideshowStartReview": "Start review",
+  "@reviewSlideshowStartReview": { "description": "Button on last slideshow slide" },
+
+  "reviewSlideshowNext": "Next",
+  "@reviewSlideshowNext": { "description": "Button to advance slideshow" },
+
+  "reviewStartTitle": "Review",
+  "@reviewStartTitle": { "description": "AppBar title for review start screen" },
+
+  "reviewStartCurrentSelection": "Current selection",
+  "@reviewStartCurrentSelection": { "description": "Card title on review start screen" },
+
+  "reviewStartKanjiInScope": "{count} kanji in scope",
+  "@reviewStartKanjiInScope": {
+    "description": "Count of kanji in current scope",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewStartCountingDue": "Counting due cards…",
+  "@reviewStartCountingDue": { "description": "Shown while due count is loading" },
+
+  "reviewStartDueNow": "{count} due now",
+  "@reviewStartDueNow": {
+    "description": "Number of cards due",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewStartSeen": "{seen} seen, {unseen} new",
+  "@reviewStartSeen": {
+    "description": "Count of seen vs unseen kanji in scope",
+    "placeholders": {
+      "seen": { "type": "int" },
+      "unseen": { "type": "int" }
+    }
+  },
+
+  "reviewStartCustomSetEmpty": "Custom set (empty)",
+  "@reviewStartCustomSetEmpty": { "description": "Scope description for empty custom set" },
+
+  "reviewStartCustomSet": "Custom set",
+  "@reviewStartCustomSet": { "description": "Scope description for custom set" },
+
+  "reviewStartRtk": "RTK up to {index}",
+  "@reviewStartRtk": {
+    "description": "Scope description for RTK mode",
+    "placeholders": { "index": { "type": "int" } }
+  },
+
+  "reviewStartNothingSelected": "Nothing selected",
+  "@reviewStartNothingSelected": { "description": "Scope description when nothing selected" },
+
+  "reviewStartWhatToQuiz": "What to quiz",
+  "@reviewStartWhatToQuiz": { "description": "Section title for quiz focus" },
+
+  "reviewStartKanjiOnly": "Kanji only",
+  "@reviewStartKanjiOnly": { "description": "Segment label for core focus" },
+
+  "reviewStartComposita": "Composita",
+  "@reviewStartComposita": { "description": "Segment label for composita focus" },
+
+  "reviewStartBoth": "Both",
+  "@reviewStartBoth": { "description": "Segment label for both focus" },
+
+  "reviewStartCompositaOff": "No composita/sentence testing is enabled for this scope yet — set a composita ceiling while editing it in the Learning section.",
+  "@reviewStartCompositaOff": { "description": "Warning when composita not enabled" },
+
+  "reviewStartNewKanjiPerDay": "New kanji per day:",
+  "@reviewStartNewKanjiPerDay": { "description": "Label for daily new cap input" },
+
+  "reviewStartButton": "Start Review",
+  "@reviewStartButton": { "description": "Button to start the review session" },
+
+  "reviewContinueButton": "Continue Review",
+  "@reviewContinueButton": { "description": "Button to continue a review session when cards are due" },
+
+  "reviewStartLearnNew": "Learn {count} new kanji",
+  "@reviewStartLearnNew": {
+    "description": "Button label when nothing is due but new kanji can be learned",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewLeaveDialogTitle": "Leave review?",
+  "@reviewLeaveDialogTitle": { "description": "Dialog title when leaving review mid-session" },
+
+  "reviewLeaveDialogContent": "Your daily review is not complete yet. Leave anyway?",
+  "@reviewLeaveDialogContent": { "description": "Dialog content when leaving review mid-session" },
+
+  "reviewLeaveConfirm": "Leave",
+  "@reviewLeaveConfirm": { "description": "Confirm button for leaving review" },
+
+  "statisticsTitle": "Statistics",
+  "@statisticsTitle": { "description": "AppBar title for statistics screen" },
+
+  "statisticsKanjiRecognition": "Kanji recognition",
+  "@statisticsKanjiRecognition": { "description": "Card type label" },
+
+  "statisticsDrawFromMeaning": "Draw from meaning",
+  "@statisticsDrawFromMeaning": { "description": "Card type label" },
+
+  "statisticsReadingCloze": "Reading (composita/sentence)",
+  "@statisticsReadingCloze": { "description": "Card type label" },
+
+  "statisticsDrawInSentence": "Draw in sentence (composita/sentence)",
+  "@statisticsDrawInSentence": { "description": "Card type label" },
+
+  "statisticsKnown": "Known",
+  "@statisticsKnown": { "description": "Legend label for known cards" },
+
+  "statisticsMissed": "Missed",
+  "@statisticsMissed": { "description": "Legend label for missed cards" },
+
+  "statisticsNotStarted": "Not started",
+  "@statisticsNotStarted": { "description": "Legend label for not started cards" },
+
+  "statisticsCompositaTitle": "Composita/sentence testing",
+  "@statisticsCompositaTitle": { "description": "Section title for composita stats" },
+
+  "statisticsTestableWords": "{count} testable {count, plural, =1{word} other{words}} in this scope — never gates green, tracked separately.",
+  "@statisticsTestableWords": {
+    "description": "Explanation of testable composita words",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "statisticsReadingTested": "Reading tested",
+  "@statisticsReadingTested": { "description": "Label for reading coverage pie" },
+
+  "statisticsWritingTested": "Writing tested",
+  "@statisticsWritingTested": { "description": "Label for writing coverage pie" },
+
+  "statisticsInspectAllKanji": "Inspect all kanji",
+  "@statisticsInspectAllKanji": { "description": "Button to open kanji browser" },
+
+  "statisticsResetButton": "Reset statistics",
+  "@statisticsResetButton": { "description": "Button to reset all stats" },
+
+  "statisticsResetDialogTitle": "Reset statistics?",
+  "@statisticsResetDialogTitle": { "description": "Dialog title for reset" },
+
+  "statisticsResetDialogContent": "This clears all review progress (due dates, known/unknown status, and new-card introductions) for every kanji. You will start from scratch. This cannot be undone.",
+  "@statisticsResetDialogContent": { "description": "Dialog content for reset" },
+
+  "statisticsResetConfirm": "Reset",
+  "@statisticsResetConfirm": { "description": "Confirm button for reset dialog" },
+
+  "drawAndPickClearDrawing": "Clear drawing",
+  "@drawAndPickClearDrawing": { "description": "Clear button on draw and pick widget" },
+
+  "drawAndPickRecognizing": "Recognizing...",
+  "@drawAndPickRecognizing": { "description": "Shown while recognizer runs" },
+
+  "drawAndPickWhichOne": "Which one did you draw?",
+  "@drawAndPickWhichOne": { "description": "Prompt to pick a candidate" },
+
+  "legendValuePercent": "{label}: {value} ({percent}%)",
+  "@legendValuePercent": {
+    "description": "Legend row showing label, count, and percentage",
+    "placeholders": {
+      "label": { "type": "String" },
+      "value": { "type": "int" },
+      "percent": { "type": "int" }
+    }
+  },
+
+  "compositaPieLabel": "{label}: {tested}/{testable}",
+  "@compositaPieLabel": {
+    "description": "Composita pie chart label",
+    "placeholders": {
+      "label": { "type": "String" },
+      "tested": { "type": "int" },
+      "testable": { "type": "int" }
+    }
+  },
+
+  "proPaywallTitle": "Unlock Pro",
+  "@proPaywallTitle": { "description": "Title of the Pro paywall bottom sheet" },
+
+  "proPaywallDescription": "Get access to all JLPT levels, custom study sets, composita testing, and statistics.",
+  "@proPaywallDescription": { "description": "Description in paywall sheet" },
+
+  "proPaywallFeatureJlpt": "All JLPT levels (N1\u2013N3)",
+  "@proPaywallFeatureJlpt": { "description": "Feature bullet for JLPT levels" },
+
+  "proPaywallFeatureCustom": "Unlimited custom kanji sets",
+  "@proPaywallFeatureCustom": { "description": "Feature bullet for custom sets" },
+
+  "proPaywallFeatureComposita": "Composita & sentence testing",
+  "@proPaywallFeatureComposita": { "description": "Feature bullet for composita" },
+
+  "proPaywallFeatureStats": "Detailed statistics",
+  "@proPaywallFeatureStats": { "description": "Feature bullet for statistics" },
+
+  "proPaywallBuyButton": "Unlock Pro \u2014 {price}",
+  "@proPaywallBuyButton": {
+    "description": "Purchase button label with price",
+    "placeholders": { "price": { "type": "String" } }
+  },
+
+  "proPaywallRestore": "Restore Purchases",
+  "@proPaywallRestore": { "description": "Restore purchases link" },
+
+  "proPaywallRestoring": "Restoring...",
+  "@proPaywallRestoring": { "description": "Shown while restoring purchases" },
+
+  "proPaywallError": "Purchase failed. Please try again.",
+  "@proPaywallError": { "description": "Error message when purchase fails" },
+
+  "proPaywallRestoreSuccess": "Purchases restored!",
+  "@proPaywallRestoreSuccess": { "description": "Shown after successful restore" },
+
+  "proPaywallRestoreNothing": "No previous purchase found.",
+  "@proPaywallRestoreNothing": { "description": "Shown when restore finds nothing" },
+
+  "proLevelLocked": "Pro required for N1\u2013N3",
+  "@proLevelLocked": { "description": "Hint when tapping a gated JLPT level" },
+
+  "helpRestorePurchases": "Restore Purchases",
+  "@helpRestorePurchases": { "description": "Button on help screen to restore purchases" },
+
+  "customEditKanjiCount": "{count}/{limit} kanji",
+  "@customEditKanjiCount": {
+    "description": "Kanji count with free-tier limit",
+    "placeholders": {
+      "count": { "type": "int" },
+      "limit": { "type": "int" }
+    }
+  },
+
+  "customEditKanjiCountPro": "{count} kanji",
+  "@customEditKanjiCountPro": {
+    "description": "Kanji count for Pro users (no limit)",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "customEditLimitReached": "Free tier limited to {limit} kanji",
+  "@customEditLimitReached": {
+    "description": "Snackbar when free user hits custom set cap",
+    "placeholders": { "limit": { "type": "int" } }
+  }
+}
