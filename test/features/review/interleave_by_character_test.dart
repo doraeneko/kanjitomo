@@ -7,6 +7,7 @@ ReviewCard _card(String character, CardType cardType) {
   return ReviewCard(
     character: character,
     cardType: cardType,
+    compositaWord: '',
     easeFactor: 2.5,
     intervalDays: 0,
     repetitions: 0,

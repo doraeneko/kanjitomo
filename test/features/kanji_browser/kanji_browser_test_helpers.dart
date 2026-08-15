@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kanjitomo/app_dependencies.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
+import 'package:kanjitomo/core/first_time_dialog.dart';
 
 /// Real asset loads (kanji_info.json, jlpt_levels.json, rtk_index.json,
 /// composita.json, stroke_paths.json) need real wall-clock time inside
@@ -13,7 +14,7 @@ import 'package:kanjitomo/core/db/app_database.dart';
 /// runAsync-wrapped real asset load in the same test *process* can hang
 /// indefinitely, so each test file gets a fresh process instead.
 Future<AppDependencies> loadTestDeps(WidgetTester tester) async {
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
   final deps = AppDependencies(
     database: AppDatabase.forTesting(NativeDatabase.memory()),
   );

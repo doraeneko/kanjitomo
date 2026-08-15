@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kanjitomo/app_dependencies.dart';
+import 'package:kanjitomo/core/first_time_dialog.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
+import 'package:kanjitomo/features/review/review_repository.dart';
 import 'package:kanjitomo/features/review/review_session_screen.dart';
 import 'package:kanjitomo/features/review/study_scope.dart';
 
@@ -16,14 +18,18 @@ void main() {
   testWidgets(
     'back button mid-review shows confirmation dialog; dismissing it stays',
     (tester) async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
       await tester.runAsync(() => deps.load());
       await deps.studyScope.update(
-        const StudyScope(mode: StudyScopeMode.rtk, rtkMaxIndex: 1),
+        const StudyScope(characters: {'一'}),
       );
+
+      // Pre-introduce cards so the session has something to show.
+      final reviewRepo = ReviewRepository(deps.database);
+      await reviewRepo.introduceCardsForCharacters({'一'});
 
       // Push ReviewSessionScreen on top of a dummy page so AppBar renders a
       // back button (ReviewStartScreen uses pushReplacement, so the session
@@ -51,14 +57,10 @@ void main() {
       );
       await tester.pump();
 
-      // Skip the new-kanji slideshow to reach the actual review card.
-      expect(find.text('New kanji (1/1)'), findsOneWidget);
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Start review'));
-      await tester.pump();
-
-      // Verify we're on a review card. With rtkMaxIndex=1 (only 一), A + B
-      // cards are introduced, plus C+D if composita coverage exists.
-      expect(find.textContaining('Review (1/'), findsOneWidget);
+      // Review starts directly (no slideshow -- that's in AddRemoveScreen now).
+      // Verify we're on a review card. With only 一 in scope, A + B cards
+      // were pre-introduced above.
+      expect(find.textContaining('Review \u2014'), findsOneWidget);
 
       // Tap the AppBar back button to trigger PopScope.
       final backButton = find.byType(BackButton);
@@ -78,7 +80,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.textContaining('Review (1/'), findsOneWidget);
+      expect(find.textContaining('Review \u2014'), findsOneWidget);
     },
   );
 }

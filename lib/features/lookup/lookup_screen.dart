@@ -14,6 +14,9 @@ import '../../l10n/app_localizations.dart';
 import '../kanji_browser/kanji_detail_content.dart';
 import '../learning/composita_picker.dart';
 import '../review/review_repository.dart';
+import '../review/sentence_selection.dart'
+    show isKanji, compositaWithinCeiling, selectCompositaForIntroduction;
+import '../../widgets/coffee_button.dart';
 
 /// Draw -> up to 3 non-reject matches (collapsed to just the top one when
 /// the recognizer is already confident, see [_confidentThreshold]) -> tap
@@ -189,6 +192,18 @@ class _LookupScreenState extends State<LookupScreen> {
     });
   }
 
+  static bool _isKana(String char) {
+    if (char.isEmpty) return false;
+    final c = char.codeUnitAt(0);
+    return (c >= 0x3040 && c <= 0x309F) || (c >= 0x30A0 && c <= 0x30FF);
+  }
+
+  static bool _isHiragana(String char) {
+    if (char.isEmpty) return false;
+    final c = char.codeUnitAt(0);
+    return c >= 0x3040 && c <= 0x309F;
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -208,6 +223,7 @@ class _LookupScreenState extends State<LookupScreen> {
             Text(l.lookupTitle),
           ],
         ),
+        actions: const [CoffeeButton()],
       ),
       body: SafeArea(
         child: Column(
@@ -293,12 +309,28 @@ class _LookupScreenState extends State<LookupScreen> {
                                       ),
                                       SizedBox(
                                         width: 48,
-                                        child: Text(
-                                          p.label,
-                                          style: const TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              p.label,
+                                              style: const TextStyle(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            if (_isKana(p.label))
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 2),
+                                                child: Text(
+                                                  _isHiragana(p.label) ? 'H' : 'K',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
                                       Expanded(
@@ -361,25 +393,53 @@ class _AddToCustomButtonState extends State<_AddToCustomButton> {
   void initState() {
     super.initState();
     final scope = widget.deps.studyScope.scope.value;
-    _added = scope.customCharacters.contains(widget.character);
+    _added = scope.characters.contains(widget.character);
   }
 
-  void _addAndOpenComposita() {
+  void _addAndOpenComposita() async {
+    final char = widget.character;
     final scope = widget.deps.studyScope.scope.value;
-    if (!scope.customCharacters.contains(widget.character)) {
-      final chars = Set<String>.from(scope.customCharacters)
-        ..add(widget.character);
-      widget.deps.studyScope.update(scope.copyWith(customCharacters: chars));
+    final reviewRepo = ReviewRepository(widget.deps.database);
+
+    // Auto-select composita (same logic as Add/Remove screen).
+    final bundled = widget.deps.composita.lookup(char);
+    final ceiling = scope.compositaCeiling;
+    final charLevel = widget.deps.jlptLevels.levelOf(char);
+    final eligible = bundled.where((c) {
+      if (!c.word.runes.any((r) => isKanji(r))) return false;
+      return compositaWithinCeiling(c, ceiling, charJlptLevel: charLevel);
+    }).toList();
+    final selected = selectCompositaForIntroduction(
+      char, eligible, scope.maxCompositaPerKanji,
+    );
+    final seen = <String>{};
+    final words = [
+      for (final c in selected)
+        if (seen.add(c.word)) c.word,
+    ];
+
+    // Register composita and create cards.
+    for (final word in words) {
+      await reviewRepo.addCustomComposita(char, word);
     }
+    await reviewRepo.introduceCardsForCharacters(
+      {char},
+      compositaWordsByChar: {char: words},
+    );
+    if (!scope.characters.contains(char)) {
+      await widget.deps.studyScope.addCharacters({char});
+    }
+
+    if (!mounted) return;
     setState(() => _added = true);
 
-    // Close the current sheet, then open the composita picker.
+    // Close the current sheet, then open the composita picker (only if
+    // there are composita to adjust).
     Navigator.of(context).pop();
 
-    final reviewRepo = ReviewRepository(widget.deps.database);
-    final all = rankComposita(
-      widget.deps.composita.lookup(widget.character),
-    );
+    if (bundled.isEmpty) return;
+
+    final all = rankComposita(bundled);
     showModalBottomSheet<void>(
       context: Navigator.of(context).context,
       showDragHandle: true,
@@ -399,14 +459,14 @@ class _AddToCustomButtonState extends State<_AddToCustomButton> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CompositaPicker(
-                    character: widget.character,
+                    character: char,
                     composita: all,
                     reviewRepo: reviewRepo,
                     wordIndex: widget.deps.wordIndex,
                   ),
                   const Divider(height: 32),
                   KanjiDetailContent(
-                    character: widget.character,
+                    character: char,
                     deps: widget.deps,
                     scrollable: false,
                   ),

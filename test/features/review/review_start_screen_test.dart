@@ -5,8 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kanjitomo/app_dependencies.dart';
+import 'package:kanjitomo/core/first_time_dialog.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
-import 'package:kanjitomo/features/review/review_focus.dart';
+import 'package:kanjitomo/features/review/review_repository.dart';
 import 'package:kanjitomo/features/review/review_session_screen.dart';
 import 'package:kanjitomo/features/review/review_start_screen.dart';
 import 'package:kanjitomo/features/review/study_scope.dart';
@@ -17,79 +18,46 @@ import 'package:kanjitomo/features/review/study_scope.dart';
 // its own file.
 void main() {
   testWidgets(
-    'summarizes the current scope (however it was set elsewhere), offers a '
-    'core/composita/both focus selector, and starts a review',
+    'summarizes the current scope and starts a review',
     (tester) async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
       await tester.runAsync(() => deps.load());
-      // Unlock Pro so focus-selector gates don't interfere.
+      // Unlock Pro so gates don't interfere.
       deps.proStatus.isProUnlocked.value = true;
-      // No compositaCeiling set -- this scope hasn't opted into composita yet.
-      // Scope editing itself (level chips, RTK, custom-set membership) no
-      // longer happens on this screen at all -- see
-      // jlpt_edit_screen_test.dart/custom_edit_screen_test.dart for that.
-      await deps.studyScope.update(const StudyScope(jlptLevels: {5}));
+      await deps.studyScope.update(const StudyScope(
+        characters: {'一', '二', '三', '四', '五', '六', '七', '八', '九', '十'},
+      ));
+
+      // Pre-introduce cards so the start screen has something to review.
+      final reviewRepo = ReviewRepository(deps.database);
+      await reviewRepo.introduceCardsForCharacters(
+        {'一', '二', '三', '四', '五', '六', '七', '八', '九', '十'},
+      );
 
       await tester.pumpWidget(testApp(home: ReviewStartScreen(deps: deps)));
-      // countDueCards does real async DB I/O in initState() -- same gotcha
-      // as everywhere else in this suite: plain tester.pump() runs in a
-      // FakeAsync zone whose virtual clock never elapses real wall-clock
-      // time, so real Futures never get a chance to resolve without
-      // tester.runAsync().
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 300)),
       );
       await tester.pump();
 
-      expect(find.textContaining('N5'), findsWidgets);
-      expect(find.textContaining('0 due now'), findsOneWidget); // fresh DB
-      expect(find.byType(FilterChip), findsNothing);
-      expect(find.text('RTK'), findsNothing);
+      // Cards are now due (just introduced).
+      expect(find.textContaining('No cards due right now.'), findsNothing);
 
-      // Selecting "Composita" surfaces a hint since this scope has no
-      // compositaCeiling yet -- an honest "nothing to quiz" rather than a
-      // silent empty session.
-      await tester.tap(find.text('Composita'));
-      await tester.pump();
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 300)),
-      );
-      await tester.pump();
-      expect(
-        find.textContaining('No composita/sentence testing is enabled'),
-        findsOneWidget,
-      );
-
-      // Switch back to "Both" and start the review -- the chosen focus is
-      // threaded through to ReviewSessionScreen.
-      await tester.tap(find.text('Both'));
-      await tester.pump();
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 300)),
-      );
-      await tester.pump();
-      // With 0 due in a fresh DB, the button shows "Learn N new kanji" instead.
+      // Start the review directly -- no "Add new kanji?" dialog anymore.
       final startButton = find.byType(ElevatedButton);
       await tester.ensureVisible(startButton);
       await tester.pump();
       await tester.tap(startButton);
-      // Two bounded pumps past the standard MaterialPageRoute transition
-      // duration (300ms exactly landed right on the boundary elsewhere in
-      // this suite and wasn't quite enough), then let ReviewSessionScreen's
-      // own real async _loadQueue() resolve.
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 300)),
       );
       await tester.pump();
-      final session = tester.widget<ReviewSessionScreen>(
-        find.byType(ReviewSessionScreen),
-      );
-      expect(session.focus, ReviewFocus.both);
+      expect(find.byType(ReviewSessionScreen), findsOneWidget);
     },
   );
 }

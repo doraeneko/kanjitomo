@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/db/tables.dart';
@@ -91,6 +92,29 @@ List<ReviewCard> interleaveByCharacter(List<ReviewCard> cards) {
   return result;
 }
 
+/// Snapshot of a card's SM-2 state before grading, used to undo a grade.
+/// [dbRow] is null when the card didn't exist yet (brand-new introduction).
+class CardStateSnapshot {
+  final double? easeFactor;
+  final int? intervalDays;
+  final int? repetitions;
+  final DateTime? dueDate;
+  final DateTime? lastReviewedAt;
+  final int? lapses;
+
+  /// True when the card had no prior DB row (first-ever grade).
+  bool get isNew => dueDate == null;
+
+  const CardStateSnapshot({
+    this.easeFactor,
+    this.intervalDays,
+    this.repetitions,
+    this.dueDate,
+    this.lastReviewedAt,
+    this.lapses,
+  });
+}
+
 /// Drift-backed queries composing [StudyScope] filtering with the SM-2
 /// algorithm in sm2.dart. This is the only place that reads/writes
 /// review_cards and review_log -- sm2.dart itself never touches the DB.
@@ -99,17 +123,13 @@ class ReviewRepository {
 
   ReviewRepository(this.db);
 
-  /// A card is reviewable once its SM-2 due date arrives, OR -- regardless
-  /// of due date -- while it's still fragile (repetitions <= 1: either
-  /// never yet passed, or passed only once and not yet "established").
-  /// Otherwise a card that's only ever been reviewed once would vanish from
-  /// the pool the instant it's graded, often for weeks, which reads as "no
-  /// cards to review" even though the scope is far from mastered.
-  Expression<bool> _dueOrFragileExpr(DateTime today) =>
-      db.reviewCards.dueDate.isSmallerOrEqualValue(today) |
-      db.reviewCards.repetitions.isSmallerOrEqualValue(1);
+  /// A card is reviewable once its SM-2 due date has arrived (standard
+  /// SM-2 behavior). After a first successful review the interval is 1 day,
+  /// so the card reappears tomorrow -- not immediately in the same session.
+  Expression<bool> _dueExpr(DateTime today) =>
+      db.reviewCards.dueDate.isSmallerOrEqualValue(today);
 
-  /// Restricts to [cardTypes] when given -- used by ReviewFocus (core/
+  /// Restricts to [cardTypes] when given -- used for filtering (core/
   /// composita/both) to gate not just which new cards get introduced but
   /// also which already-introduced due cards actually appear in a
   /// focused session.
@@ -120,10 +140,10 @@ class ReviewRepository {
         .reduce((a, b) => a | b);
   }
 
-  /// Existing due (or still-fragile, see [_dueOrFragileExpr]) cards within
-  /// [scope]. Which cards make it into the batch is still decided oldest-
-  /// due-date-first (so a backlog surfaces its most-overdue cards, not an
-  /// arbitrary subset) -- but the returned ORDER is then interleaved by
+  /// Existing due cards (see [_dueExpr]) within [scope]. Which cards make
+  /// it into the batch is decided oldest-due-date-first (so a backlog
+  /// surfaces its most-overdue cards, not an arbitrary subset) -- but the
+  /// returned ORDER is then interleaved by
   /// character (see [interleaveByCharacter]) rather than left in that raw
   /// due-date order, so a character's several card types (typically
   /// introduced together, same dueDate) don't show up back-to-back. An
@@ -148,7 +168,7 @@ class ReviewRepository {
             db.kanjiStatic.character.equalsExp(db.reviewCards.character),
           ),
         ])
-        ..where(_dueOrFragileExpr(today))
+        ..where(_dueExpr(today))
         ..where(_scopeExpr(scope))
         ..orderBy([OrderingTerm.asc(db.reviewCards.dueDate)]);
     final cardTypesExpr = _cardTypesExpr(cardTypes);
@@ -160,6 +180,31 @@ class ReviewRepository {
     final rows = await query.get();
     final cards = rows.map((row) => row.readTable(db.reviewCards)).toList();
     return interleaveByCharacter(cards);
+  }
+
+  /// All cards that have been introduced but never reviewed -- these need
+  /// to be merged into the review queue alongside genuine reviews so the
+  /// user always sees cards they've been shown in the slideshow.
+  Future<List<ReviewCard>> cardsNeverReviewed(
+    StudyScope scope, {
+    Set<CardType>? cardTypes,
+  }) async {
+    if (scope.isEmpty) return [];
+    final today = DateTime.now();
+    final query =
+        db.select(db.reviewCards).join([
+          innerJoin(
+            db.kanjiStatic,
+            db.kanjiStatic.character.equalsExp(db.reviewCards.character),
+          ),
+        ])
+        ..where(db.reviewCards.lastReviewedAt.isNull())
+        ..where(_dueExpr(today))
+        ..where(_scopeExpr(scope));
+    final cardTypesExpr = _cardTypesExpr(cardTypes);
+    if (cardTypesExpr != null) query.where(cardTypesExpr);
+    final rows = await query.get();
+    return rows.map((row) => row.readTable(db.reviewCards)).toList();
   }
 
   /// Loads the cards for characters freshly introduced by
@@ -185,7 +230,7 @@ class ReviewRepository {
     return query.get();
   }
 
-  /// Count of due (or still-fragile) cards within [scope], read-only
+  /// Count of due cards within [scope], read-only
   /// (unlike [dueCards]' sibling [introduceNewCards], this never inserts
   /// anything) -- for a pre-review "how many elements to review" preview
   /// that can be recomputed freely as the user tweaks scope without side
@@ -208,7 +253,7 @@ class ReviewRepository {
               db.kanjiStatic.character.equalsExp(db.reviewCards.character),
             ),
           ])
-          ..where(_dueOrFragileExpr(today))
+          ..where(_dueExpr(today))
           ..where(_scopeExpr(scope));
     final cardTypesExpr = _cardTypesExpr(cardTypes);
     if (cardTypesExpr != null) query.where(cardTypesExpr);
@@ -217,9 +262,9 @@ class ReviewRepository {
     return row.read(count) ?? 0;
   }
 
-  /// Returns the distinct characters that have at least one due (or
-  /// still-fragile) card within [scope] -- for previewing which kanji
-  /// are up for review without loading full card objects.
+  /// Returns the distinct characters that have at least one due card
+  /// within [scope] -- for previewing which kanji are up for review
+  /// without loading full card objects.
   Future<List<String>> dueCharacters(
     StudyScope scope, {
     DateTime? asOf,
@@ -238,7 +283,7 @@ class ReviewRepository {
               db.kanjiStatic.character.equalsExp(db.reviewCards.character),
             ),
           ])
-          ..where(_dueOrFragileExpr(today))
+          ..where(_dueExpr(today))
           ..where(_scopeExpr(scope));
     final cardTypesExpr = _cardTypesExpr(cardTypes);
     if (cardTypesExpr != null) query.where(cardTypesExpr);
@@ -334,6 +379,78 @@ class ReviewRepository {
     return characters;
   }
 
+  /// Creates one card per (character, word) pair for composita card types
+  /// (readingCloze/drawInSentence). Unlike [introduceNewCards] which creates
+  /// one card per character, this creates one per composita word so each
+  /// word gets independent SM-2 scheduling. [wordsByCharacter] maps each
+  /// character to its eligible composita words (the caller resolves this
+  /// via sentence_selection.dart's eligibleComposita). Only characters in
+  /// [restrictToCharacters] (when given) are considered, and at most
+  /// [characterLimit] characters are processed.
+  Future<Set<String>> introduceNewCompositaCards(
+    StudyScope scope,
+    CardType cardType, {
+    required Map<String, List<String>> wordsByCharacter,
+    int characterLimit = 10,
+    Set<String>? restrictToCharacters,
+  }) async {
+    if (scope.isEmpty) return {};
+    if (wordsByCharacter.isEmpty) return {};
+
+    // Find characters that are in scope and don't yet have ANY card of this
+    // type (fresh introduction only -- characters that already have at least
+    // one composita card for this type are skipped entirely, since their
+    // individual words were already introduced).
+    final query =
+        db.select(db.kanjiStatic).join([
+          leftOuterJoin(
+            db.reviewCards,
+            db.reviewCards.character.equalsExp(db.kanjiStatic.character) &
+                db.reviewCards.cardType.equalsValue(cardType),
+          ),
+        ])
+        ..where(db.reviewCards.character.isNull())
+        ..where(_scopeExpr(scope));
+    if (restrictToCharacters != null) {
+      query.where(db.kanjiStatic.character.isIn(restrictToCharacters));
+    }
+    query.where(db.kanjiStatic.character.isIn(wordsByCharacter.keys));
+    query
+      ..orderBy([
+        OrderingTerm.asc(db.kanjiStatic.rtkIndex, nulls: NullsOrder.last),
+      ])
+      ..limit(characterLimit);
+
+    final rows = await query.get();
+    final characters = rows
+        .map((row) => row.readTable(db.kanjiStatic).character)
+        .toList();
+    if (characters.isEmpty) return {};
+
+    final now = DateTime.now();
+    final introduced = <String>{};
+    await db.batch((b) {
+      for (final char in characters) {
+        final words = wordsByCharacter[char];
+        if (words == null || words.isEmpty) continue;
+        introduced.add(char);
+        b.insertAll(
+          db.reviewCards,
+          words.map(
+            (word) => ReviewCardsCompanion.insert(
+              character: char,
+              cardType: cardType,
+              compositaWord: Value(word),
+              dueDate: now,
+            ),
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+    });
+    return introduced;
+  }
+
   /// The next [limit] characters that WOULD be introduced for [scope] and
   /// [cardType] -- read-only preview (no inserts), same candidate-selection
   /// and RTK ordering as [introduceNewCards]. Used by ReviewStartScreen to
@@ -409,11 +526,13 @@ class ReviewRepository {
 
   /// Grades a card: computes the next SM-2 state, updates review_cards, and
   /// appends a review_log entry. Works for both existing and (defensively)
-  /// not-yet-introduced cards.
+  /// not-yet-introduced cards. [compositaWord] identifies the specific
+  /// composita word for C/D card types (empty for core A/B cards).
   Future<void> gradeCard({
     required String character,
     required CardType cardType,
     required int quality,
+    String compositaWord = '',
     DateTime? now,
   }) async {
     final today = now ?? DateTime.now();
@@ -421,7 +540,8 @@ class ReviewRepository {
         await (db.select(db.reviewCards)..where(
               (t) =>
                   t.character.equals(character) &
-                  t.cardType.equalsValue(cardType),
+                  t.cardType.equalsValue(cardType) &
+                  t.compositaWord.equals(compositaWord),
             ))
             .getSingleOrNull();
 
@@ -445,6 +565,7 @@ class ReviewRepository {
           ReviewCardsCompanion.insert(
             character: character,
             cardType: cardType,
+            compositaWord: Value(compositaWord),
             easeFactor: Value(next.easeFactor),
             intervalDays: Value(next.intervalDays),
             repetitions: Value(next.repetitions),
@@ -460,11 +581,120 @@ class ReviewRepository {
           ReviewLogCompanion.insert(
             character: character,
             cardType: cardType,
+            compositaWord: Value(compositaWord),
             reviewedAt: today,
             quality: quality,
             resultingIntervalDays: next.intervalDays,
           ),
         );
+  }
+
+  /// Reads the current SM-2 state for a card, returning null if the card
+  /// has never been introduced. Used to snapshot state before grading so
+  /// an undo can restore it.
+  Future<CardStateSnapshot> getCardState({
+    required String character,
+    required CardType cardType,
+    String compositaWord = '',
+  }) async {
+    final existing =
+        await (db.select(db.reviewCards)..where(
+              (t) =>
+                  t.character.equals(character) &
+                  t.cardType.equalsValue(cardType) &
+                  t.compositaWord.equals(compositaWord),
+            ))
+            .getSingleOrNull();
+    if (existing == null) return const CardStateSnapshot();
+    return CardStateSnapshot(
+      easeFactor: existing.easeFactor,
+      intervalDays: existing.intervalDays,
+      repetitions: existing.repetitions,
+      dueDate: existing.dueDate,
+      lastReviewedAt: existing.lastReviewedAt,
+      lapses: existing.lapses,
+    );
+  }
+
+  /// Reverses a single [gradeCard] call: restores the card's SM-2 state
+  /// from [snapshot] and deletes the most recent review_log entry for
+  /// that card.
+  Future<void> undoGrade({
+    required String character,
+    required CardType cardType,
+    String compositaWord = '',
+    required CardStateSnapshot snapshot,
+  }) async {
+    if (snapshot.isNew) {
+      // Card didn't exist before grading -- delete the row entirely.
+      await (db.delete(db.reviewCards)..where(
+            (t) =>
+                t.character.equals(character) &
+                t.cardType.equalsValue(cardType) &
+                t.compositaWord.equals(compositaWord),
+          ))
+          .go();
+    } else {
+      // Restore the previous state.
+      await db
+          .into(db.reviewCards)
+          .insertOnConflictUpdate(
+            ReviewCardsCompanion.insert(
+              character: character,
+              cardType: cardType,
+              compositaWord: Value(compositaWord),
+              easeFactor: Value(snapshot.easeFactor!),
+              intervalDays: Value(snapshot.intervalDays!),
+              repetitions: Value(snapshot.repetitions!),
+              dueDate: snapshot.dueDate!,
+              lastReviewedAt: Value(snapshot.lastReviewedAt),
+              lapses: Value(snapshot.lapses!),
+            ),
+          );
+    }
+
+    // Delete the most recent review_log entry for this card.
+    final latestLog =
+        await (db.select(db.reviewLog)..where(
+              (t) =>
+                  t.character.equals(character) &
+                  t.cardType.equalsValue(cardType) &
+                  t.compositaWord.equals(compositaWord),
+            )
+            ..orderBy([(t) => OrderingTerm.desc(t.id)])
+            ..limit(1))
+            .getSingleOrNull();
+    if (latestLog != null) {
+      await (db.delete(db.reviewLog)..where(
+            (t) => t.id.equals(latestLog.id),
+          ))
+          .go();
+    }
+  }
+
+  /// Returns the subset of [characters] that have at least one review_cards
+  /// row with lastReviewedAt set (i.e. have actually been reviewed, not just
+  /// introduced). Used to filter quiz questions to only cover kanji the user
+  /// has practiced.
+  Future<Set<String>> seenCharacters(Set<String> characters) async {
+    if (characters.isEmpty) return {};
+    final rows = await (db.select(db.reviewCards)..where(
+          (t) => t.character.isIn(characters) & t.lastReviewedAt.isNotNull(),
+        ))
+        .get();
+    return rows.map((r) => r.character).toSet();
+  }
+
+  /// Counts how many cards were reviewed today (lastReviewedAt >= start of
+  /// today). Used to track daily review limits across sessions.
+  Future<int> countReviewedToday() async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final rows = await (db.select(db.reviewCards)..where(
+          (t) => t.lastReviewedAt.isBiggerOrEqualValue(startOfDay),
+        ))
+        .get();
+    return rows.length;
   }
 
   /// [characters] is the kanji universe to report against -- typically the
@@ -483,14 +713,32 @@ class ReviewRepository {
               t.cardType.equalsValue(cardType) & t.character.isIn(characters),
         ))
         .get();
-    final known = rows.where((r) => r.repetitions > 0).length;
-    final missed = rows
-        .where((r) => r.repetitions == 0 && r.lastReviewedAt != null)
-        .length;
+    // Group by character. "Known" = at least one card has been answered
+    // correctly knownThreshold times in a row (repetitions >= 4). A fail
+    // (quality < 3) resets repetitions to 0 via SM-2, so the user must
+    // pass the card 4 consecutive times to earn "known". "Learning" =
+    // reviewed but not yet at the threshold. "Not started" = never reviewed.
+    const knownThreshold = 3;
+    final byChar = <String, List<ReviewCard>>{};
+    for (final r in rows) {
+      byChar.putIfAbsent(r.character, () => []).add(r);
+    }
+    var known = 0;
+    var missed = 0;
+    for (final entry in byChar.entries) {
+      final reviewed = entry.value.any((r) => r.lastReviewedAt != null);
+      if (!reviewed) continue; // introduced but never reviewed
+      final learnt = entry.value.any((r) => r.repetitions >= knownThreshold);
+      if (learnt) {
+        known++;
+      } else {
+        missed++;
+      }
+    }
     return CardTypeStats(
       known: known,
       missed: missed,
-      notStarted: characters.length - rows.length,
+      notStarted: characters.length - byChar.length,
     );
   }
 
@@ -500,6 +748,8 @@ class ReviewRepository {
   Future<void> resetAllProgress() async {
     await db.delete(db.reviewCards).go();
     await db.delete(db.reviewLog).go();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('review.slideshow_shown');
   }
 
   /// character -> coarse progress, for the kanji browser grid's indicator.
@@ -514,6 +764,7 @@ class ReviewRepository {
   /// (composita/sentence testing, "C+D") are tracked separately via
   /// [CompositaProgress] and never gate this.
   Future<Map<String, KanjiProgress>> overallProgress() async {
+    const knownThreshold = 3;
     final rows = await db.select(db.reviewCards).get();
     final reading = <String, CardProgress>{};
     final writing = <String, CardProgress>{};
@@ -524,7 +775,7 @@ class ReviewRepository {
         CardType.readingCloze || CardType.drawInSentence => null,
       };
       if (bucket == null) continue;
-      if (row.repetitions > 0) {
+      if (row.repetitions >= knownThreshold) {
         bucket[row.character] = CardProgress.known;
       } else if (row.lastReviewedAt != null &&
           bucket[row.character] != CardProgress.known) {
@@ -718,6 +969,33 @@ class ReviewRepository {
     return result;
   }
 
+  /// Returns the earliest card dueDate per character (approximates "date added
+  /// to pool", since cards are created with dueDate=now at add time).
+  Future<Map<String, DateTime>> addedDates() async {
+    final rows = await db.select(db.reviewCards).get();
+    final result = <String, DateTime>{};
+    for (final row in rows) {
+      final existing = result[row.character];
+      if (existing == null || row.dueDate.isBefore(existing)) {
+        result[row.character] = row.dueDate;
+      }
+    }
+    return result;
+  }
+
+  /// Returns the latest modification date per character, considering
+  /// KanjiNotes.updatedAt (story/keyword edits).
+  Future<Map<String, DateTime>> modifiedDates() async {
+    final rows = await db.select(db.kanjiNotes).get();
+    final result = <String, DateTime>{};
+    for (final row in rows) {
+      if (row.updatedAt != null) {
+        result[row.character] = row.updatedAt!;
+      }
+    }
+    return result;
+  }
+
   Future<void> upsertStoryKeyword(String character, String keyword) async {
     await db
         .into(db.kanjiNotes)
@@ -830,22 +1108,236 @@ class ReviewRepository {
     );
   }
 
-  /// Mirrors [StudyScope.matches]: custom mode is exact set membership, rtk
-  /// mode is an RTK-index cutoff, jlpt mode is level membership.
-  Expression<bool> _scopeExpr(StudyScope scope) {
-    switch (scope.mode) {
-      case StudyScopeMode.custom:
-        return scope.customCharacters.isEmpty
-            ? const Constant(false)
-            : db.kanjiStatic.character.isIn(scope.customCharacters);
-      case StudyScopeMode.rtk:
-        return db.kanjiStatic.rtkIndex.isSmallerOrEqualValue(
-              scope.rtkMaxIndex,
-            ) &
-            db.kanjiStatic.rtkIndex.isNotNull();
-      case StudyScopeMode.jlpt:
-        if (scope.jlptLevels.isEmpty) return const Constant(false);
-        return db.kanjiStatic.jlptLevel.isIn(scope.jlptLevels);
+  /// Counts of review cards grouped by time bucket relative to [asOf].
+  /// Returns a map with keys: "overdue", "today", "tomorrow", "thisWeek",
+  /// "later", "notStarted". Only includes cards matching the scope and
+  /// card types.
+  Future<Map<String, int>> dueDateDistribution(
+    StudyScope scope, {
+    DateTime? asOf,
+    Set<CardType>? cardTypes,
+  }) async {
+    if (scope.isEmpty) {
+      return {
+        'overdue': 0,
+        'today': 0,
+        'tomorrow': 0,
+        'thisWeek': 0,
+        'later': 0,
+        'notStarted': 0,
+      };
     }
+    final now = asOf ?? DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    final startOfTomorrow = startOfToday.add(const Duration(days: 1));
+    final startOfDayAfterTomorrow = startOfToday.add(const Duration(days: 2));
+    final startOfBeyondWeek = startOfToday.add(const Duration(days: 8));
+
+    // Fetch all review cards in scope.
+    final query =
+        db.select(db.reviewCards).join([
+          innerJoin(
+            db.kanjiStatic,
+            db.kanjiStatic.character.equalsExp(db.reviewCards.character),
+          ),
+        ])
+        ..where(_scopeExpr(scope));
+    final cardTypesExpr = _cardTypesExpr(cardTypes);
+    if (cardTypesExpr != null) query.where(cardTypesExpr);
+
+    final rows = await query.get();
+    final cards = rows.map((row) => row.readTable(db.reviewCards)).toList();
+
+    var overdue = 0;
+    var today = 0;
+    var tomorrow = 0;
+    var thisWeek = 0;
+    var later = 0;
+
+    for (final card in cards) {
+      if (card.dueDate.isBefore(startOfToday)) {
+        overdue++;
+      } else if (card.dueDate.isBefore(startOfTomorrow)) {
+        today++;
+      } else if (card.dueDate.isBefore(startOfDayAfterTomorrow)) {
+        tomorrow++;
+      } else if (card.dueDate.isBefore(startOfBeyondWeek)) {
+        thisWeek++;
+      } else {
+        later++;
+      }
+    }
+
+    // "Not started": characters in scope with no review card at all for
+    // the requested card types.
+    final seenCharacters = cards.map((c) => c.character).toSet();
+    final totalInScope = await _countScopeCharacters(scope);
+    final notStarted = totalInScope - seenCharacters.length;
+
+    return {
+      'overdue': overdue,
+      'today': today,
+      'tomorrow': tomorrow,
+      'thisWeek': thisWeek,
+      'later': later,
+      'notStarted': notStarted < 0 ? 0 : notStarted,
+    };
+  }
+
+  /// Total number of characters matching [scope] in kanji_static.
+  Future<int> _countScopeCharacters(StudyScope scope) async {
+    final count = countAll();
+    final query =
+        db.selectOnly(db.kanjiStatic)
+          ..addColumns([count])
+          ..where(_scopeExpr(scope));
+    final row = await query.getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Unified pool: simple set membership against the scope's characters.
+  Expression<bool> _scopeExpr(StudyScope scope) {
+    return scope.characters.isEmpty
+        ? const Constant(false)
+        : db.kanjiStatic.character.isIn(scope.characters);
+  }
+
+  /// Create C+D cards for a single composita word (if not already present).
+  Future<void> introduceCompositaCardsForWord(
+    String character,
+    String word, {
+    DateTime? asOf,
+  }) async {
+    final now = asOf ?? DateTime.now();
+    await db.batch((b) {
+      for (final ct in [CardType.readingCloze, CardType.drawInSentence]) {
+        b.insert(
+          db.reviewCards,
+          ReviewCardsCompanion.insert(
+            character: character,
+            cardType: ct,
+            compositaWord: Value(word),
+            dueDate: now,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+    });
+  }
+
+  /// Delete C+D cards for a single composita word.
+  Future<void> deleteCompositaCardsForWord(
+    String character,
+    String word,
+  ) async {
+    await (db.delete(db.reviewCards)..where(
+          (t) =>
+              t.character.equals(character) &
+              t.compositaWord.equals(word) &
+              (t.cardType.equalsValue(CardType.readingCloze) |
+                  t.cardType.equalsValue(CardType.drawInSentence)),
+        ))
+        .go();
+  }
+
+  /// Count of never-reviewed cards within [scope] (introduced but
+  /// lastReviewedAt IS NULL). Efficient count query for refreshing the
+  /// remaining-beyond-cap display without loading full card objects.
+  Future<int> countNeverReviewed(StudyScope scope) async {
+    if (scope.isEmpty) return 0;
+    final count = countAll();
+    final query =
+        db.selectOnly(db.reviewCards)
+          ..addColumns([count])
+          ..join([
+            innerJoin(
+              db.kanjiStatic,
+              db.kanjiStatic.character.equalsExp(db.reviewCards.character),
+            ),
+          ])
+          ..where(db.reviewCards.lastReviewedAt.isNull())
+          ..where(db.reviewCards.dueDate.isSmallerOrEqualValue(DateTime.now()))
+          ..where(_scopeExpr(scope));
+    final row = await query.getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Deletes all review progress for [chars]: ReviewCards, CompositaProgress,
+  /// CustomComposita. Leaves kanji_notes (personal stories/keywords) intact.
+  Future<void> deleteProgressForCharacters(Set<String> chars) async {
+    if (chars.isEmpty) return;
+    await (db.delete(db.reviewCards)
+          ..where((t) => t.character.isIn(chars)))
+        .go();
+    await (db.delete(db.reviewLog)
+          ..where((t) => t.character.isIn(chars)))
+        .go();
+    await (db.delete(db.compositaProgress)
+          ..where((t) => t.character.isIn(chars)))
+        .go();
+    await (db.delete(db.customComposita)
+          ..where((t) => t.character.isIn(chars)))
+        .go();
+  }
+
+  /// Creates A+B+C+D cards immediately for [chars] with dueDate=now.
+  /// [compositaWordsByChar] maps each character to its eligible composita
+  /// words (already resolved by the caller via auto-selection). Characters
+  /// that already have cards are skipped (insertOrIgnore).
+  Future<void> introduceCardsForCharacters(
+    Set<String> chars, {
+    Map<String, List<String>> compositaWordsByChar = const {},
+    DateTime? asOf,
+  }) async {
+    if (chars.isEmpty) return;
+    final now = asOf ?? DateTime.now();
+    await db.batch((b) {
+      for (final char in chars) {
+        // A: kanjiRecognition
+        b.insert(
+          db.reviewCards,
+          ReviewCardsCompanion.insert(
+            character: char,
+            cardType: CardType.kanjiRecognition,
+            dueDate: now,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+        // B: drawFromMeaning
+        b.insert(
+          db.reviewCards,
+          ReviewCardsCompanion.insert(
+            character: char,
+            cardType: CardType.drawFromMeaning,
+            dueDate: now,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+        // C+D: one card per composita word
+        final words = compositaWordsByChar[char] ?? const [];
+        for (final word in words) {
+          b.insert(
+            db.reviewCards,
+            ReviewCardsCompanion.insert(
+              character: char,
+              cardType: CardType.readingCloze,
+              compositaWord: Value(word),
+              dueDate: now,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+          b.insert(
+            db.reviewCards,
+            ReviewCardsCompanion.insert(
+              character: char,
+              cardType: CardType.drawInSentence,
+              compositaWord: Value(word),
+              dueDate: now,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+        }
+      }
+    });
   }
 }

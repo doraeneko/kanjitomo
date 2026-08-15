@@ -24,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,8 +60,51 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         await m.createTable(userComposita);
       }
+      if (from < 8) {
+        await _migrateToPerCompositaCards(m);
+      }
     },
   );
+
+  /// Rebuilds review_cards with the new 3-column primary key
+  /// (character, cardType, compositaWord) and adds compositaWord to
+  /// review_log. Composita card types (readingCloze=0, drawInSentence=1)
+  /// are dropped since they had no word stored -- they'll be re-introduced
+  /// by the session's introduceNewCompositaCards on next review.
+  Future<void> _migrateToPerCompositaCards(Migrator m) async {
+    // 1. Rebuild review_cards with new PK
+    await customStatement('''
+      CREATE TABLE review_cards_v8 (
+        character TEXT NOT NULL,
+        card_type INTEGER NOT NULL,
+        composita_word TEXT NOT NULL DEFAULT '',
+        ease_factor REAL NOT NULL DEFAULT 2.5,
+        interval_days INTEGER NOT NULL DEFAULT 0,
+        repetitions INTEGER NOT NULL DEFAULT 0,
+        due_date INTEGER NOT NULL,
+        last_reviewed_at INTEGER,
+        lapses INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (character, card_type, composita_word)
+      )
+    ''');
+    // Copy only core cards (drawFromMeaning=2, kanjiRecognition=3)
+    await customStatement('''
+      INSERT INTO review_cards_v8
+        (character, card_type, composita_word, ease_factor, interval_days,
+         repetitions, due_date, last_reviewed_at, lapses)
+      SELECT character, card_type, '', ease_factor, interval_days,
+             repetitions, due_date, last_reviewed_at, lapses
+      FROM review_cards
+      WHERE card_type IN (2, 3)
+    ''');
+    await customStatement('DROP TABLE review_cards');
+    await customStatement('ALTER TABLE review_cards_v8 RENAME TO review_cards');
+
+    // 2. Add compositaWord column to review_log
+    await customStatement(
+      "ALTER TABLE review_log ADD COLUMN composita_word TEXT NOT NULL DEFAULT ''",
+    );
+  }
 
   /// Idempotent upsert of reference data from the bundled jlpt_levels.json /
   /// rtk_index.json / kanji_level_rank.json assets, run once at app

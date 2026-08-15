@@ -77,7 +77,7 @@ class _CatMascotPainter extends CustomPainter {
     )..layout();
     textPainter.paint(
       canvas,
-      Offset((s - textPainter.width) / 2, s * 0.24),
+      Offset((s - textPainter.width) / 2, s * 0.18),
     );
 
     // -- eyes: big oval eyes with pupils --

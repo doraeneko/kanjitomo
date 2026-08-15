@@ -1,168 +1,195 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Which kind of selection currently defines "in scope". Mutually exclusive
-/// -- exactly one of a JLPT-level selection, an RTK-ordinal cutoff, or a
-/// user-curated custom set defines the scope at a time, not a union of
-/// several.
-enum StudyScopeMode { jlpt, rtk, custom }
-
-/// Which characters are "in scope" for browsing and review. In
-/// [StudyScopeMode.jlpt], scope is JLPT level membership. In
-/// [StudyScopeMode.rtk], scope is an RTK-ordinal cutoff. In
-/// [StudyScopeMode.custom], scope is exactly [customCharacters] -- for a
-/// learner who wants to hand-pick their own study list instead of taking a
-/// whole JLPT/RTK bucket. Deliberately not "empty set = everything" -- an
-/// explicit "nothing selected" is a valid UI state, not a shorthand for
-/// "select all".
+/// Which characters are "in scope" for browsing and review -- a single
+/// unified pool of explicitly-added kanji. No automatic introduction;
+/// users add kanji explicitly (by JLPT batch, RTK batch, or drawing) and
+/// remove them explicitly. Deliberately not "empty set = everything" --
+/// an explicit "nothing selected" is a valid UI state, not a shorthand
+/// for "select all".
 @immutable
 class StudyScope {
-  final StudyScopeMode mode;
-  final Set<int> jlptLevels; // subset of {1..5}, meaningful only in jlpt mode
-  final int rtkMaxIndex; // meaningful only in rtk mode
-  final Set<String> customCharacters; // meaningful only in custom mode
+  final Set<String> characters; // the unified pool
   // The hardest (numerically lowest) JLPT level composita/sentence testing
-  // (C+D) is allowed to draw from, meaningful only in jlpt mode --
-  // deliberately independent of jlptLevels (which kanji are being studied):
-  // a learner studying N3 kanji may still want an easier or harder
-  // composita ceiling than N3 itself. Null means composita/sentence
-  // testing isn't enabled for this scope at all yet -- an explicit opt-in,
-  // not a shorthand for "unrestricted" (see sentence_selection.dart's
-  // compositaEnabled/jlptCeilingFor). Not meaningful in rtk/custom mode:
-  // rtk has no composita/sentence testing surfaced in new UI at all, and
-  // custom mode's composita scope is chosen per-kanji (see
-  // CustomComposita), not via a level ceiling.
+  // (C+D) is allowed to draw from. Null means composita/sentence testing
+  // isn't enabled for this scope at all yet.
   final int? compositaCeiling;
+  // How many composita words to auto-select per kanji when batch-adding.
+  final int maxCompositaPerKanji;
 
   const StudyScope({
-    this.mode = StudyScopeMode.jlpt,
-    this.jlptLevels = const {},
-    this.rtkMaxIndex = 500,
-    this.customCharacters = const {},
+    this.characters = const {},
     this.compositaCeiling,
+    this.maxCompositaPerKanji = 4,
   });
 
-  /// jlpt mode is empty with no level selected; custom mode is empty with
-  /// no characters chosen; rtk mode is never empty -- its cutoff always has
-  /// a value (the slider can't go below 1).
-  bool get isEmpty => switch (mode) {
-    StudyScopeMode.custom => customCharacters.isEmpty,
-    StudyScopeMode.jlpt => jlptLevels.isEmpty,
-    StudyScopeMode.rtk => false,
-  };
+  bool get isEmpty => characters.isEmpty;
 
-  /// Whether a character falls inside this scope. [jlptLevel]/[rtkIndex]
-  /// are only consulted in the matching mode; [character] is only consulted
-  /// in custom mode.
-  bool matches({
-    required String character,
-    required int? jlptLevel,
-    required int? rtkIndex,
-    int? levelRank,
-  }) {
-    switch (mode) {
-      case StudyScopeMode.custom:
-        return customCharacters.contains(character);
-      case StudyScopeMode.rtk:
-        return rtkIndex != null && rtkIndex <= rtkMaxIndex;
-      case StudyScopeMode.jlpt:
-        if (jlptLevel == null || !jlptLevels.contains(jlptLevel)) return false;
-        return true;
-    }
+  /// Whether a character falls inside this scope -- simple set membership.
+  bool matches({required String character}) {
+    return characters.contains(character);
   }
 
   StudyScope copyWith({
-    StudyScopeMode? mode,
-    Set<int>? jlptLevels,
-    int? rtkMaxIndex,
-    Set<String>? customCharacters,
-    // Nullable field, same "leave unchanged" vs "reset to null" ambiguity
-    // -- pass a value to set it, or use clearCompositaCeiling to reset to
-    // "no composita testing".
+    Set<String>? characters,
     int? compositaCeiling,
     bool clearCompositaCeiling = false,
+    int? maxCompositaPerKanji,
   }) {
     return StudyScope(
-      mode: mode ?? this.mode,
-      jlptLevels: jlptLevels ?? this.jlptLevels,
-      rtkMaxIndex: rtkMaxIndex ?? this.rtkMaxIndex,
-      customCharacters: customCharacters ?? this.customCharacters,
+      characters: characters ?? this.characters,
       compositaCeiling: clearCompositaCeiling
           ? null
           : (compositaCeiling ?? this.compositaCeiling),
+      maxCompositaPerKanji: maxCompositaPerKanji ?? this.maxCompositaPerKanji,
     );
   }
 
   @override
   bool operator ==(Object other) =>
       other is StudyScope &&
-      mode == other.mode &&
-      setEquals(jlptLevels, other.jlptLevels) &&
-      rtkMaxIndex == other.rtkMaxIndex &&
-      setEquals(customCharacters, other.customCharacters) &&
-      compositaCeiling == other.compositaCeiling;
+      setEquals(characters, other.characters) &&
+      compositaCeiling == other.compositaCeiling &&
+      maxCompositaPerKanji == other.maxCompositaPerKanji;
 
   @override
   int get hashCode => Object.hash(
-    mode,
-    Object.hashAllUnordered(jlptLevels),
-    rtkMaxIndex,
-    Object.hashAllUnordered(customCharacters),
+    Object.hashAllUnordered(characters),
     compositaCeiling,
+    maxCompositaPerKanji,
   );
 }
 
-/// Persists [StudyScope] via shared_preferences (a handful of scalars plus
-/// a string list -- drift would be overkill here) and exposes it as a
+/// Persists [StudyScope] via shared_preferences and exposes it as a
 /// ValueNotifier so both the kanji-browser filter chips and the
 /// review-session launcher observe the same live value.
 class StudyScopeRepository {
-  static const _modeKey = 'study_scope.mode';
-  static const _jlptLevelsKey = 'study_scope.jlpt_levels';
-  static const _rtkMaxIndexKey = 'study_scope.rtk_max_index';
-  static const _customCharactersKey = 'study_scope.custom_characters';
+  // New unified keys.
+  static const _charactersKey = 'study_scope.characters';
   static const _compositaCeilingKey = 'study_scope.composita_ceiling';
+  static const _maxCompositaPerKanjiKey = 'study_scope.max_composita_per_kanji';
+
+  // Old keys used for migration detection.
+  static const _oldModeKey = 'study_scope.mode';
+  static const _oldJlptLevelsKey = 'study_scope.jlpt_levels';
+  static const _oldCustomCharactersKey = 'study_scope.custom_characters';
+  static const _migratedKey = 'study_scope.migrated_to_unified';
 
   final ValueNotifier<StudyScope> scope = ValueNotifier(const StudyScope());
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    final levels = prefs.getStringList(_jlptLevelsKey)?.map(int.parse).toSet();
-    // A stored "levelBased" (this mode's old name, pre-RTK-as-its-own-mode)
-    // has no matching enum value anymore -- falls back to jlpt, the closest
-    // equivalent, rather than crashing on an unrecognized name.
-    final modeName = prefs.getString(_modeKey);
-    final mode = StudyScopeMode.values.firstWhere(
-      (m) => m.name == modeName,
-      orElse: () => StudyScopeMode.jlpt,
-    );
+
+    // Already using the new format?
+    if (prefs.getBool(_migratedKey) == true) {
+      scope.value = StudyScope(
+        characters:
+            prefs.getStringList(_charactersKey)?.toSet() ?? const {},
+        compositaCeiling: prefs.getInt(_compositaCeilingKey),
+        maxCompositaPerKanji: prefs.getInt(_maxCompositaPerKanjiKey) ?? 4,
+      );
+      return;
+    }
+
+    // Fresh install -- no old keys either.
+    if (!prefs.containsKey(_oldModeKey) &&
+        !prefs.containsKey(_oldCustomCharactersKey)) {
+      await prefs.setBool(_migratedKey, true);
+      return;
+    }
+
+    // Migration needed -- will be completed in migrateIfNeeded().
+    // Load what we can for now (custom characters are directly usable).
+    final oldCustom =
+        prefs.getStringList(_oldCustomCharactersKey)?.toSet() ?? const <String>{};
+    final oldCeiling = prefs.getInt(_compositaCeilingKey);
+    // Also check for the old max-composita key from review prefs.
+    final oldMaxComposita = prefs.getInt('review.max_composita_per_kanji');
     scope.value = StudyScope(
-      mode: mode,
-      jlptLevels: levels ?? const {},
-      rtkMaxIndex: prefs.getInt(_rtkMaxIndexKey) ?? 500,
-      customCharacters:
-          prefs.getStringList(_customCharactersKey)?.toSet() ?? const {},
-      compositaCeiling: prefs.getInt(_compositaCeilingKey),
+      characters: oldCustom,
+      compositaCeiling: oldCeiling,
+      maxCompositaPerKanji: oldMaxComposita ?? 4,
     );
+  }
+
+  /// One-time migration from old JLPT/Custom mode-based keys to the unified
+  /// pool. Must be called after JSON repositories have loaded (needs
+  /// jlptLevels to resolve JLPT level selections into character sets).
+  Future<void> migrateIfNeeded({
+    required List<String> Function(Set<int> levels) charsInLevels,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_migratedKey) == true) return;
+
+    final modeName = prefs.getString(_oldModeKey);
+    final oldCustom =
+        prefs.getStringList(_oldCustomCharactersKey)?.toSet() ?? const <String>{};
+    final oldJlptLevels =
+        prefs.getStringList(_oldJlptLevelsKey)?.map(int.parse).toSet() ??
+        const <int>{};
+    final oldCeiling = prefs.getInt(_compositaCeilingKey);
+    final oldMaxComposita = prefs.getInt('review.max_composita_per_kanji');
+
+    Set<String> characters;
+    if (modeName == 'custom') {
+      // Custom mode: keep the hand-picked set.
+      characters = oldCustom;
+    } else if (modeName == 'jlpt' && oldJlptLevels.isNotEmpty) {
+      // JLPT mode: resolve levels into actual characters.
+      characters = charsInLevels(oldJlptLevels).toSet();
+    } else {
+      // RTK or fresh -- start empty (RTK was hidden from UI anyway).
+      characters = oldCustom;
+    }
+
+    final migrated = StudyScope(
+      characters: characters,
+      compositaCeiling: oldCeiling,
+      maxCompositaPerKanji: oldMaxComposita ?? 4,
+    );
+    scope.value = migrated;
+    await _persist(prefs, migrated);
+    await prefs.setBool(_migratedKey, true);
+
+    // Clean up old keys.
+    await prefs.remove(_oldModeKey);
+    await prefs.remove(_oldJlptLevelsKey);
+    await prefs.remove(_oldCustomCharactersKey);
+    await prefs.remove('study_scope.rtk_max_index');
+    await prefs.remove('review.max_composita_per_kanji');
   }
 
   Future<void> update(StudyScope newScope) async {
     scope.value = newScope;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_modeKey, newScope.mode.name);
-    await prefs.setStringList(
-      _jlptLevelsKey,
-      newScope.jlptLevels.map((l) => l.toString()).toList(),
-    );
-    await prefs.setInt(_rtkMaxIndexKey, newScope.rtkMaxIndex);
-    await prefs.setStringList(
-      _customCharactersKey,
-      newScope.customCharacters.toList(),
-    );
-    if (newScope.compositaCeiling == null) {
+    await _persist(prefs, newScope);
+  }
+
+  /// Convenience: add characters to the pool.
+  Future<void> addCharacters(Set<String> chars) async {
+    if (chars.isEmpty) return;
+    final current = scope.value;
+    await update(current.copyWith(
+      characters: {...current.characters, ...chars},
+    ));
+  }
+
+  /// Convenience: remove characters from the pool.
+  Future<void> removeCharacters(Set<String> chars) async {
+    if (chars.isEmpty) return;
+    final current = scope.value;
+    await update(current.copyWith(
+      characters: current.characters.difference(chars),
+    ));
+  }
+
+  static Future<void> _persist(SharedPreferences prefs, StudyScope s) async {
+    await prefs.setStringList(_charactersKey, s.characters.toList());
+    if (s.compositaCeiling == null) {
       await prefs.remove(_compositaCeilingKey);
     } else {
-      await prefs.setInt(_compositaCeilingKey, newScope.compositaCeiling!);
+      await prefs.setInt(_compositaCeilingKey, s.compositaCeiling!);
     }
+    await prefs.setInt(_maxCompositaPerKanjiKey, s.maxCompositaPerKanji);
   }
 }

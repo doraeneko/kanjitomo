@@ -3,12 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
 import 'package:kanjitomo/core/db/tables.dart';
 import 'package:kanjitomo/features/review/review_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:kanjitomo/core/first_time_dialog.dart';
 
 void main() {
   late AppDatabase db;
   late ReviewRepository repo;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
     db = AppDatabase.forTesting(NativeDatabase.memory());
     repo = ReviewRepository(db);
   });
@@ -16,11 +20,12 @@ void main() {
   tearDown(() => db.close());
 
   test('statsFor counts known, missed, and not-started correctly', () async {
-    // Known: passed at least once (repetitions > 0).
-    await repo.gradeCard(character: '一', cardType: CardType.drawFromMeaning, quality: 4);
-    // Missed: reviewed but currently failing (repetitions reset to 0).
+    // Known (learnt): repetitions >= 3 (3 consecutive correct answers).
+    for (var i = 0; i < 3; i++) {
+      await repo.gradeCard(character: '一', cardType: CardType.drawFromMeaning, quality: 5);
+    }
+    // Learning: reviewed but repetitions < 3.
     await repo.gradeCard(character: '二', cardType: CardType.drawFromMeaning, quality: 4);
-    await repo.gradeCard(character: '二', cardType: CardType.drawFromMeaning, quality: 1);
     // Not started: no row at all for this cardType -- doesn't touch drawFromMeaning.
     await repo.gradeCard(character: '三', cardType: CardType.readingCloze, quality: 4);
 
@@ -28,8 +33,8 @@ void main() {
       '一', '二', '三', '四', '五', '六', '七', '八', '九', '十',
     };
     final stats = await repo.statsFor(CardType.drawFromMeaning, universe);
-    expect(stats.known, 1); // 一
-    expect(stats.missed, 1); // 二
+    expect(stats.known, 1); // 一 (interval ~39)
+    expect(stats.missed, 1); // 二 (interval 1)
     expect(stats.notStarted, 8); // 10 - 2 introduced rows
   });
 
@@ -43,12 +48,13 @@ void main() {
   });
 
   test('statsFor only counts rows for characters within the given universe', () async {
-    // 一 is known, but outside the universe passed in -- shouldn't count.
+    // 一 is reviewed, but outside the universe passed in -- shouldn't count.
     await repo.gradeCard(character: '一', cardType: CardType.drawFromMeaning, quality: 4);
     await repo.gradeCard(character: '二', cardType: CardType.drawFromMeaning, quality: 4);
 
     final stats = await repo.statsFor(CardType.drawFromMeaning, {'二'});
-    expect(stats.known, 1); // 二 only
+    expect(stats.missed, 1); // 二 only (repetitions=1, below threshold of 4)
+    expect(stats.known, 0);
     expect(stats.notStarted, 0);
   });
 
@@ -56,9 +62,11 @@ void main() {
     'overallProgress tracks reading (kanjiRecognition) and writing '
     '(drawFromMeaning) as independent directions',
     () async {
-      // 一: kanjiRecognition known, drawFromMeaning missed -- the two
-      // directions must stay distinct, not collapse to a single "known".
-      await repo.gradeCard(character: '一', cardType: CardType.kanjiRecognition, quality: 4);
+      // 一: kanjiRecognition known (3 correct = threshold), drawFromMeaning
+      // missed (pass then fail resets repetitions to 0).
+      for (var i = 0; i < 3; i++) {
+        await repo.gradeCard(character: '一', cardType: CardType.kanjiRecognition, quality: 5);
+      }
       await repo.gradeCard(character: '一', cardType: CardType.drawFromMeaning, quality: 4);
       await repo.gradeCard(character: '一', cardType: CardType.drawFromMeaning, quality: 1);
       // 二: only ever attempted in the writing direction, and missed there.

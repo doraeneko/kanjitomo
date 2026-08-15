@@ -23,6 +23,9 @@ enum CompositaDirection { reading, writing }
 class ReviewCards extends Table {
   TextColumn get character => text()();
   IntColumn get cardType => intEnum<CardType>()();
+  /// The specific composita word this card tests (readingCloze/drawInSentence
+  /// only -- empty string for core card types drawFromMeaning/kanjiRecognition).
+  TextColumn get compositaWord => text().withDefault(const Constant(''))();
 
   RealColumn get easeFactor => real().withDefault(const Constant(2.5))();
   IntColumn get intervalDays => integer().withDefault(const Constant(0))();
@@ -32,7 +35,7 @@ class ReviewCards extends Table {
   IntColumn get lapses => integer().withDefault(const Constant(0))();
 
   @override
-  Set<Column> get primaryKey => {character, cardType};
+  Set<Column> get primaryKey => {character, cardType, compositaWord};
 }
 
 /// Append-only review history, independent of current [ReviewCards] state --
@@ -41,6 +44,7 @@ class ReviewLog extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get character => text()();
   IntColumn get cardType => intEnum<CardType>()();
+  TextColumn get compositaWord => text().withDefault(const Constant(''))();
   DateTimeColumn get reviewedAt => dateTime()();
   IntColumn get quality => integer()();
   IntColumn get resultingIntervalDays => integer()();
@@ -120,7 +124,7 @@ class UserComposita extends Table {
 }
 
 /// Which composita the user has explicitly attached to a kanji in their
-/// Custom study list (see StudyScopeMode.custom) -- kept as its own table
+/// Custom composita selection per kanji -- kept as its own table
 /// rather than folded into StudyScope's SharedPreferences-backed
 /// customCharacters, since it's a growing structured many-to-many relation
 /// (many words per character), not a scalar/string-list.

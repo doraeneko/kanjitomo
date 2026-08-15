@@ -1,6 +1,6 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'
-    show FilteringTextInputFormatter, LengthLimitingTextInputFormatter;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app_dependencies.dart';
@@ -13,11 +13,12 @@ import '../../l10n/app_localizations.dart';
 import '../kanji_browser/kanji_detail_content.dart';
 import 'draw_and_pick.dart';
 import 'furigana_sentence.dart';
-import 'review_focus.dart';
 import 'review_repository.dart';
+import 'reading_splitter.dart';
 import 'sentence_selection.dart';
 import 'sm2.dart';
 import 'study_scope.dart';
+import '../../widgets/tts_button.dart';
 
 /// A composita word paired with one of its example sentences -- just
 /// enough context to render a sentence-based card without needing to
@@ -51,253 +52,181 @@ class _DrawFeedback {
   });
 }
 
+/// Pre-grade snapshot so a single undo can restore the previous card's
+/// state exactly as it was before the user graded it.
+class _GradeSnapshot {
+  final ReviewCard queueCard;
+  final CardStateSnapshot dbSnapshot;
+  final bool wasRequeued;
+  final _ExampleSentenceRef? sentence;
+
+  const _GradeSnapshot({
+    required this.queueCard,
+    required this.dbSnapshot,
+    required this.wasRequeued,
+    this.sentence,
+  });
+}
+
 /// Presents due (and newly-introduced) review cards one at a time across
 /// all three card types, grading each via SM-2. Card-type-specific UI is
 /// built inline per card rather than as separate screens/routes, since
 /// they share the same session flow (grade -> advance) and queue.
 class ReviewSessionScreen extends StatefulWidget {
   final AppDependencies deps;
-  // Which learning axes (A+B / C+D / both) this session introduces and
-  // quizzes -- chosen in ReviewStartScreen, defaulting to both so every
-  // existing direct construction of this screen keeps today's behavior.
-  final ReviewFocus focus;
 
   const ReviewSessionScreen({
     super.key,
     required this.deps,
-    this.focus = ReviewFocus.both,
   });
 
   @override
   State<ReviewSessionScreen> createState() => _ReviewSessionScreenState();
 }
 
-class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
-  static const _dailyNewCapKey = 'review.daily_new_cap';
-  static const _defaultDailyNewCap = 10;
+/// SharedPreferences key for the max new cards per session setting.
+const _newCardsPerSessionKey = 'review.new_cards_per_session';
+const _maxReviewsPerDayKey = 'review.max_reviews_per_day';
+const _learnMoreExtraKey = 'review.learn_more_extra';
+const _learnMoreDateKey = 'review.learn_more_date';
 
+class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   late final ReviewRepository _reviewRepo;
-  int _dailyNewCap = _defaultDailyNewCap;
-  late final TextEditingController _learnMoreCapController;
   bool _loading = true;
-  bool _sessionStarted = false;
   List<ReviewCard> _queue = [];
   int _index = 0;
-  // Deduplicated new characters (lastReviewedAt == null) from the queue,
-  // shown in a slideshow before the actual review begins.
-  List<String> _newCharacters = [];
-  // Non-null while the new-kanji slideshow is active; null means normal
-  // review mode. Incremented by "Next", set to null after the last slide.
-  int? _slideshowIndex;
+  int _cardsDone = 0;
   bool _revealed = false;
   bool _translationRevealed = false;
+  bool _showFeedbackDetails = false;
   _ExampleSentenceRef? _currentSentence;
   _DrawFeedback? _feedback;
-  // How many more not-yet-introduced characters are available in scope
-  // beyond today's cap -- 0 once truly nothing is left to learn. Powers
-  // the "Learn more today" button shown once the queue runs dry.
-  int _moreToLearn = 0;
-  // Cards re-queued after a fail -- tracked to avoid infinite loops (each
-  // card is re-queued at most once per session, like Anki's "learning" step).
-  final Set<String> _requeued = {}; // "${character}:${cardType}" keys
-  // The current card's personal story keyword (not the fuller story --
-  // that would give away too much before the user has drawn anything),
-  // fetched asynchronously since kanji_notes is DB-backed, unlike the
-  // preloaded JSON repositories. Null while loading or genuinely unset.
+  // Key for the FuriganaSentence in readingCloze, used to auto-scroll
+  // the highlighted target word into view after layout.
+  final _readingClozeTargetKey = GlobalKey();
   String? _currentStoryKeyword;
-  // character -> composita words already passed at least once, batch-loaded
-  // for the whole queue up front (see _loadQueue) so _pickSentenceFor (a
-  // synchronous helper called from setState) can prefer not-yet-tested
-  // words without needing its own DB round-trip.
+  String? _currentStory;
   Map<String, Set<String>> _testedWords = {};
-  // character -> explicitly-selected custom composita (see
-  // custom_edit_screen.dart), batch-loaded up front same as [_testedWords]
-  // -- only ever populated (and consulted) in custom mode; JLPT mode uses
-  // StudyScope.compositaCeiling instead (see sentence_selection.dart).
   Map<String, Set<String>> _customComposita = {};
-  // character -> user-added composita (JMdict words added manually via
-  // composita picker search or word lookup's "Add to review"), batch-loaded
-  // up front so _eligibleCompositaFor can merge them with the bundled list
-  // without a DB round-trip.
   Map<String, List<Composita>> _userComposita = {};
+  Set<String> _seenCharacters = {};
+  _GradeSnapshot? _lastGradeSnapshot;
+  int _remainingBeyondCap = 0;
+  Timer? _dueRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _reviewRepo = ReviewRepository(widget.deps.database);
-    _learnMoreCapController = TextEditingController();
-    _loadDailyNewCap();
+    _loadQueue();
   }
 
   @override
   void dispose() {
-    _learnMoreCapController.dispose();
+    _dueRefreshTimer?.cancel();
+    TtsButton.stop();
     super.dispose();
-  }
-
-  Future<void> _loadDailyNewCap() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getInt(_dailyNewCapKey);
-    if (stored != null && mounted) {
-      _dailyNewCap = stored;
-    }
-    _learnMoreCapController.text = '$_dailyNewCap';
-    _loadQueue();
   }
 
   Future<void> _loadQueue() async {
     final scope = widget.deps.studyScope.scope.value;
-    // Loaded up front, before _introduceNewCardsForToday (which calls
-    // _sentenceEligibleCharacters, needing this for custom mode) --
-    // mirrors _testedWords' own "batch-load once, no DB round-trip from a
-    // synchronous helper" reasoning.
-    _customComposita = scope.mode == StudyScopeMode.custom
-        ? await _reviewRepo.customCompositaForCharacters(scope.customCharacters)
-        : {};
+    _customComposita = await _reviewRepo.customCompositaForCharacters(scope.characters);
     _userComposita = await _reviewRepo.allUserCompositaByChar();
-    final introducedNow = await _introduceNewCardsForToday();
 
-    final cardTypes = cardTypesForFocus(widget.focus);
-
-    // Load reviews (previously seen cards that are due or fragile) and
-    // freshly introduced new cards separately, then merge -- never-
-    // reviewed leftovers from earlier sessions stay hidden until the
-    // daily cap has room (Anki-like behaviour).
+    // Two sources merged into one queue:
+    // 1. Previously-reviewed cards that are due again.
+    // 2. Never-reviewed cards (introduced when kanji were added to pool).
     final reviews = await _reviewRepo.dueCards(
       scope,
-      cardTypes: cardTypes,
       excludeNeverReviewed: true,
     );
-    final newCards = introducedNow.isNotEmpty
-        ? await _reviewRepo.cardsForCharacters(
-            introducedNow,
-            cardTypes: cardTypes,
-          )
+    final neverReviewed = await _reviewRepo.cardsNeverReviewed(scope);
+    // Sort never-reviewed cards so basic kanji cards (draw from meaning,
+    // recognition) come before composita cards (reading cloze, draw in
+    // sentence). This way you learn the kanji before being tested on its
+    // compound words.
+    const _cardTypeOrder = {
+      CardType.drawFromMeaning: 0,
+      CardType.kanjiRecognition: 1,
+      CardType.readingCloze: 2,
+      CardType.drawInSentence: 3,
+    };
+    neverReviewed.sort((a, b) =>
+        (_cardTypeOrder[a.cardType] ?? 9)
+            .compareTo(_cardTypeOrder[b.cardType] ?? 9));
+    // Apply max reviews/day cap across sessions: subtract cards already
+    // reviewed today so restarting a session doesn't reset the limit.
+    final prefs = await SharedPreferences.getInstance();
+    final maxReviewsPerDay = prefs.getInt(_maxReviewsPerDayKey) ?? 200;
+    final reviewedToday = await _reviewRepo.countReviewedToday();
+    final dailyBudget = maxReviewsPerDay <= 0
+        ? reviews.length + neverReviewed.length
+        : (maxReviewsPerDay - reviewedToday).clamp(0, maxReviewsPerDay);
+    final cappedReviews = dailyBudget <= 0
+        ? <ReviewCard>[]
+        : reviews.take(dailyBudget).toList();
+    final remainingBudget = maxReviewsPerDay <= 0
+        ? neverReviewed.length
+        : (dailyBudget - cappedReviews.length).clamp(0, dailyBudget);
+    final maxNewCardsPerDay = prefs.getInt(_newCardsPerSessionKey) ?? 30;
+    final newCardCap = maxNewCardsPerDay <= 0
+        ? remainingBudget
+        : remainingBudget.clamp(0, maxNewCardsPerDay);
+    final cappedNew = neverReviewed.take(newCardCap).toList();
+    // "Learn more" persistence: _learnMoreExtraKey stores a high-water
+    // mark — the total number of reviews the user has committed to today
+    // (including learn-more clicks). Subtracting reviewedToday gives the
+    // outstanding commitment that should survive leaving mid-session.
+    final todayStr = '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
+    final learnMoreDate = prefs.getString(_learnMoreDateKey);
+    final learnMoreHighWater = (learnMoreDate == todayStr)
+        ? (prefs.getInt(_learnMoreExtraKey) ?? 0)
+        : 0;
+    final learnMoreRemaining = learnMoreHighWater > 0
+        ? (learnMoreHighWater - reviewedToday).clamp(0, learnMoreHighWater)
+        : 0;
+    // Take extra cards from the combined pool (reviews first, then new),
+    // skipping what the caps already loaded.
+    final alreadyLoaded = <String>{};
+    for (final c in cappedReviews) {
+      alreadyLoaded.add('${c.character}|${c.cardType.index}|${c.compositaWord}');
+    }
+    for (final c in cappedNew) {
+      alreadyLoaded.add('${c.character}|${c.cardType.index}|${c.compositaWord}');
+    }
+    final extraPool = [...reviews, ...neverReviewed]
+        .where((c) => !alreadyLoaded.contains('${c.character}|${c.cardType.index}|${c.compositaWord}'))
+        .toList();
+    final extraCards = learnMoreRemaining > 0
+        ? extraPool.take(learnMoreRemaining).toList()
         : <ReviewCard>[];
-    final due = interleaveByCharacter([...reviews, ...newCards]);
+    // ignore: avoid_print
+    print('[_loadQueue] cappedReviews=${cappedReviews.length} cappedNew=${cappedNew.length} '
+        'extraCards=${extraCards.length} learnMoreRemaining=$learnMoreRemaining '
+        'highWater=$learnMoreHighWater reviewedToday=$reviewedToday');
+    final totalAvailable = reviews.length + neverReviewed.length;
+    final totalLoaded = cappedReviews.length + cappedNew.length + extraCards.length;
+    final due = interleaveByCharacter([...cappedReviews, ...cappedNew, ...extraCards]);
 
     final testedWords = await _reviewRepo.testedCompositaWordsFor(
       due.map((c) => c.character).toSet(),
       CompositaDirection.reading,
     );
+    // Kanji in the learning pool count as "seen" for furigana hints.
+    // Kanji NOT in the pool get furigana shown so the user isn't blocked
+    // by unknown readings in composita/sentence cards.
     if (!mounted) return;
-    // Deduplicate new characters for the slideshow.
-    final seen = <String>{};
-    final newChars = <String>[];
-    for (final card in newCards) {
-      if (seen.add(card.character)) {
-        newChars.add(card.character);
-      }
-    }
     setState(() {
       _queue = due;
       _index = 0;
       _loading = false;
+      _lastGradeSnapshot = null;
+      _remainingBeyondCap = totalAvailable - totalLoaded;
       _testedWords = testedWords;
-      _newCharacters = newChars;
-      _slideshowIndex = !_sessionStarted && newChars.isNotEmpty ? 0 : null;
-      _sessionStarted = true;
+      _seenCharacters = scope.characters;
       _prepareCurrentCard();
     });
     _loadStoryForCurrentCard();
-    _refreshMoreToLearn();
-  }
-
-  /// Introduces up to [_dailyNewCap] not-yet-seen characters, creating
-  /// ALL card types for each character in one go -- A (drawFromMeaning) +
-  /// B (kanjiRecognition) unconditionally, plus C+D (readingCloze,
-  /// drawInSentence) for characters with composita coverage. The session
-  /// then presents them in order (A first, then B, then C/D via the
-  /// interleaved queue) so the user learns all axes of each new kanji in
-  /// one sitting.
-  ///
-  /// Characters that were introduced in PREVIOUS sessions but haven't
-  /// passed their earlier card types yet still get their remaining types
-  /// introduced here too (same "no gate" rule), since the user chose to
-  /// learn them and shouldn't have to wait across sessions.
-  ///
-  /// Shared by the initial load and by [_learnMore], since calling it
-  /// again naturally introduces up to another capful (already-introduced
-  /// characters are excluded by [ReviewRepository.introduceNewCards]' own
-  /// query).
-  ///
-  /// Returns the set of characters freshly introduced by this call (used
-  /// to populate the new-kanji slideshow without including older
-  /// never-reviewed leftovers).
-  Future<Set<String>> _introduceNewCardsForToday() async {
-    final scope = widget.deps.studyScope.scope.value;
-    final introduced = <String>{};
-
-    // A (drawFromMeaning): the entry-point card type -- determines which
-    // characters are "new today". The cap applies here.
-    if (widget.focus != ReviewFocus.composita) {
-      introduced.addAll(await _reviewRepo.introduceNewCards(
-        scope,
-        CardType.drawFromMeaning,
-        limit: _dailyNewCap,
-      ));
-    }
-
-    // B (kanjiRecognition): introduced for ALL characters that have an A
-    // card (whether passed or not), so freshly introduced characters get
-    // their B card in the same session. Also picks up characters from
-    // earlier sessions whose B card hasn't been created yet.
-    if (widget.focus != ReviewFocus.composita) {
-      introduced.addAll(await _reviewRepo.introduceNewCards(
-        scope,
-        CardType.kanjiRecognition,
-        limit: _dailyNewCap,
-      ));
-    }
-
-    // C+D (readingCloze, drawInSentence): introduced for ALL characters
-    // with composita coverage, not gated behind passing B. Same "learn
-    // everything about each kanji in one session" principle.
-    if (widget.focus != ReviewFocus.core) {
-      final sentenceEligible = _sentenceEligibleCharacters(scope);
-      introduced.addAll(await _reviewRepo.introduceNewCards(
-        scope,
-        CardType.readingCloze,
-        limit: _dailyNewCap,
-        restrictToCharacters: sentenceEligible,
-      ));
-      introduced.addAll(await _reviewRepo.introduceNewCards(
-        scope,
-        CardType.drawInSentence,
-        limit: _dailyNewCap,
-        restrictToCharacters: sentenceEligible,
-      ));
-    }
-
-    return introduced;
-  }
-
-  /// Read-only tally of how many more NEW CHARACTERS are available to learn
-  /// if the user asks for more today. Counts introducible A
-  /// (drawFromMeaning) cards -- one per character -- so the number matches
-  /// the user's mental model ("learn 2 more kanji", not "learn 6 more
-  /// cards"). Shown so "Learn more today" can either offer an honest count
-  /// or, once this is 0, tell the user there's genuinely nothing left in
-  /// scope instead of a dead button.
-  Future<void> _refreshMoreToLearn() async {
-    final scope = widget.deps.studyScope.scope.value;
-    // A cards are the entry point: one per character, so this count equals
-    // the number of new kanji available.
-    final count = await _reviewRepo.countIntroducible(
-      scope,
-      CardType.drawFromMeaning,
-    );
-    if (!mounted) return;
-    setState(() => _moreToLearn = count);
-  }
-
-  Future<void> _learnMore() async {
-    final parsed = int.tryParse(_learnMoreCapController.text);
-    if (parsed != null && parsed >= 1) {
-      _dailyNewCap = parsed;
-    }
-    setState(() => _loading = true);
-    await _loadQueue();
   }
 
   /// [char]'s composita actually eligible for C+D testing under [scope]
@@ -306,64 +235,20 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   /// stays a synchronous, no-DB-round-trip helper.
   List<Composita> _eligibleCompositaFor(String char, StudyScope scope) {
     final bundled = widget.deps.composita.lookup(char);
-    final merged = _mergeComposita(bundled, _userComposita[char]);
+    final merged = mergeComposita(bundled, _userComposita[char]);
     return eligibleComposita(
       merged,
       scope,
       _customComposita[char] ?? const {},
+      charJlptLevel: widget.deps.jlptLevels.levelOf(char),
     );
   }
 
-  /// Merges bundled composita with user-added ones, deduplicating by word.
-  static List<Composita> _mergeComposita(
-    List<Composita> bundled,
-    List<Composita>? userAdded,
-  ) {
-    if (userAdded == null || userAdded.isEmpty) return bundled;
-    final seen = bundled.map((c) => c.word).toSet();
-    final merged = [...bundled];
-    for (final c in userAdded) {
-      if (seen.add(c.word)) merged.add(c);
-    }
-    return merged;
-  }
 
-  /// Characters with at least one eligible composita word (see
-  /// _eligibleCompositaFor) -- the composita/sentence card types (C+D) can
-  /// only be introduced for these (see
-  /// ReviewRepository.introduceNewCards' restrictToCharacters). A real
-  /// mined sentence is no longer required: _pickSentenceFor falls back to
-  /// a synthetic single-word pseudo-sentence (see
-  /// sentence_selection.dart's syntheticSentenceFor) when none exists, so
-  /// composita-only testing (C, without D) still works. Empty outright
-  /// when composita/sentence testing isn't enabled for this scope at all
-  /// (see compositaEnabled) -- e.g. JLPT mode with no ceiling chosen yet.
-  Set<String> _sentenceEligibleCharacters(StudyScope scope) {
-    if (!compositaEnabled(scope)) return {};
-    final chars = <String>{};
-    for (final char in widget.deps.kanjiInfo.characters) {
-      final jlptLevel = widget.deps.jlptLevels.levelOf(char);
-      final rtkIndex = widget.deps.rtkIndex.indexOf(char);
-      final levelRank = widget.deps.kanjiLevelRank.rankOf(char);
-      if (!scope.matches(
-        character: char,
-        jlptLevel: jlptLevel,
-        rtkIndex: rtkIndex,
-        levelRank: levelRank,
-      )) {
-        continue;
-      }
-      if (_eligibleCompositaFor(char, scope).isNotEmpty) chars.add(char);
-    }
-    return chars;
-  }
-
-  /// Re-appends [card] to the end of the queue if it hasn't been re-queued
-  /// already in this session. Prevents infinite loops while still giving
-  /// the user a second chance at each missed card (Anki-style).
-  void _requeueIfFirst(ReviewCard card) {
-    final key = '${card.character}:${card.cardType}';
-    if (_requeued.add(key)) _queue.add(card);
+  /// Re-appends [card] to the end of the queue so the user sees it again.
+  /// Failed cards repeat until passed (quality >= 3).
+  void _requeueFailed(ReviewCard card) {
+    _queue.add(card);
   }
 
   ReviewCard? get _currentCard =>
@@ -372,14 +257,17 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   void _prepareCurrentCard() {
     _revealed = false;
     _translationRevealed = false;
+    _showFeedbackDetails = false;
     _feedback = null;
     _currentStoryKeyword = null; // stale until _loadStoryForCurrentCard() resolves
+    _currentStory = null;
     final card = _currentCard;
     _currentSentence =
         (card != null &&
+            card.compositaWord.isNotEmpty &&
             (card.cardType == CardType.readingCloze ||
                 card.cardType == CardType.drawInSentence))
-        ? _pickSentenceFor(card.character)
+        ? _sentenceForWord(card.character, card.compositaWord, card.repetitions)
         : null;
   }
 
@@ -393,33 +281,72 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     if (card == null) return;
     final character = card.character;
     final keyword = await _reviewRepo.getStoryKeyword(character);
+    final story = await _reviewRepo.getNote(character);
     if (!mounted || _currentCard?.character != character) return;
-    setState(() => _currentStoryKeyword = keyword);
+    setState(() {
+      _currentStoryKeyword = keyword;
+      _currentStory = story;
+    });
   }
 
-  _ExampleSentenceRef? _pickSentenceFor(String character) {
+  /// Builds the sentence reference for a specific composita word (read from
+  /// the card itself, not picked dynamically). Rotates through available
+  /// real sentences based on [repetitions] so the user sees a different
+  /// sentence after each successful review, falling back to a synthetic
+  /// single-word pseudo-sentence when none exists.
+  _ExampleSentenceRef? _sentenceForWord(
+    String character,
+    String compositaWord,
+    int repetitions,
+  ) {
     final scope = widget.deps.studyScope.scope.value;
-    if (!compositaEnabled(scope)) return null;
     final eligible = _eligibleCompositaFor(character, scope);
-    final picked = pickUntested(eligible, _testedWords[character] ?? const {});
-    if (picked == null) return null;
-    final realSentences = widget.deps.sentences.lookup(picked.word);
-    // D when a real mined sentence exists, else C via a synthetic
-    // single-word pseudo-sentence (see sentence_selection.dart) -- same
-    // FuriganaSentence-based card either way.
-    final sentence = realSentences.isNotEmpty
-        ? realSentences.first
-        : syntheticSentenceFor(picked);
-    return _ExampleSentenceRef(composita: picked, sentence: sentence);
+    var composita = eligible.cast<Composita?>().firstWhere(
+      (c) => c!.word == compositaWord,
+      orElse: () => null,
+    );
+    // Fall back to the full (unfiltered) composita data when the word isn't
+    // in the eligible list (e.g. ceiling changed after the card was created).
+    if (composita == null) {
+      final bundled = widget.deps.composita.lookup(character);
+      final merged = mergeComposita(bundled, _userComposita[character]);
+      composita = merged.cast<Composita?>().firstWhere(
+        (c) => c!.word == compositaWord,
+        orElse: () => null,
+      );
+    }
+    if (composita == null) return null;
+    // Filter sentences whose target token reading matches the composita's
+    // reading — prevents mismatches like 入る(はいる) in a 気に入る(きにいる)
+    // sentence.
+    final realSentences = widget.deps.sentences.lookup(composita.word);
+    final expectedReading = composita.reading;
+    final matching = realSentences.where((s) {
+      final target = s.tokens.where((t) => t.isTarget).firstOrNull;
+      return target == null || target.reading == expectedReading;
+    }).toList();
+    // Don't fall back to mismatched sentences — use synthetic instead.
+    final sentence = matching.isNotEmpty
+        ? matching[repetitions % matching.length]
+        : syntheticSentenceFor(composita);
+    return _ExampleSentenceRef(composita: composita, sentence: sentence);
   }
 
   Future<void> _grade(int quality) async {
     final card = _currentCard;
     if (card == null) return;
     final sentenceRef = _currentSentence; // captured before it's reset below
+    // Snapshot the card's current DB state before grading so undo can
+    // restore it.
+    final snapshot = await _reviewRepo.getCardState(
+      character: card.character,
+      cardType: card.cardType,
+      compositaWord: card.compositaWord,
+    );
     await _reviewRepo.gradeCard(
       character: card.character,
       cardType: card.cardType,
+      compositaWord: card.compositaWord,
       quality: quality,
     );
     // quality >= 3 is SM-2's own pass threshold (below it repetitions resets
@@ -435,13 +362,25 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       _testedWords.putIfAbsent(card.character, () => {}).add(word);
     }
     if (!mounted) return;
-    // Anki-style: re-queue failed cards so the user sees them once more.
-    if (quality < 3) _requeueIfFirst(card);
+    // Re-queue failed cards so the user sees them again until passed.
+    final requeued = quality < 3;
+    if (requeued) _requeueFailed(card);
     setState(() {
+      _lastGradeSnapshot = _GradeSnapshot(
+        queueCard: card,
+        dbSnapshot: snapshot,
+        wasRequeued: requeued,
+        sentence: sentenceRef,
+      );
       _index++;
+      if (!requeued) _cardsDone++;
       _prepareCurrentCard();
     });
-    _loadStoryForCurrentCard();
+    if (_index >= _queue.length) {
+      _refreshRemainingCount();
+    } else {
+      _loadStoryForCurrentCard();
+    }
   }
 
   Future<void> _onDrawPicked(
@@ -458,16 +397,44 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       topCandidates: candidates,
       userPick: userPick,
     );
+    // Snapshot before grading for undo.
+    final snapshot = await _reviewRepo.getCardState(
+      character: card.character,
+      cardType: card.cardType,
+      compositaWord: card.compositaWord,
+    );
     // Grade (persist SM-2 state) immediately, but don't advance yet -- show
     // feedback first so a miss always reveals the correct answer instead of
     // silently moving on.
     await _reviewRepo.gradeCard(
       character: card.character,
       cardType: card.cardType,
+      compositaWord: card.compositaWord,
       quality: quality,
     );
+    // Record composita tested for drawInSentence (same logic as _grade's
+    // composita path, but draw cards go through _onDrawPicked, not _grade).
+    // drawInSentence tests writing (user draws), not reading.
+    final sentenceRef = _currentSentence;
+    if (quality >= 3 && sentenceRef != null) {
+      final word = sentenceRef.composita.word;
+      await _reviewRepo.recordCompositaTested(
+        card.character,
+        word,
+        CompositaDirection.writing,
+      );
+      _testedWords.putIfAbsent(card.character, () => {}).add(word);
+    }
     if (!mounted) return;
     setState(() {
+      // Snapshot saved here; _continueAfterFeedback will use it when
+      // advancing (it knows the requeue status from _feedback.correct).
+      _lastGradeSnapshot = _GradeSnapshot(
+        queueCard: card,
+        dbSnapshot: snapshot,
+        wasRequeued: false, // set correctly in _continueAfterFeedback
+        sentence: sentenceRef,
+      );
       _feedback = _DrawFeedback(
         correct: userPick == card.character,
         target: card.character,
@@ -475,6 +442,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
         sentence: _currentSentence?.sentence,
         composita: _currentSentence?.composita,
       );
+      _showFeedbackDetails = true;
     });
   }
 
@@ -484,13 +452,27 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   Future<void> _onDontKnow() async {
     final card = _currentCard;
     if (card == null) return;
+    // Snapshot before grading for undo.
+    final snapshot = await _reviewRepo.getCardState(
+      character: card.character,
+      cardType: card.cardType,
+      compositaWord: card.compositaWord,
+    );
     await _reviewRepo.gradeCard(
       character: card.character,
       cardType: card.cardType,
+      compositaWord: card.compositaWord,
       quality: 0,
     );
     if (!mounted) return;
+    final sentenceRef = _currentSentence;
     setState(() {
+      _lastGradeSnapshot = _GradeSnapshot(
+        queueCard: card,
+        dbSnapshot: snapshot,
+        wasRequeued: false, // set correctly in _continueAfterFeedback
+        sentence: sentenceRef,
+      );
       _feedback = _DrawFeedback(
         correct: false,
         target: card.character,
@@ -498,71 +480,85 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
         sentence: _currentSentence?.sentence,
         composita: _currentSentence?.composita,
       );
+      _showFeedbackDetails = true;
     });
   }
 
   void _continueAfterFeedback() {
-    // Anki-style: re-queue missed draw cards so the user sees them once more.
     final card = _currentCard;
-    if (card != null && _feedback != null && !_feedback!.correct) {
-      _requeueIfFirst(card);
+    final requeued = card != null && _feedback != null && !_feedback!.correct;
+    if (requeued) {
+      // Re-queue missed draw cards until passed.
+      _requeueFailed(card);
     }
     setState(() {
+      // Update the snapshot's wasRequeued now that we know whether the
+      // card was actually re-appended (draw/don't-know cards defer
+      // requeue to this point, after the feedback overlay).
+      if (_lastGradeSnapshot != null) {
+        _lastGradeSnapshot = _GradeSnapshot(
+          queueCard: _lastGradeSnapshot!.queueCard,
+          dbSnapshot: _lastGradeSnapshot!.dbSnapshot,
+          wasRequeued: requeued,
+          sentence: _lastGradeSnapshot!.sentence,
+        );
+      }
       _index++;
+      if (!requeued) _cardsDone++;
       _prepareCurrentCard();
     });
-    _loadStoryForCurrentCard();
+    if (_index >= _queue.length) {
+      _refreshRemainingCount();
+    } else {
+      _loadStoryForCurrentCard();
+    }
   }
 
-  void _advanceSlideshow() {
-    setState(() {
-      final next = (_slideshowIndex ?? 0) + 1;
-      if (next < _newCharacters.length) {
-        _slideshowIndex = next;
-      } else {
-        _slideshowIndex = null; // slideshow done, start normal review
-      }
-    });
-  }
+  Future<void> _undoLastGrade() async {
+    final snap = _lastGradeSnapshot;
+    if (snap == null || _index <= 0) return;
 
-  Widget _buildSlideshow() {
-    final l = AppLocalizations.of(context)!;
-    final idx = _slideshowIndex!;
-    final char = _newCharacters[idx];
-    final isLast = idx == _newCharacters.length - 1;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l.reviewSlideshowTitle(idx + 1, _newCharacters.length)),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: KanjiDetailContent(character: char, deps: widget.deps),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _advanceSlideshow,
-                  child: Text(isLast ? l.reviewSlideshowStartReview : l.reviewSlideshowNext),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    // 1. Restore the card's DB state.
+    await _reviewRepo.undoGrade(
+      character: snap.queueCard.character,
+      cardType: snap.queueCard.cardType,
+      compositaWord: snap.queueCard.compositaWord,
+      snapshot: snap.dbSnapshot,
     );
+
+    // 2. If the card was re-queued (failed), remove the last occurrence
+    //    from the queue.
+    if (snap.wasRequeued) {
+      for (var i = _queue.length - 1; i >= 0; i--) {
+        final c = _queue[i];
+        if (c.character == snap.queueCard.character &&
+            c.cardType == snap.queueCard.cardType &&
+            c.compositaWord == snap.queueCard.compositaWord) {
+          _queue.removeAt(i);
+          break;
+        }
+      }
+    }
+
+    if (!mounted) return;
+    // 3. Go back one card and reset its state.
+    setState(() {
+      _index--;
+      if (!snap.wasRequeued) _cardsDone--;
+      _lastGradeSnapshot = null;
+      _currentSentence = snap.sentence;
+      _prepareCurrentCard();
+      // Restore the sentence ref that _prepareCurrentCard just recomputed --
+      // the snapshot's sentence is the one the user originally saw.
+      _currentSentence = snap.sentence;
+    });
+    _loadStoryForCurrentCard();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    if (_slideshowIndex != null) {
-      return _buildSlideshow();
     }
     final l = AppLocalizations.of(context)!;
     final card = _currentCard;
@@ -603,9 +599,18 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
             card == null
                 ? l.reviewTitle
                 : isNew
-                    ? l.reviewHeaderNew(_index + 1, _queue.length)
-                    : l.reviewHeader(_index + 1, _queue.length),
+                    ? l.reviewHeaderNew(_cardsDone + 1, _cardsDone + _queue.length - _index)
+                    : l.reviewHeader(_cardsDone + 1, _cardsDone + _queue.length - _index),
           ),
+          actions: [
+            if (_lastGradeSnapshot != null &&
+                _feedback == null)
+              IconButton(
+                icon: const Icon(Icons.undo),
+                tooltip: l.reviewUndoTooltip,
+                onPressed: _undoLastGrade,
+              ),
+          ],
         ),
         body: SafeArea(
           child: card == null
@@ -619,56 +624,136 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     );
   }
 
-  /// Shown once the queue runs dry: due cards are done, and today's new-card
-  /// cap (if in scope) has been reached. Offers to lift the cap on demand
-  /// rather than making the user wait for a fresh calendar day, but only
-  /// when there's honestly something left to learn in scope.
+  /// Load more cards beyond the daily cap. Reloads the queue without any
+  /// cap so the user can continue studying.
+  Future<void> _loadMore(int count) async {
+    _dueRefreshTimer?.cancel();
+    setState(() => _loading = true);
+
+    // Persist the "learn more" commitment so leaving mid-session and
+    // coming back today reloads with the expanded cap, not the default.
+    // Persist a high-water mark: the total reviews the user has committed
+    // to today. _loadQueue subtracts reviewedToday to get the outstanding
+    // remainder, so as cards are reviewed the commitment shrinks naturally.
+    final prefs = await SharedPreferences.getInstance();
+    final reviewedSoFar = await _reviewRepo.countReviewedToday();
+    final todayStr = '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
+    final learnMoreDate = prefs.getString(_learnMoreDateKey);
+    final existingHighWater = (learnMoreDate == todayStr)
+        ? (prefs.getInt(_learnMoreExtraKey) ?? 0)
+        : 0;
+    // High-water = max(previous high-water, current reviewed + new count).
+    final newHighWater = (reviewedSoFar + count).clamp(existingHighWater, reviewedSoFar + count);
+    await prefs.setInt(_learnMoreExtraKey, newHighWater);
+    await prefs.setString(_learnMoreDateKey, todayStr);
+    // ignore: avoid_print
+    print('[_loadMore] count=$count reviewedSoFar=$reviewedSoFar highWater=$newHighWater');
+
+    final scope = widget.deps.studyScope.scope.value;
+    _customComposita = await _reviewRepo.customCompositaForCharacters(scope.characters);
+    _userComposita = await _reviewRepo.allUserCompositaByChar();
+
+    final reviews = await _reviewRepo.dueCards(
+      scope,
+      excludeNeverReviewed: true,
+    );
+    final neverReviewed = await _reviewRepo.cardsNeverReviewed(scope);
+    const cardTypeOrder = {
+      CardType.drawFromMeaning: 0,
+      CardType.kanjiRecognition: 1,
+      CardType.readingCloze: 2,
+      CardType.drawInSentence: 3,
+    };
+    neverReviewed.sort((a, b) =>
+        (cardTypeOrder[a.cardType] ?? 9)
+            .compareTo(cardTypeOrder[b.cardType] ?? 9));
+
+    // Load up to [count] more cards, no cap applied.
+    final all = [...reviews, ...neverReviewed];
+    final loaded = all.take(count).toList();
+    final due = interleaveByCharacter(loaded);
+
+    final testedWords = await _reviewRepo.testedCompositaWordsFor(
+      due.map((c) => c.character).toSet(),
+      CompositaDirection.reading,
+    );
+    if (!mounted) return;
+    setState(() {
+      _queue = due;
+      _index = 0;
+      _loading = false;
+      _lastGradeSnapshot = null;
+      _remainingBeyondCap = all.length - loaded.length;
+      _testedWords = testedWords;
+      _seenCharacters = scope.characters;
+      _prepareCurrentCard();
+    });
+    _loadStoryForCurrentCard();
+  }
+
+  /// Re-queries the actual remaining card count from the DB so the
+  /// queue-exhausted screen shows a fresh number, not the stale load-time
+  /// snapshot. Also starts a periodic timer to pick up cards that become
+  /// due while the user is looking at the "no cards" screen.
+  Future<void> _refreshRemainingCount() async {
+    final scope = widget.deps.studyScope.scope.value;
+    // countDueCards already includes never-reviewed cards (they have a
+    // dueDate set at introduction time), so no separate query needed.
+    final dueCount = await _reviewRepo.countDueCards(scope);
+    if (mounted) setState(() => _remainingBeyondCap = dueCount);
+
+    // Start periodic refresh so newly-due cards appear automatically.
+    _dueRefreshTimer?.cancel();
+    _dueRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) async {
+        final count = await _reviewRepo.countDueCards(scope);
+        if (mounted) setState(() => _remainingBeyondCap = count);
+      },
+    );
+  }
+
   Widget _buildQueueExhausted() {
     final l = AppLocalizations.of(context)!;
+    final remaining = _remainingBeyondCap;
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(l.reviewNoCardsDue),
-          if (_moreToLearn > 0) ...[
-            const SizedBox(height: 24),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 60,
-                  child: TextField(
-                    controller: _learnMoreCapController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[1-9][0-9]*')),
-                      LengthLimitingTextInputFormatter(3),
-                    ],
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      border: OutlineInputBorder(),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(remaining > 0
+                ? l.reviewDailyLimitReached(remaining)
+                : l.reviewNoCardsDue),
+            if (remaining > 0) ...[
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  for (final n in [10, 25, 50, 100])
+                    if (n <= remaining)
+                      OutlinedButton(
+                        onPressed: () => _loadMore(n),
+                        child: Text(l.reviewContinueCards(n)),
+                      ),
+                  if (!const [10, 25, 50, 100].contains(remaining) &&
+                      remaining < 100)
+                    OutlinedButton(
+                      onPressed: () => _loadMore(remaining),
+                      child: Text(l.reviewContinueCards(remaining)),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _learnMore,
-                  child: Text(l.reviewLearnMoreButton),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l.reviewMoreAvailable(_moreToLearn),
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ],
+              ),
+            ],
+            const SizedBox(height: 24),
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l.reviewReturnButton),
             ),
           ],
-          const SizedBox(height: 24),
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l.reviewReturnButton),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -704,17 +789,15 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       Icon(
         feedback.correct ? Icons.check_circle : Icons.cancel,
         color: feedback.correct ? Colors.green : Colors.red,
-        size: 56,
+        size: feedback.correct ? 40 : 56,
       ),
-      const SizedBox(height: 16),
-      if (feedback.correct) ...[
-        Text(l.reviewCorrect, style: Theme.of(context).textTheme.headlineSmall),
+      if (!feedback.correct) ...[
         const SizedBox(height: 16),
-      ],
-      Text(l.reviewAnswer(feedback.target), style: const TextStyle(fontSize: 40)),
-      if (feedback.userPick != null) ...[
-        const SizedBox(height: 8),
-        Text(l.reviewYouPicked(feedback.userPick!)),
+        Text(l.reviewAnswer(feedback.target), style: const TextStyle(fontSize: 40)),
+        if (feedback.userPick != null) ...[
+          const SizedBox(height: 8),
+          Text(l.reviewYouPicked(feedback.userPick!)),
+        ],
       ],
     ];
 
@@ -740,17 +823,11 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       children: [
         ...header,
         if (sentence != null) ...[
-          const SizedBox(height: 16),
-          // Re-show the sentence, fully revealed -- the bare "Answer: X"
-          // line above loses the context (and, for drawInSentence, the
-          // actual sentence) the card was testing.
-          FuriganaSentence(
-            tokens: sentence.tokens,
-            emphasizeTargetReading: true,
-            highlightTargetBox: true,
-          ),
-          if (sentence.translation != null) ...[
-            const SizedBox(height: 8),
+          // Show translation first so the user sees the meaning context
+          // before the answer reading.
+          if (sentence.translation != null &&
+              sentence.source != 'synthetic') ...[
+            const SizedBox(height: 16),
             Text(
               sentence.translation!,
               textAlign: TextAlign.center,
@@ -760,6 +837,28 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
               ),
             ),
           ],
+          const SizedBox(height: 8),
+          // Re-show the sentence, fully revealed -- the bare "Answer: X"
+          // line above loses the context (and, for drawInSentence, the
+          // actual sentence) the card was testing.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: FuriganaSentence(
+                  kanjiLookup: widget.deps.kanjiInfo.lookup,
+                  tokens: sentence.tokens,
+                  emphasizeTargetReading: true,
+                  highlightTargetBox: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: TtsButton(text: sentence.sentence),
+              ),
+            ],
+          ),
           // The specific composita word this sentence was built around --
           // its meaning isn't otherwise shown anywhere in this card.
           if (composita != null) ...[
@@ -768,19 +867,23 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
               child: _compositaInfoText(
                 composita,
                 sentence.tokens.firstWhere((t) => t.isTarget).reading,
+                highlightChar: feedback.target,
               ),
             ),
           ],
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
         const Divider(),
         Expanded(
           child: KanjiDetailContent(character: feedback.target, deps: widget.deps),
         ),
         const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: _continueAfterFeedback,
-          child: Text(l.reviewContinue),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _continueAfterFeedback,
+            child: Text(l.reviewContinue),
+          ),
         ),
       ],
     );
@@ -799,33 +902,98 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   /// sentence). Showing composita.reading here could contradict the reading
   /// already revealed above it, so the sentence's own reading is the one
   /// that must agree with what the user just saw.
-  Widget _compositaInfoText(Composita composita, String reading) {
-    const base = TextStyle(fontSize: 14, color: Colors.black87);
-    return Text.rich(
-      TextSpan(
-        style: base,
-        children: [
-          TextSpan(
-            text: composita.word,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          TextSpan(text: ' ($reading): ${composita.meaning}'),
-          if (composita.effectiveJlptLevel != null)
-            TextSpan(
-              text: composita.isLevelInferred
-                  ? ' [N${composita.effectiveJlptLevel}?]'
-                  : ' [N${composita.effectiveJlptLevel}]',
-              style: TextStyle(color: Colors.grey.shade600),
+  /// Shows a bottom sheet with kanji info (readings, meaning, keyword, story)
+  /// for a single character tapped in a composita word.
+  void _showKanjiPopup(String character) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.3,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: KanjiDetailContent(
+                character: character,
+                deps: widget.deps,
+                scrollable: false,
+                compact: false,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+  Widget _compositaInfoText(
+    Composita composita,
+    String reading, {
+    String? highlightChar,
+  }) {
+    const wordStyle = TextStyle(fontSize: 28, color: Colors.black87);
+    const detailStyle = TextStyle(fontSize: 14, color: Colors.black87);
+    // Build the composita word as individual characters, with kanji tappable.
+    // The tested character (highlightChar) gets a red underline.
+    final wordChars = composita.word.characters.toList();
+    final kanjiButtons = wordChars.map((char) {
+      final isTested = char == highlightChar;
+      if (char.length == 1 && isKanji(char.codeUnitAt(0))) {
+        return GestureDetector(
+          onTap: () => _showKanjiPopup(char),
+          child: Text(
+            char,
+            style: wordStyle.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isTested ? Colors.red : null,
+              decoration: TextDecoration.underline,
+              decorationColor: isTested ? Colors.red : Colors.grey.shade400,
             ),
-        ],
-      ),
-      textAlign: TextAlign.center,
-      // A JMdict gloss can run long (multiple senses, semicolon-separated) --
-      // capped rather than left to grow unbounded, since this sits in a
-      // plain (non-scrollable) Column in _buildFeedback that can only
-      // absorb so much before overflowing.
-      maxLines: 3,
-      overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }
+      return Text(char, style: wordStyle.copyWith(fontWeight: FontWeight.bold));
+    }).toList();
+
+    // Try to show per-character readings separated by dots.
+    String displayReading = reading;
+    final kanjiLookup = widget.deps.kanjiInfo.lookup;
+    final splits = composita.splits ??
+        splitReading(composita.word, reading, kanjiLookup);
+    if (splits != null && splits.length == wordChars.length) {
+      displayReading = splits.join('・');
+    }
+
+    final suffix = ' ($displayReading): ${composita.meaning}';
+    final levelText = composita.effectiveJlptLevel != null
+        ? (composita.isLevelInferred
+            ? ' [N${composita.effectiveJlptLevel}?]'
+            : ' [N${composita.effectiveJlptLevel}]')
+        : '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: kanjiButtons,
+        ),
+        Text(
+          '$suffix$levelText',
+          style: detailStyle,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -893,12 +1061,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
             key: ValueKey('${card.character}-${card.cardType}'),
             recognizer: widget.deps.recognizer,
             onPicked: _onDrawPicked,
-          ),
-        ),
-        Center(
-          child: TextButton(
-            onPressed: _onDontKnow,
-            child: Text(l.reviewDontKnow),
+            onDontKnow: _onDontKnow,
           ),
         ),
       ],
@@ -916,46 +1079,119 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   Widget _buildKanjiRecognition(ReviewCard card) {
     final l = AppLocalizations.of(context)!;
     final info = widget.deps.kanjiInfo.lookup(card.character);
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l.reviewKanjiRecognitionPrompt),
-          const SizedBox(height: 24),
-          Center(
-            child: Text(
-              card.character,
-              style: const TextStyle(fontSize: 72),
+    final keyword = _currentStoryKeyword;
+    final story = _currentStory;
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.reviewKanjiRecognitionPrompt),
+                const SizedBox(height: 24),
+                Center(
+                  child: Text(
+                    card.character,
+                    style: const TextStyle(fontSize: 72),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                if (_revealed && info != null) ...[
+                  if (info.on.isNotEmpty) Text(l.reviewOnyomi(info.on.join('、'))),
+                  if (info.kun.isNotEmpty) Text(l.reviewKunyomi(info.kun.join('、'))),
+                  if (info.meanings.isNotEmpty)
+                    Text(l.reviewMeaning(info.meanings.join(', '))),
+                  if (keyword != null && keyword.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      keyword,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                  if (story != null && story.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      story,
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => DraggableScrollableSheet(
+                            initialChildSize: 0.8,
+                            minChildSize: 0.4,
+                            maxChildSize: 0.95,
+                            expand: false,
+                            builder: (context, scrollController) => Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: KanjiDetailContent(
+                                character: card.character,
+                                deps: widget.deps,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.info_outline, size: 18),
+                      label: Text(l.reviewShowDetails),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          if (_revealed && info != null) ...[
-            if (info.on.isNotEmpty) Text(l.reviewOnyomi(info.on.join('、'))),
-            if (info.kun.isNotEmpty) Text(l.reviewKunyomi(info.kun.join('、'))),
-            if (info.meanings.isNotEmpty)
-              Text(l.reviewMeaning(info.meanings.join(', '))),
-            const SizedBox(height: 24),
-          ],
-          if (!_revealed)
-            ElevatedButton(
+        ),
+        const SizedBox(height: 8),
+        if (!_revealed)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
               onPressed: () => setState(() => _revealed = true),
               child: Text(l.reviewReveal),
-            )
-          else
-            Wrap(
-              spacing: 12,
-              children: [
-                ElevatedButton(
+            ),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
                   onPressed: () => _grade(2),
                   child: Text(l.reviewAgain),
                 ),
-                ElevatedButton(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
                   onPressed: () => _grade(4),
                   child: Text(l.reviewGood),
                 ),
-              ],
-            ),
-        ],
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  /// Tiny right-aligned label showing the sentence origin: a Tatoeba link
+  /// for mined sentences, "LLM-generated" for LLM ones, nothing for
+  /// synthetic pseudo-sentences (the bare word is self-evident).
+  Widget _buildSentenceSourceLabel(ExampleSentence sentence) {
+    if (sentence.source == 'synthetic') return const SizedBox.shrink();
+    final text = sentence.source == 'tatoeba' ? 'Tatoeba' : 'LLM-generated';
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Text(
+          text,
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+        ),
       ),
     );
   }
@@ -1008,78 +1244,154 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     );
   }
 
+
   Widget _buildReadingCloze(ReviewCard card, _ExampleSentenceRef ref) {
     final l = AppLocalizations.of(context)!;
     final targetReading = ref.sentence.tokens
         .firstWhere((t) => t.isTarget)
         .reading;
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l.reviewReadingClozePrompt),
-          const SizedBox(height: 24),
-          FuriganaSentence(
-            tokens: ref.sentence.tokens,
-            hideTargetReading: !_revealed,
-            emphasizeTargetReading: _revealed,
-            highlightTargetBox: true,
+    // Auto-scroll to the highlighted target word after layout so a long
+    // sentence doesn't leave the red box below the fold.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _readingClozeTargetKey.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 300),
+            alignment: 0.3);
+      }
+    });
+    // Use unsplit tokens so the target word stays as a single Wrap child
+    // with one consistent red highlight box. Splitting into per-character
+    // sub-tokens caused misaligned furigana and inconsistent box heights.
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.reviewReadingClozePrompt),
+                const SizedBox(height: 24),
+                FuriganaSentence(
+                  kanjiLookup: widget.deps.kanjiInfo.lookup,
+                  targetKey: _readingClozeTargetKey,
+                  tokens: ref.sentence.tokens,
+                  hideTargetReading: !_revealed,
+                  emphasizeTargetReading: _revealed,
+                  highlightTargetBox: true,
+                  highlightCharacter: card.character,
+                  seenCharacters: _seenCharacters,
+                ),
+                Row(
+                  children: [
+                    Expanded(child: _buildSentenceSourceLabel(ref.sentence)),
+                    TtsButton(text: ref.sentence.sentence),
+                  ],
+                ),
+                if (_revealed) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    targetReading,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+                _buildTranslationToggle(ref.sentence),
+                if (_revealed) ...[
+                  const SizedBox(height: 8),
+                  _compositaInfoText(
+                    ref.composita,
+                    targetReading,
+                    highlightChar: card.character,
+                  ),
+                  const SizedBox(height: 8),
+                  _compositaKanjiRow(ref.composita),
+                ],
+              ],
+            ),
           ),
-          if (_revealed) ...[
-            const SizedBox(height: 8),
-            Text(
-              targetReading,
-              style: const TextStyle(
-                fontSize: 20,
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-          _buildTranslationToggle(ref.sentence),
-          // Once the answer is revealed, show the translation automatically
-          // too -- unless the manual toggle already showed it, to avoid
-          // displaying the same text twice.
-          if (_revealed &&
-              !_translationRevealed &&
-              ref.sentence.translation != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              ref.sentence.translation!,
-              style: TextStyle(
-                fontStyle: FontStyle.italic,
-                color: Colors.grey.shade700,
-              ),
-            ),
-          ],
-          // The composita word being tested -- its meaning isn't otherwise
-          // shown anywhere on this card, only its reading (above).
-          if (_revealed) ...[
-            const SizedBox(height: 8),
-            _compositaInfoText(ref.composita, targetReading),
-          ],
-          const SizedBox(height: 24),
-          if (!_revealed)
-            ElevatedButton(
+        ),
+        const SizedBox(height: 8),
+        if (!_revealed)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
               onPressed: () => setState(() => _revealed = true),
               child: Text(l.reviewReveal),
-            )
-          else
-            Wrap(
-              spacing: 12,
-              children: [
-                ElevatedButton(
+            ),
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
                   onPressed: () => _grade(2),
                   child: Text(l.reviewAgain),
                 ),
-                ElevatedButton(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
                   onPressed: () => _grade(4),
                   child: Text(l.reviewGood),
                 ),
-              ],
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  /// A compact row of the composita word's kanji characters, each tappable
+  /// to show a kanji detail popup. Used before reveal in readingCloze so the
+  /// user can identify which word is being tested and look up components.
+  /// Shows each kanji in the composita word with its meaning, similar to
+  /// the kanji browser's detail view. Each kanji is tappable for full info.
+  Widget _compositaKanjiRow(Composita composita) {
+    final wordChars = composita.word.characters.toList();
+    final kanjiChars = wordChars
+        .where((c) => c.length == 1 && isKanji(c.codeUnitAt(0)))
+        .toList();
+    if (kanjiChars.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: kanjiChars.map((char) {
+        final info = widget.deps.kanjiInfo.lookup(char);
+        final meaning = info?.meanings.join(', ') ?? '';
+        return GestureDetector(
+          onTap: () => _showKanjiPopup(char),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: RichText(
+              text: TextSpan(
+                style: DefaultTextStyle.of(context).style,
+                children: [
+                  TextSpan(
+                    text: char,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                      decorationColor: Colors.grey,
+                    ),
+                  ),
+                  if (meaning.isNotEmpty)
+                    TextSpan(
+                      text: ' — $meaning',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                ],
+              ),
             ),
-        ],
-      ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -1137,8 +1449,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   // total by ~25dp it didn't need to, squeezing the sentence box down to
   // its 60dp floor even for a short sentence.
   static const double _drawAndPickCanvasHeight = 260 + 12;
-  static const double _drawAndPickTextWorstCase = 150;
-  static const double _dontKnowButtonHeight = 48;
+  static const double _drawAndPickTextWorstCase = 160;
 
   double _translationToggleReservedHeight(String? translation, double maxWidth) {
     final scaler = MediaQuery.textScalerOf(context);
@@ -1163,6 +1474,13 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   Widget _buildDrawInSentence(ReviewCard card, _ExampleSentenceRef ref) {
     final l = AppLocalizations.of(context)!;
     const sentenceGap = 8.0;
+    // Split the target token so unseen kanji show reading hints.
+    // For draw-in-sentence, FuriganaSentence uses targetCharacter+replacement
+    // Don't split the target token for drawInSentence — the draw box
+    // replaces only the tested character within the unsplit word, keeping
+    // the other characters aligned at the same vertical position. Splitting
+    // would make each character a separate Wrap child, misaligning the
+    // 32×32 draw box against the smaller text-height kanji.
     return LayoutBuilder(
       builder: (context, constraints) {
         // The Don't-know button and DrawAndPickWidget's own Clear button/
@@ -1177,8 +1495,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
               constraints.maxWidth,
             ) +
             _drawAndPickCanvasHeight +
-            _drawAndPickTextWorstCase * textScale +
-            _dontKnowButtonHeight * textScale;
+            _drawAndPickTextWorstCase * textScale;
         final sentenceMaxHeight = (constraints.maxHeight - reserved).clamp(
           60.0,
           double.infinity,
@@ -1189,18 +1506,30 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: sentenceMaxHeight),
               child: SingleChildScrollView(
-                child: FuriganaSentence(
-                  tokens: ref.sentence.tokens,
-                  targetCharacter: card.character,
-                  targetReplacement: Container(
-                    width: 32,
-                    height: 32,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade500),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FuriganaSentence(
+                    kanjiLookup: widget.deps.kanjiInfo.lookup,
+                      tokens: ref.sentence.tokens,
+                      targetCharacter: card.character,
+                      targetReplacement: Container(
+                        width: 32,
+                        height: 32,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade500),
+                        ),
+                        child: const Icon(Icons.edit, size: 18),
+                      ),
                     ),
-                    child: const Icon(Icons.edit, size: 18),
-                  ),
+                    Row(
+                      children: [
+                        Expanded(child: _buildSentenceSourceLabel(ref.sentence)),
+                        TtsButton(text: ref.sentence.sentence),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1211,12 +1540,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
                 key: ValueKey('${card.character}-${card.cardType}'),
                 recognizer: widget.deps.recognizer,
                 onPicked: _onDrawPicked,
-              ),
-            ),
-            Center(
-              child: TextButton(
-                onPressed: _onDontKnow,
-                child: Text(l.reviewDontKnow),
+                onDontKnow: _onDontKnow,
               ),
             ),
           ],

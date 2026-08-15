@@ -29,6 +29,18 @@ class $ReviewCardsTable extends ReviewCards
         type: DriftSqlType.int,
         requiredDuringInsert: true,
       ).withConverter<CardType>($ReviewCardsTable.$convertercardType);
+  static const VerificationMeta _compositaWordMeta = const VerificationMeta(
+    'compositaWord',
+  );
+  @override
+  late final GeneratedColumn<String> compositaWord = GeneratedColumn<String>(
+    'composita_word',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _easeFactorMeta = const VerificationMeta(
     'easeFactor',
   );
@@ -102,6 +114,7 @@ class $ReviewCardsTable extends ReviewCards
   List<GeneratedColumn> get $columns => [
     character,
     cardType,
+    compositaWord,
     easeFactor,
     intervalDays,
     repetitions,
@@ -128,6 +141,15 @@ class $ReviewCardsTable extends ReviewCards
       );
     } else if (isInserting) {
       context.missing(_characterMeta);
+    }
+    if (data.containsKey('composita_word')) {
+      context.handle(
+        _compositaWordMeta,
+        compositaWord.isAcceptableOrUnknown(
+          data['composita_word']!,
+          _compositaWordMeta,
+        ),
+      );
     }
     if (data.containsKey('ease_factor')) {
       context.handle(
@@ -180,7 +202,7 @@ class $ReviewCardsTable extends ReviewCards
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {character, cardType};
+  Set<GeneratedColumn> get $primaryKey => {character, cardType, compositaWord};
   @override
   ReviewCard map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -195,6 +217,10 @@ class $ReviewCardsTable extends ReviewCards
           data['${effectivePrefix}card_type'],
         )!,
       ),
+      compositaWord: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}composita_word'],
+      )!,
       easeFactor: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}ease_factor'],
@@ -234,6 +260,10 @@ class $ReviewCardsTable extends ReviewCards
 class ReviewCard extends DataClass implements Insertable<ReviewCard> {
   final String character;
   final CardType cardType;
+
+  /// The specific composita word this card tests (readingCloze/drawInSentence
+  /// only -- empty string for core card types drawFromMeaning/kanjiRecognition).
+  final String compositaWord;
   final double easeFactor;
   final int intervalDays;
   final int repetitions;
@@ -243,6 +273,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
   const ReviewCard({
     required this.character,
     required this.cardType,
+    required this.compositaWord,
     required this.easeFactor,
     required this.intervalDays,
     required this.repetitions,
@@ -259,6 +290,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
         $ReviewCardsTable.$convertercardType.toSql(cardType),
       );
     }
+    map['composita_word'] = Variable<String>(compositaWord);
     map['ease_factor'] = Variable<double>(easeFactor);
     map['interval_days'] = Variable<int>(intervalDays);
     map['repetitions'] = Variable<int>(repetitions);
@@ -274,6 +306,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
     return ReviewCardsCompanion(
       character: Value(character),
       cardType: Value(cardType),
+      compositaWord: Value(compositaWord),
       easeFactor: Value(easeFactor),
       intervalDays: Value(intervalDays),
       repetitions: Value(repetitions),
@@ -295,6 +328,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
       cardType: $ReviewCardsTable.$convertercardType.fromJson(
         serializer.fromJson<int>(json['cardType']),
       ),
+      compositaWord: serializer.fromJson<String>(json['compositaWord']),
       easeFactor: serializer.fromJson<double>(json['easeFactor']),
       intervalDays: serializer.fromJson<int>(json['intervalDays']),
       repetitions: serializer.fromJson<int>(json['repetitions']),
@@ -311,6 +345,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
       'cardType': serializer.toJson<int>(
         $ReviewCardsTable.$convertercardType.toJson(cardType),
       ),
+      'compositaWord': serializer.toJson<String>(compositaWord),
       'easeFactor': serializer.toJson<double>(easeFactor),
       'intervalDays': serializer.toJson<int>(intervalDays),
       'repetitions': serializer.toJson<int>(repetitions),
@@ -323,6 +358,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
   ReviewCard copyWith({
     String? character,
     CardType? cardType,
+    String? compositaWord,
     double? easeFactor,
     int? intervalDays,
     int? repetitions,
@@ -332,6 +368,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
   }) => ReviewCard(
     character: character ?? this.character,
     cardType: cardType ?? this.cardType,
+    compositaWord: compositaWord ?? this.compositaWord,
     easeFactor: easeFactor ?? this.easeFactor,
     intervalDays: intervalDays ?? this.intervalDays,
     repetitions: repetitions ?? this.repetitions,
@@ -345,6 +382,9 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
     return ReviewCard(
       character: data.character.present ? data.character.value : this.character,
       cardType: data.cardType.present ? data.cardType.value : this.cardType,
+      compositaWord: data.compositaWord.present
+          ? data.compositaWord.value
+          : this.compositaWord,
       easeFactor: data.easeFactor.present
           ? data.easeFactor.value
           : this.easeFactor,
@@ -367,6 +407,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
     return (StringBuffer('ReviewCard(')
           ..write('character: $character, ')
           ..write('cardType: $cardType, ')
+          ..write('compositaWord: $compositaWord, ')
           ..write('easeFactor: $easeFactor, ')
           ..write('intervalDays: $intervalDays, ')
           ..write('repetitions: $repetitions, ')
@@ -381,6 +422,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
   int get hashCode => Object.hash(
     character,
     cardType,
+    compositaWord,
     easeFactor,
     intervalDays,
     repetitions,
@@ -394,6 +436,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
       (other is ReviewCard &&
           other.character == this.character &&
           other.cardType == this.cardType &&
+          other.compositaWord == this.compositaWord &&
           other.easeFactor == this.easeFactor &&
           other.intervalDays == this.intervalDays &&
           other.repetitions == this.repetitions &&
@@ -405,6 +448,7 @@ class ReviewCard extends DataClass implements Insertable<ReviewCard> {
 class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
   final Value<String> character;
   final Value<CardType> cardType;
+  final Value<String> compositaWord;
   final Value<double> easeFactor;
   final Value<int> intervalDays;
   final Value<int> repetitions;
@@ -415,6 +459,7 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
   const ReviewCardsCompanion({
     this.character = const Value.absent(),
     this.cardType = const Value.absent(),
+    this.compositaWord = const Value.absent(),
     this.easeFactor = const Value.absent(),
     this.intervalDays = const Value.absent(),
     this.repetitions = const Value.absent(),
@@ -426,6 +471,7 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
   ReviewCardsCompanion.insert({
     required String character,
     required CardType cardType,
+    this.compositaWord = const Value.absent(),
     this.easeFactor = const Value.absent(),
     this.intervalDays = const Value.absent(),
     this.repetitions = const Value.absent(),
@@ -439,6 +485,7 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
   static Insertable<ReviewCard> custom({
     Expression<String>? character,
     Expression<int>? cardType,
+    Expression<String>? compositaWord,
     Expression<double>? easeFactor,
     Expression<int>? intervalDays,
     Expression<int>? repetitions,
@@ -450,6 +497,7 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
     return RawValuesInsertable({
       if (character != null) 'character': character,
       if (cardType != null) 'card_type': cardType,
+      if (compositaWord != null) 'composita_word': compositaWord,
       if (easeFactor != null) 'ease_factor': easeFactor,
       if (intervalDays != null) 'interval_days': intervalDays,
       if (repetitions != null) 'repetitions': repetitions,
@@ -463,6 +511,7 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
   ReviewCardsCompanion copyWith({
     Value<String>? character,
     Value<CardType>? cardType,
+    Value<String>? compositaWord,
     Value<double>? easeFactor,
     Value<int>? intervalDays,
     Value<int>? repetitions,
@@ -474,6 +523,7 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
     return ReviewCardsCompanion(
       character: character ?? this.character,
       cardType: cardType ?? this.cardType,
+      compositaWord: compositaWord ?? this.compositaWord,
       easeFactor: easeFactor ?? this.easeFactor,
       intervalDays: intervalDays ?? this.intervalDays,
       repetitions: repetitions ?? this.repetitions,
@@ -494,6 +544,9 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
       map['card_type'] = Variable<int>(
         $ReviewCardsTable.$convertercardType.toSql(cardType.value),
       );
+    }
+    if (compositaWord.present) {
+      map['composita_word'] = Variable<String>(compositaWord.value);
     }
     if (easeFactor.present) {
       map['ease_factor'] = Variable<double>(easeFactor.value);
@@ -524,6 +577,7 @@ class ReviewCardsCompanion extends UpdateCompanion<ReviewCard> {
     return (StringBuffer('ReviewCardsCompanion(')
           ..write('character: $character, ')
           ..write('cardType: $cardType, ')
+          ..write('compositaWord: $compositaWord, ')
           ..write('easeFactor: $easeFactor, ')
           ..write('intervalDays: $intervalDays, ')
           ..write('repetitions: $repetitions, ')
@@ -575,6 +629,18 @@ class $ReviewLogTable extends ReviewLog
         type: DriftSqlType.int,
         requiredDuringInsert: true,
       ).withConverter<CardType>($ReviewLogTable.$convertercardType);
+  static const VerificationMeta _compositaWordMeta = const VerificationMeta(
+    'compositaWord',
+  );
+  @override
+  late final GeneratedColumn<String> compositaWord = GeneratedColumn<String>(
+    'composita_word',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _reviewedAtMeta = const VerificationMeta(
     'reviewedAt',
   );
@@ -612,6 +678,7 @@ class $ReviewLogTable extends ReviewLog
     id,
     character,
     cardType,
+    compositaWord,
     reviewedAt,
     quality,
     resultingIntervalDays,
@@ -638,6 +705,15 @@ class $ReviewLogTable extends ReviewLog
       );
     } else if (isInserting) {
       context.missing(_characterMeta);
+    }
+    if (data.containsKey('composita_word')) {
+      context.handle(
+        _compositaWordMeta,
+        compositaWord.isAcceptableOrUnknown(
+          data['composita_word']!,
+          _compositaWordMeta,
+        ),
+      );
     }
     if (data.containsKey('reviewed_at')) {
       context.handle(
@@ -689,6 +765,10 @@ class $ReviewLogTable extends ReviewLog
           data['${effectivePrefix}card_type'],
         )!,
       ),
+      compositaWord: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}composita_word'],
+      )!,
       reviewedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}reviewed_at'],
@@ -717,6 +797,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
   final int id;
   final String character;
   final CardType cardType;
+  final String compositaWord;
   final DateTime reviewedAt;
   final int quality;
   final int resultingIntervalDays;
@@ -724,6 +805,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
     required this.id,
     required this.character,
     required this.cardType,
+    required this.compositaWord,
     required this.reviewedAt,
     required this.quality,
     required this.resultingIntervalDays,
@@ -738,6 +820,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
         $ReviewLogTable.$convertercardType.toSql(cardType),
       );
     }
+    map['composita_word'] = Variable<String>(compositaWord);
     map['reviewed_at'] = Variable<DateTime>(reviewedAt);
     map['quality'] = Variable<int>(quality);
     map['resulting_interval_days'] = Variable<int>(resultingIntervalDays);
@@ -749,6 +832,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
       id: Value(id),
       character: Value(character),
       cardType: Value(cardType),
+      compositaWord: Value(compositaWord),
       reviewedAt: Value(reviewedAt),
       quality: Value(quality),
       resultingIntervalDays: Value(resultingIntervalDays),
@@ -766,6 +850,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
       cardType: $ReviewLogTable.$convertercardType.fromJson(
         serializer.fromJson<int>(json['cardType']),
       ),
+      compositaWord: serializer.fromJson<String>(json['compositaWord']),
       reviewedAt: serializer.fromJson<DateTime>(json['reviewedAt']),
       quality: serializer.fromJson<int>(json['quality']),
       resultingIntervalDays: serializer.fromJson<int>(
@@ -782,6 +867,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
       'cardType': serializer.toJson<int>(
         $ReviewLogTable.$convertercardType.toJson(cardType),
       ),
+      'compositaWord': serializer.toJson<String>(compositaWord),
       'reviewedAt': serializer.toJson<DateTime>(reviewedAt),
       'quality': serializer.toJson<int>(quality),
       'resultingIntervalDays': serializer.toJson<int>(resultingIntervalDays),
@@ -792,6 +878,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
     int? id,
     String? character,
     CardType? cardType,
+    String? compositaWord,
     DateTime? reviewedAt,
     int? quality,
     int? resultingIntervalDays,
@@ -799,6 +886,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
     id: id ?? this.id,
     character: character ?? this.character,
     cardType: cardType ?? this.cardType,
+    compositaWord: compositaWord ?? this.compositaWord,
     reviewedAt: reviewedAt ?? this.reviewedAt,
     quality: quality ?? this.quality,
     resultingIntervalDays: resultingIntervalDays ?? this.resultingIntervalDays,
@@ -808,6 +896,9 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
       id: data.id.present ? data.id.value : this.id,
       character: data.character.present ? data.character.value : this.character,
       cardType: data.cardType.present ? data.cardType.value : this.cardType,
+      compositaWord: data.compositaWord.present
+          ? data.compositaWord.value
+          : this.compositaWord,
       reviewedAt: data.reviewedAt.present
           ? data.reviewedAt.value
           : this.reviewedAt,
@@ -824,6 +915,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
           ..write('id: $id, ')
           ..write('character: $character, ')
           ..write('cardType: $cardType, ')
+          ..write('compositaWord: $compositaWord, ')
           ..write('reviewedAt: $reviewedAt, ')
           ..write('quality: $quality, ')
           ..write('resultingIntervalDays: $resultingIntervalDays')
@@ -836,6 +928,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
     id,
     character,
     cardType,
+    compositaWord,
     reviewedAt,
     quality,
     resultingIntervalDays,
@@ -847,6 +940,7 @@ class ReviewLogData extends DataClass implements Insertable<ReviewLogData> {
           other.id == this.id &&
           other.character == this.character &&
           other.cardType == this.cardType &&
+          other.compositaWord == this.compositaWord &&
           other.reviewedAt == this.reviewedAt &&
           other.quality == this.quality &&
           other.resultingIntervalDays == this.resultingIntervalDays);
@@ -856,6 +950,7 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
   final Value<int> id;
   final Value<String> character;
   final Value<CardType> cardType;
+  final Value<String> compositaWord;
   final Value<DateTime> reviewedAt;
   final Value<int> quality;
   final Value<int> resultingIntervalDays;
@@ -863,6 +958,7 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
     this.id = const Value.absent(),
     this.character = const Value.absent(),
     this.cardType = const Value.absent(),
+    this.compositaWord = const Value.absent(),
     this.reviewedAt = const Value.absent(),
     this.quality = const Value.absent(),
     this.resultingIntervalDays = const Value.absent(),
@@ -871,6 +967,7 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
     this.id = const Value.absent(),
     required String character,
     required CardType cardType,
+    this.compositaWord = const Value.absent(),
     required DateTime reviewedAt,
     required int quality,
     required int resultingIntervalDays,
@@ -883,6 +980,7 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
     Expression<int>? id,
     Expression<String>? character,
     Expression<int>? cardType,
+    Expression<String>? compositaWord,
     Expression<DateTime>? reviewedAt,
     Expression<int>? quality,
     Expression<int>? resultingIntervalDays,
@@ -891,6 +989,7 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
       if (id != null) 'id': id,
       if (character != null) 'character': character,
       if (cardType != null) 'card_type': cardType,
+      if (compositaWord != null) 'composita_word': compositaWord,
       if (reviewedAt != null) 'reviewed_at': reviewedAt,
       if (quality != null) 'quality': quality,
       if (resultingIntervalDays != null)
@@ -902,6 +1001,7 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
     Value<int>? id,
     Value<String>? character,
     Value<CardType>? cardType,
+    Value<String>? compositaWord,
     Value<DateTime>? reviewedAt,
     Value<int>? quality,
     Value<int>? resultingIntervalDays,
@@ -910,6 +1010,7 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
       id: id ?? this.id,
       character: character ?? this.character,
       cardType: cardType ?? this.cardType,
+      compositaWord: compositaWord ?? this.compositaWord,
       reviewedAt: reviewedAt ?? this.reviewedAt,
       quality: quality ?? this.quality,
       resultingIntervalDays:
@@ -931,6 +1032,9 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
         $ReviewLogTable.$convertercardType.toSql(cardType.value),
       );
     }
+    if (compositaWord.present) {
+      map['composita_word'] = Variable<String>(compositaWord.value);
+    }
     if (reviewedAt.present) {
       map['reviewed_at'] = Variable<DateTime>(reviewedAt.value);
     }
@@ -951,6 +1055,7 @@ class ReviewLogCompanion extends UpdateCompanion<ReviewLogData> {
           ..write('id: $id, ')
           ..write('character: $character, ')
           ..write('cardType: $cardType, ')
+          ..write('compositaWord: $compositaWord, ')
           ..write('reviewedAt: $reviewedAt, ')
           ..write('quality: $quality, ')
           ..write('resultingIntervalDays: $resultingIntervalDays')
@@ -2499,6 +2604,7 @@ typedef $$ReviewCardsTableCreateCompanionBuilder =
     ReviewCardsCompanion Function({
       required String character,
       required CardType cardType,
+      Value<String> compositaWord,
       Value<double> easeFactor,
       Value<int> intervalDays,
       Value<int> repetitions,
@@ -2511,6 +2617,7 @@ typedef $$ReviewCardsTableUpdateCompanionBuilder =
     ReviewCardsCompanion Function({
       Value<String> character,
       Value<CardType> cardType,
+      Value<String> compositaWord,
       Value<double> easeFactor,
       Value<int> intervalDays,
       Value<int> repetitions,
@@ -2539,6 +2646,11 @@ class $$ReviewCardsTableFilterComposer
         column: $table.cardType,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnFilters<String> get compositaWord => $composableBuilder(
+    column: $table.compositaWord,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<double> get easeFactor => $composableBuilder(
     column: $table.easeFactor,
@@ -2590,6 +2702,11 @@ class $$ReviewCardsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get compositaWord => $composableBuilder(
+    column: $table.compositaWord,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get easeFactor => $composableBuilder(
     column: $table.easeFactor,
     builder: (column) => ColumnOrderings(column),
@@ -2635,6 +2752,11 @@ class $$ReviewCardsTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<CardType, int> get cardType =>
       $composableBuilder(column: $table.cardType, builder: (column) => column);
+
+  GeneratedColumn<String> get compositaWord => $composableBuilder(
+    column: $table.compositaWord,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<double> get easeFactor => $composableBuilder(
     column: $table.easeFactor,
@@ -2696,6 +2818,7 @@ class $$ReviewCardsTableTableManager
               ({
                 Value<String> character = const Value.absent(),
                 Value<CardType> cardType = const Value.absent(),
+                Value<String> compositaWord = const Value.absent(),
                 Value<double> easeFactor = const Value.absent(),
                 Value<int> intervalDays = const Value.absent(),
                 Value<int> repetitions = const Value.absent(),
@@ -2706,6 +2829,7 @@ class $$ReviewCardsTableTableManager
               }) => ReviewCardsCompanion(
                 character: character,
                 cardType: cardType,
+                compositaWord: compositaWord,
                 easeFactor: easeFactor,
                 intervalDays: intervalDays,
                 repetitions: repetitions,
@@ -2718,6 +2842,7 @@ class $$ReviewCardsTableTableManager
               ({
                 required String character,
                 required CardType cardType,
+                Value<String> compositaWord = const Value.absent(),
                 Value<double> easeFactor = const Value.absent(),
                 Value<int> intervalDays = const Value.absent(),
                 Value<int> repetitions = const Value.absent(),
@@ -2728,6 +2853,7 @@ class $$ReviewCardsTableTableManager
               }) => ReviewCardsCompanion.insert(
                 character: character,
                 cardType: cardType,
+                compositaWord: compositaWord,
                 easeFactor: easeFactor,
                 intervalDays: intervalDays,
                 repetitions: repetitions,
@@ -2766,6 +2892,7 @@ typedef $$ReviewLogTableCreateCompanionBuilder =
       Value<int> id,
       required String character,
       required CardType cardType,
+      Value<String> compositaWord,
       required DateTime reviewedAt,
       required int quality,
       required int resultingIntervalDays,
@@ -2775,6 +2902,7 @@ typedef $$ReviewLogTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> character,
       Value<CardType> cardType,
+      Value<String> compositaWord,
       Value<DateTime> reviewedAt,
       Value<int> quality,
       Value<int> resultingIntervalDays,
@@ -2804,6 +2932,11 @@ class $$ReviewLogTableFilterComposer
         column: $table.cardType,
         builder: (column) => ColumnWithTypeConverterFilters(column),
       );
+
+  ColumnFilters<String> get compositaWord => $composableBuilder(
+    column: $table.compositaWord,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get reviewedAt => $composableBuilder(
     column: $table.reviewedAt,
@@ -2845,6 +2978,11 @@ class $$ReviewLogTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get compositaWord => $composableBuilder(
+    column: $table.compositaWord,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get reviewedAt => $composableBuilder(
     column: $table.reviewedAt,
     builder: (column) => ColumnOrderings(column),
@@ -2878,6 +3016,11 @@ class $$ReviewLogTableAnnotationComposer
 
   GeneratedColumnWithTypeConverter<CardType, int> get cardType =>
       $composableBuilder(column: $table.cardType, builder: (column) => column);
+
+  GeneratedColumn<String> get compositaWord => $composableBuilder(
+    column: $table.compositaWord,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get reviewedAt => $composableBuilder(
     column: $table.reviewedAt,
@@ -2927,6 +3070,7 @@ class $$ReviewLogTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> character = const Value.absent(),
                 Value<CardType> cardType = const Value.absent(),
+                Value<String> compositaWord = const Value.absent(),
                 Value<DateTime> reviewedAt = const Value.absent(),
                 Value<int> quality = const Value.absent(),
                 Value<int> resultingIntervalDays = const Value.absent(),
@@ -2934,6 +3078,7 @@ class $$ReviewLogTableTableManager
                 id: id,
                 character: character,
                 cardType: cardType,
+                compositaWord: compositaWord,
                 reviewedAt: reviewedAt,
                 quality: quality,
                 resultingIntervalDays: resultingIntervalDays,
@@ -2943,6 +3088,7 @@ class $$ReviewLogTableTableManager
                 Value<int> id = const Value.absent(),
                 required String character,
                 required CardType cardType,
+                Value<String> compositaWord = const Value.absent(),
                 required DateTime reviewedAt,
                 required int quality,
                 required int resultingIntervalDays,
@@ -2950,6 +3096,7 @@ class $$ReviewLogTableTableManager
                 id: id,
                 character: character,
                 cardType: cardType,
+                compositaWord: compositaWord,
                 reviewedAt: reviewedAt,
                 quality: quality,
                 resultingIntervalDays: resultingIntervalDays,

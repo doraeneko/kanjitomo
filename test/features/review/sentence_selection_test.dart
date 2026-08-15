@@ -7,78 +7,17 @@ import 'package:kanjitomo/features/review/study_scope.dart';
 void main() {
   group('compositaEnabled', () {
     test(
-      'JLPT mode requires an explicit compositaCeiling -- null means not '
-      'opted in yet, not "unrestricted"',
+      'requires an explicit compositaCeiling -- null means not opted in yet',
       () {
         expect(
-          compositaEnabled(
-            const StudyScope(mode: StudyScopeMode.jlpt, jlptLevels: {2}),
-          ),
+          compositaEnabled(const StudyScope(characters: {'一'})),
           isFalse,
         );
         expect(
           compositaEnabled(
-            const StudyScope(
-              mode: StudyScopeMode.jlpt,
-              jlptLevels: {2},
-              compositaCeiling: 3,
-            ),
+            const StudyScope(characters: {'一'}, compositaCeiling: 3),
           ),
           isTrue,
-        );
-      },
-    );
-
-    test('rtk and custom mode are always enabled -- no ceiling gate here', () {
-      expect(
-        compositaEnabled(const StudyScope(mode: StudyScopeMode.rtk)),
-        isTrue,
-      );
-      expect(
-        compositaEnabled(const StudyScope(mode: StudyScopeMode.custom)),
-        isTrue,
-      );
-    });
-  });
-
-  group('jlptCeilingFor', () {
-    test('null when the scope is not JLPT mode -- rtk/custom are '
-        'unrestricted, not gated by a ceiling at all', () {
-      expect(
-        jlptCeilingFor(const StudyScope(mode: StudyScopeMode.rtk)),
-        isNull,
-      );
-      expect(
-        jlptCeilingFor(const StudyScope(mode: StudyScopeMode.custom)),
-        isNull,
-      );
-    });
-
-    test('null when JLPT mode has no compositaCeiling chosen -- callers '
-        'should check compositaEnabled before treating this as '
-        '"unrestricted"', () {
-      expect(
-        jlptCeilingFor(const StudyScope(mode: StudyScopeMode.jlpt)),
-        isNull,
-      );
-    });
-
-    test(
-      'the explicit compositaCeiling, independent of jlptLevels',
-      () {
-        // Studying N3 kanji (jlptLevels) doesn't imply an N3 composita
-        // ceiling -- they're deliberately independent settings.
-        expect(
-          jlptCeilingFor(
-            const StudyScope(jlptLevels: {3}, compositaCeiling: 1),
-          ),
-          1,
-        );
-        expect(
-          jlptCeilingFor(
-            const StudyScope(jlptLevels: {3}, compositaCeiling: 5),
-          ),
-          5,
         );
       },
     );
@@ -124,9 +63,6 @@ void main() {
     });
 
     test('a word harder than the ceiling is rejected', () {
-      // 並 is an N2 kanji, but 月並 (its composita word) is tagged N1 --
-      // this is exactly the case that must NOT surface under an N2-only
-      // scope (confirmed directly against the bundled composita.json).
       expect(compositaWithinCeiling(n1Real, 2), isFalse);
     });
 
@@ -160,22 +96,32 @@ void main() {
     );
 
     test(
-      'custom mode: exactly the explicitly-selected words, no ceiling '
-      'fallback -- an unselected word is excluded even if it would pass '
-      'any JLPT ceiling',
+      'customSelected non-empty: exactly the explicitly-selected words, '
+      'no ceiling fallback',
       () {
-        const scope = StudyScope(mode: StudyScopeMode.custom);
+        const scope = StudyScope(characters: {'一'});
         expect(eligibleComposita([n1, n5], scope, {'一つ'}), [n5]);
-        expect(eligibleComposita([n1, n5], scope, {}), isEmpty);
+        // Empty customSelected with no ceiling: falls through to
+        // ceiling-based filtering; null ceiling means everything passes.
+        expect(eligibleComposita([n1, n5], scope, {}), [n1, n5]);
       },
     );
 
-    test('jlpt mode: filtered by compositaCeiling, customSelected ignored', () {
-      const scope = StudyScope(compositaCeiling: 3);
-      // customSelected ({'一向'}) is irrelevant in jlpt mode -- 一向 (N1)
-      // is still excluded since it's harder than the N3 ceiling, while 一つ
-      // (N5, easier) passes despite not being in customSelected.
-      expect(eligibleComposita([n1, n5], scope, {'一向'}), [n5]);
+    test('customSelected empty: filtered by compositaCeiling', () {
+      const scope = StudyScope(
+        characters: {'一'},
+        compositaCeiling: 3,
+      );
+      // 一向 (N1) is excluded since it's harder than the N3 ceiling, while
+      // 一つ (N5, easier) passes.
+      expect(eligibleComposita([n1, n5], scope, {}), [n5]);
+    });
+
+    test('no ceiling and no customSelected: all composita pass', () {
+      const scope = StudyScope(characters: {'一'});
+      // No ceiling means compositaWithinCeiling always returns true, but
+      // customSelected is empty so it falls through to ceiling-based filter.
+      expect(eligibleComposita([n1, n5], scope, {}), [n1, n5]);
     });
   });
 
@@ -217,11 +163,9 @@ void main() {
       expect(pickUntested([first, second, third], {'一'}), second);
     });
 
-    test('falls back to the first entry once everything is tested', () {
-      expect(
-        pickUntested([first, second], {'一', '一つ'}),
-        first,
-      );
+    test('falls back to a random entry once everything is tested', () {
+      final result = pickUntested([first, second], {'一', '一つ'});
+      expect(result, anyOf(first, second));
     });
   });
 

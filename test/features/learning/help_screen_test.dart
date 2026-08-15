@@ -15,9 +15,13 @@ void main() {
     await tester.pumpWidget(testApp(home: HelpScreen(deps: deps)));
     await tester.pump();
 
-    expect(find.text('Learning'), findsOneWidget);
+    expect(find.textContaining('Kanjitomo helps'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Open source licenses'));
+    await tester.scrollUntilVisible(
+      find.widgetWithText(OutlinedButton, 'All licenses'),
+      200,
+    );
+    await tester.tap(find.widgetWithText(OutlinedButton, 'All licenses'));
     await tester.pumpAndSettle();
 
     expect(find.text('kanjitomo'), findsWidgets); // the license page's app name

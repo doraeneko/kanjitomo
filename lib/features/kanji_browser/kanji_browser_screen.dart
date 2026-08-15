@@ -4,8 +4,10 @@ import '../../app_dependencies.dart';
 import '../../data/kanji_info_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../review/review_repository.dart';
+import '../review/study_scope.dart';
 import 'kanji_detail_screen.dart';
 import 'kanji_search.dart';
+import '../../widgets/coffee_button.dart';
 
 /// A general "browse every Jōyō kanji" table, reachable from the main
 /// lookup screen. Scope-based filtering (JLPT/RTK/Custom) and custom-set
@@ -66,12 +68,18 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
     _searchController.addListener(() {
       setState(() => _query = _searchController.text.trim());
     });
+    widget.deps.studyScope.scope.addListener(_onScopeChanged);
   }
 
   @override
   void dispose() {
+    widget.deps.studyScope.scope.removeListener(_onScopeChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onScopeChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadProgress() async {
@@ -164,7 +172,10 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
     final l = AppLocalizations.of(context)!;
     final filtered = _filtered;
     return Scaffold(
-      appBar: AppBar(title: Text(l.kanjiBrowserTitle)),
+      appBar: AppBar(
+        title: Text(l.kanjiBrowserTitle),
+        actions: const [CoffeeButton()],
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -273,6 +284,7 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
     final strokeCount = widget.deps.strokePaths.lookup(char)?.strokeCount;
     final progress = _progress[char];
     final keyword = _keywords[char];
+    final inPool = widget.deps.studyScope.scope.value.characters.contains(char);
     return InkWell(
       key: ValueKey(char),
       onTap: () => _openDetail(char),
@@ -286,7 +298,14 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(char, style: const TextStyle(fontSize: 22)),
+                  Text(
+                    char,
+                    style: TextStyle(
+                      fontSize: 22,
+                      color: inPool ? Colors.indigo : null,
+                      fontWeight: inPool ? FontWeight.bold : null,
+                    ),
+                  ),
                   if (progress != null &&
                       (progress.reading != CardProgress.none ||
                           progress.writing != CardProgress.none)) ...[

@@ -27,14 +27,18 @@ class DrawAndPickWidget extends StatefulWidget {
   final double confidentThreshold;
   final void Function(List<Prediction> topCandidates, String userPick)
   onPicked;
+  final VoidCallback? onDontKnow;
+  final bool allowKana;
 
   const DrawAndPickWidget({
     super.key,
     required this.recognizer,
     required this.onPicked,
+    this.onDontKnow,
     this.displaySize = 260,
     this.topK = 3,
     this.confidentThreshold = 0.9,
+    this.allowKana = false,
   });
 
   @override
@@ -89,13 +93,31 @@ class _DrawAndPickWidgetState extends State<DrawAndPickWidget> {
     });
   }
 
+  static bool _isKana(String char) {
+    if (char.isEmpty) return false;
+    final c = char.codeUnitAt(0);
+    return (c >= 0x3040 && c <= 0x309F) || (c >= 0x30A0 && c <= 0x30FF);
+  }
+
+  static bool _isHiragana(String char) {
+    if (char.isEmpty) return false;
+    final c = char.codeUnitAt(0);
+    return c >= 0x3040 && c <= 0x309F;
+  }
+
+  static bool _isKatakana(String char) {
+    if (char.isEmpty) return false;
+    final c = char.codeUnitAt(0);
+    return c >= 0x30A0 && c <= 0x30FF;
+  }
+
   Future<void> _recognize() async {
     final input = _canonicalizedInput;
     if (input == null || !widget.recognizer.isReady) return;
     setState(() => _recognizing = true);
     try {
       final raw = await widget.recognizer.predictTopK(input, k: _candidateK);
-      final nonReject = raw.where((p) => !p.isReject).toList();
+      final nonReject = raw.where((p) => !p.isReject && (widget.allowKana || !_isKana(p.label))).toList();
       final shown =
           (nonReject.isNotEmpty &&
               nonReject.first.probability >= widget.confidentThreshold)
@@ -124,7 +146,19 @@ class _DrawAndPickWidgetState extends State<DrawAndPickWidget> {
           onStrokeEnd: _onStrokeEnd,
         ),
         const SizedBox(height: 12),
-        ElevatedButton(onPressed: _clear, child: Text(l.drawAndPickClearDrawing)),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            ElevatedButton(onPressed: _clear, child: Text(l.drawAndPickClearDrawing)),
+            if (widget.onDontKnow != null)
+              OutlinedButton(
+                onPressed: widget.onDontKnow,
+                child: Text(l.reviewDontKnow),
+              ),
+          ],
+        ),
         if (_recognizing)
           Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -139,11 +173,32 @@ class _DrawAndPickWidgetState extends State<DrawAndPickWidget> {
             spacing: 12,
             children: topCandidates
                 .map(
-                  (p) => OutlinedButton(
+                  (p) => ElevatedButton(
                     onPressed: () => widget.onPicked(topCandidates, p.label),
-                    child: Text(
-                      p.label,
-                      style: const TextStyle(fontSize: 22),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          p.label,
+                          style: const TextStyle(fontSize: 28),
+                        ),
+                        if (_isHiragana(p.label) || _isKatakana(p.label)) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            _isHiragana(p.label) ? 'H' : 'K',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 )

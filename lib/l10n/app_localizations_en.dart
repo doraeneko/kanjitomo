@@ -17,7 +17,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get lookupTitle => '漢字とも';
+  String get lookupTitle => '漢字友';
 
   @override
   String get lookupWords => 'Words';
@@ -102,31 +102,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get learningSelect => 'Select';
 
   @override
+  String get learningSettings => 'Settings';
+
+  @override
   String get learningStatistics => 'Statistics';
 
   @override
-  String get helpTitle => 'Help';
+  String get helpTitle => 'Help & About';
 
   @override
   String get helpIntro =>
-      'kanjitomo helps you learn to read and write Japanese kanji: draw a character to look it up, then track your progress in Learning.';
+      'Kanjitomo helps you recognize, read, and write Japanese kanji — all offline, no account required.\n\n• Lookup — Draw any kanji to instantly look it up, with readings, meanings, stroke order, and example words.\n• Word Lookup — Build words character-by-character and search the full JMdict dictionary.\n• Learning — Add kanji to your pool (by JLPT level, RTK order, or drawing) and study with spaced repetition across four card types: draw from meaning, recognize kanji, reading cloze, and draw in sentence.\n• JLPT-like Quiz — Test yourself with multiple-choice questions matching the JLPT format.\n• Browse — Search all 2,140 Jōyō kanji by reading, meaning, or stroke count, with progress tracking.\n\nThe app includes over 60,000 vocabulary words and 6,000+ example sentences, all organized by JLPT level. Add your own keywords and mnemonics to make each kanji stick.\n\nReadings shown in [square brackets] are rare — they appear in only one or two words. Focus on the unbracketed readings first.';
 
   @override
-  String get helpLearningTitle => 'Learning';
+  String get helpAcknowledgement =>
+      'Kanjitomo would not be possible without these wonderful open-source projects and data sets:';
 
   @override
-  String get helpLearningDescription =>
-      'Pick JLPT or Custom, then Review, Edit, or check Statistics. A kanji turns green once both its reading (kanji recognition) and writing (draw from meaning) have been passed at least once. Composita/sentence testing (reading and drawing kanji within real words) is tracked separately and doesn\'t affect that green status.';
-
-  @override
-  String get helpReviewTitle => 'Review';
-
-  @override
-  String get helpReviewDescription =>
-      'New kanji are introduced in RTK (Remembering the Kanji) order, starting with numbers and basic radicals, then building progressively on shared components. You can set how many new kanji to introduce per day on the review start screen.';
-
-  @override
-  String get helpOpenSourceLicenses => 'Open source licenses';
+  String get helpOpenSourceLicenses => 'All licenses';
 
   @override
   String get jlptEditTitle => 'Edit JLPT scope';
@@ -209,7 +202,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String compositaPickerTitle(String character) {
-    return '$character: Composita for testing';
+    return '$character: Composita';
   }
 
   @override
@@ -220,13 +213,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compositaPickerEmpty => 'No composita found for this kanji.';
 
   @override
-  String get customEditAddByKanji => 'By kanji';
+  String get customEditAddByKanji => 'Add kanji';
 
   @override
-  String get customEditAddByWord => 'By word';
+  String get customEditAddByWord => 'Add composita';
 
   @override
   String get compositaPickerSearchHint => 'Search JMdict for a word...';
+
+  @override
+  String get compositaPickerDrawButton => 'Draw composita';
+
+  @override
+  String compositaPickerDrawTitle(String char) {
+    return 'Draw composita for $char';
+  }
 
   @override
   String get compositaPickerAdd => 'Add';
@@ -330,13 +331,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewTitle => 'Review';
 
   @override
-  String reviewHeader(int current, int total) {
-    return 'Review ($current/$total)';
+  String reviewHeader(int done, int total) {
+    return 'Review — $done/$total';
   }
 
   @override
-  String reviewHeaderNew(int current, int total) {
-    return 'Review ($current/$total) — New';
+  String reviewHeaderNew(int done, int total) {
+    return 'Review — $done/$total — New';
   }
 
   @override
@@ -373,6 +374,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewContinue => 'Continue';
+
+  @override
+  String get reviewShowDetails => 'Show details';
 
   @override
   String reviewOnyomi(String readings) {
@@ -450,7 +454,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String reviewStartDueNow(int count) {
-    return '$count due now';
+    return '$count facts due now';
   }
 
   @override
@@ -473,26 +477,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewStartNothingSelected => 'Nothing selected';
 
   @override
-  String get reviewStartWhatToQuiz => 'What to quiz';
-
-  @override
-  String get reviewStartKanjiOnly => 'Kanji only';
-
-  @override
-  String get reviewStartComposita => 'Composita';
-
-  @override
-  String get reviewStartBoth => 'Both';
-
-  @override
-  String get reviewStartCompositaOff =>
-      'No composita/sentence testing is enabled for this scope yet — set a composita ceiling while editing it in the Learning section.';
-
-  @override
   String get reviewStartNewKanjiPerDay => 'New kanji per day:';
 
   @override
-  String get reviewStartButton => 'Start Review';
+  String get reviewStartButton => 'Review';
+
+  @override
+  String reviewStartPoolHeading(int count) {
+    return 'Learning pool ($count)';
+  }
 
   @override
   String get reviewContinueButton => 'Continue Review';
@@ -529,10 +522,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Draw in sentence (composita/sentence)';
 
   @override
-  String get statisticsKnown => 'Known';
+  String get statisticsKnown => 'Learnt';
 
   @override
-  String get statisticsMissed => 'Missed';
+  String get statisticsMissed => 'Learning';
 
   @override
   String get statisticsNotStarted => 'Not started';
@@ -650,5 +643,424 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String customEditLimitReached(int limit) {
     return 'Free tier limited to $limit kanji';
+  }
+
+  @override
+  String get customEditAddElements => 'Add elements';
+
+  @override
+  String get dueOverviewTitle => 'Upcoming reviews';
+
+  @override
+  String get dueOverviewOverdue => 'Overdue';
+
+  @override
+  String get dueOverviewToday => 'Today';
+
+  @override
+  String get dueOverviewTomorrow => 'Tomorrow';
+
+  @override
+  String get dueOverviewThisWeek => 'This week';
+
+  @override
+  String get dueOverviewLater => 'Later';
+
+  @override
+  String get dueOverviewNotStarted => 'Not started';
+
+  @override
+  String dueOverviewCompact(int tomorrow, int week, int later) {
+    return 'Tomorrow: $tomorrow · This week: $week · Later: $later';
+  }
+
+  @override
+  String get learningQuiz => 'JLPT-like Quiz';
+
+  @override
+  String get quizStartTitle => 'Quiz';
+
+  @override
+  String get quizStartQuestionCount => 'Number of questions:';
+
+  @override
+  String get quizStartButton => 'Start Quiz';
+
+  @override
+  String quizProgress(int current, int total) {
+    return 'Question $current/$total';
+  }
+
+  @override
+  String get quizPickReading => 'What is the reading of the highlighted word?';
+
+  @override
+  String get quizPickKanji => 'Which word fits in the sentence?';
+
+  @override
+  String get quizCorrect => 'Correct!';
+
+  @override
+  String get quizWrong => 'Wrong — the answer is:';
+
+  @override
+  String get quizNext => 'Next';
+
+  @override
+  String get quizResultTitle => 'Quiz Results';
+
+  @override
+  String quizResultScore(int correct, int total) {
+    return '$correct/$total correct';
+  }
+
+  @override
+  String get quizDone => 'Done';
+
+  @override
+  String get quizNotEnoughWords => 'Not enough words in scope for a quiz.';
+
+  @override
+  String reviewStartBacklogInfo(int count) {
+    return 'You have $count cards to review from previous days.';
+  }
+
+  @override
+  String get reviewStartReviewBacklog => 'Review backlog first';
+
+  @override
+  String reviewStartBacklogAndNew(int count) {
+    return 'Also learn $count new kanji';
+  }
+
+  @override
+  String reviewStartNewKanjiDialog(int dueCount, int newCount, int totalCount) {
+    return 'You have $dueCount cards due for review. Want to add $newCount new kanji? That results in $totalCount facts to review.';
+  }
+
+  @override
+  String get reviewStartDialogYes => 'Yes';
+
+  @override
+  String get reviewStartDialogNo => 'No';
+
+  @override
+  String reviewLearnMoreEstimate(int factCount) {
+    return 'That adds $factCount new facts';
+  }
+
+  @override
+  String get reviewUndoTooltip => 'Redo previous card';
+
+  @override
+  String get jlptEditCompositaPerKanji => 'Composita words per kanji';
+
+  @override
+  String get quizOnlySeenKanji => 'Only quiz seen kanji';
+
+  @override
+  String get reviewMaxBacklog => 'Maximum backlog:';
+
+  @override
+  String get reviewMaxBacklogHint => '0 = no limit';
+
+  @override
+  String get ftdLookupTitle => 'Draw to recognize';
+
+  @override
+  String get ftdLookupMessage =>
+      'Draw a kanji stroke by stroke on the canvas. The app recognizes it after each stroke and shows the best matches. Tap a result to see its full detail — readings, meaning, stroke order, and more.\n\nTry it now — minimize this card and draw something!';
+
+  @override
+  String get ftdWordLookupTitle => 'Word lookup';
+
+  @override
+  String get ftdWordLookupMessage =>
+      'Build a word one character at a time by drawing each one, or type directly into the text field. The app looks up the word in the dictionary and shows its reading and meaning.\n\nMinimize this card to try it out!';
+
+  @override
+  String get ftdLearningTitle => 'Learning';
+
+  @override
+  String get ftdLearningMessage =>
+      'Add kanji to your learning pool from JLPT levels, RTK order, or by drawing. Review uses spaced repetition to test reading and writing. You can also take quick quizzes and track your progress with statistics.';
+
+  @override
+  String get ftdBrowserTitle => 'Kanji browser';
+
+  @override
+  String get ftdBrowserMessage =>
+      'Browse all Jōyō kanji in a searchable table. Search by reading (hiragana or katakana), meaning (English), stroke count, or the character itself. Colored dots show your review progress — green for known, orange for missed.';
+
+  @override
+  String get ftdReviewSessionTitle => 'Review session';
+
+  @override
+  String get ftdReviewSessionMessage =>
+      'Four card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nGrade yourself with Again (missed) or Good (recalled).';
+
+  @override
+  String get ftdGotIt => 'Got it';
+
+  @override
+  String get helpResetTips => 'Reset help';
+
+  @override
+  String get helpResetTipsDone =>
+      'Help reset — the welcome tour will appear again next time.';
+
+  @override
+  String get welcomeTitle => 'Welcome to Kanjitomo';
+
+  @override
+  String get welcomeSubtitle => 'Recognize, read, and write Japanese kanji';
+
+  @override
+  String get welcomeTakeTour => 'Take a tour';
+
+  @override
+  String get welcomeSkip => 'Skip';
+
+  @override
+  String get welcomeDone => 'Start learning!';
+
+  @override
+  String get tourNext => 'Next';
+
+  @override
+  String get tourBack => 'Back';
+
+  @override
+  String get welcomeDontShowAgain => 'Don\'t show again';
+
+  @override
+  String get welcomeFeatureList =>
+      'Draw any kanji to recognize and look it up instantly. Study over 60,000 vocabulary words with real example sentences using spaced repetition. Browse all Jōyō kanji — completely offline.';
+
+  @override
+  String get helpReviewStart =>
+      'Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew kanji are introduced in RTK order (building on shared radicals). You can set how many new kanji per day.\n\nIf you skip 2+ days and have a backlog of due cards, new kanji are paused until you catch up. Use \"Learn more\" inside a session to override this.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji\'s shape, meaning, and components.';
+
+  @override
+  String get helpJlptEdit =>
+      'Select one or more JLPT levels. All kanji from the selected levels are combined into your study scope.\n\nComposita ceiling controls which vocabulary words are tested:\n• Off — no word/sentence testing, only bare kanji\n• N5–N1 — only test words at or easier than this level\nThe ceiling is independent of kanji levels (e.g. study N3 kanji with N5 words only).\n\nNew kanji/day: how many new characters to introduce each day (default 10).\n\nMax backlog: optional limit on how many due cards can pile up before new kanji stop being introduced. Set to 0 to disable the limit.\n\nComposita/kanji: how many words per character are tested (2–5, default 4).\n\nChanging levels takes effect immediately. Review progress is shared between JLPT and Custom mode — a kanji reviewed in one mode counts as reviewed in the other.';
+
+  @override
+  String get helpCustomEdit =>
+      'Build your own study list by drawing kanji one at a time.\n\nTap a kanji to choose which vocabulary words (composita) to test for it. Unlike JLPT mode, nothing is auto-included — you explicitly pick each word.\n\nLong-press a kanji to remove it from your list.\n\nReview progress is shared between JLPT and Custom mode — a kanji reviewed in one mode counts as reviewed in the other.';
+
+  @override
+  String get helpQuiz =>
+      'The quiz is a quick multiple-choice self-test. It has no effect on your spaced-repetition progress.\n\nTwo question types are randomly mixed:\n• Kanji → Reading: a sentence with a kanji highlighted; pick its reading\n• Reading → Kanji: a sentence with readings shown; pick which kanji word fits\n\nOnly kanji you have already reviewed at least once are included.';
+
+  @override
+  String get helpStatistics =>
+      'Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 3 times in a row\n• Learning (orange): reviewed but not yet at 3 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 3 consecutive correct answers again.\n\nKanji grid: each kanji shows a colored dot.\n• Green: both reading and writing learnt\n• Orange: at least one direction started\n• Gray: not yet reviewed\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.';
+
+  @override
+  String get helpLearning =>
+      'This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven\'t reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.';
+
+  @override
+  String get helpSupportDevelopment => 'Support development';
+
+  @override
+  String get helpSupportDescription =>
+      'Kanjitomo is free and always will be. If you find it useful, consider buying me a coffee!';
+
+  @override
+  String get helpReportBug => 'Report a bug';
+
+  @override
+  String get helpReportBugDescription =>
+      'Found a problem? Send us an email and we\'ll look into it.';
+
+  @override
+  String get helpBugEmailSubject => 'Kanjitomo bug report';
+
+  @override
+  String get learningPoolStats => 'Your learning pool';
+
+  @override
+  String learningKanjiCount(int count) {
+    return '$count kanji in pool';
+  }
+
+  @override
+  String learningSeen(int seen) {
+    return '$seen seen';
+  }
+
+  @override
+  String learningDue(int due) {
+    return '$due cards due';
+  }
+
+  @override
+  String get learningAddRemove => 'Add/Remove';
+
+  @override
+  String learningQuickAddJlpt(int count, int level) {
+    return '+$count JLPT N$level';
+  }
+
+  @override
+  String learningQuickAddRtk(int count) {
+    return '+$count RTK';
+  }
+
+  @override
+  String get learningQuickAddHint => 'Shortcut — adds kanji in RTK order.';
+
+  @override
+  String get learningDetailedAdd => 'Add / Remove (detailed)';
+
+  @override
+  String get addRemoveTitle => 'Add / Remove kanji';
+
+  @override
+  String get addRemoveAddByJlpt => 'Add by JLPT level';
+
+  @override
+  String get addRemoveJlptHelp =>
+      'Add kanji grouped by JLPT level (N5 = easiest, N1 = hardest). Pick a level and how many to add — they\'ll be added in Heisig (RTK) order for efficient memorization. Compound words are auto-selected based on your settings below.';
+
+  @override
+  String get addRemoveKanjiCount => 'Number of kanji';
+
+  @override
+  String get addRemoveAddTip =>
+      'Tip: Add just a few new kanji each day for the best retention.';
+
+  @override
+  String get addRemoveAddJlptButton => 'Add JLPT kanji';
+
+  @override
+  String get addRemoveAddByRtk => 'Add by RTK order';
+
+  @override
+  String get addRemoveRtkHelp =>
+      'Add kanji in Heisig\'s Remembering the Kanji (RTK) order, regardless of JLPT level. Good if you\'re following the RTK book or want to learn kanji by building on shared components.';
+
+  @override
+  String get addRemoveAddRtkButton => 'Add RTK kanji';
+
+  @override
+  String get addRemoveDrawToAdd => 'Add by drawing';
+
+  @override
+  String get addRemoveDrawHelp =>
+      'Draw any kanji to add it to your learning pool. Useful for adding a specific character you encountered. Compound words are auto-selected based on your settings below.';
+
+  @override
+  String get addRemoveCompositaSettings => 'Composita settings';
+
+  @override
+  String get addRemoveCompositaCeiling => 'Vocabulary level limit';
+
+  @override
+  String get addRemoveCompositaCeilingHelp =>
+      'Only use compound words (composita) up to this JLPT level for review sentences. Lower levels use simpler vocabulary. \"Off\" allows all levels.';
+
+  @override
+  String get addRemoveCeilingOff => 'Off';
+
+  @override
+  String get addRemoveMaxComposita => 'Words per kanji';
+
+  @override
+  String get addRemoveMaxCompositaHelp =>
+      'How many compound words to auto-select per kanji for review. More words means more variety but also more cards to review.';
+
+  @override
+  String get addRemovePoolSortRtk => 'RTK order';
+
+  @override
+  String get addRemovePoolSortAdded => 'Date added';
+
+  @override
+  String get addRemovePoolSortModified => 'Last modified';
+
+  @override
+  String addRemovePoolTitle(int count) {
+    return 'Learning pool ($count)';
+  }
+
+  @override
+  String get addRemovePoolEmpty => 'No kanji in your learning pool yet.';
+
+  @override
+  String get addRemovePoolTip =>
+      'Tap a kanji to edit its composita, story, or keyword. Long-press to remove.';
+
+  @override
+  String get addRemovePoolSearch => 'Search pool';
+
+  @override
+  String get addRemoveClearAll => 'Clear all';
+
+  @override
+  String get addRemoveConfirmClearTitle => 'Clear learning pool?';
+
+  @override
+  String addRemoveConfirmClearContent(int count) {
+    return 'Remove all $count kanji and delete all review progress? This cannot be undone.';
+  }
+
+  @override
+  String get addRemoveConfirmRemoveTitle => 'Remove kanji?';
+
+  @override
+  String addRemoveConfirmRemoveContent(String char) {
+    return 'Remove $char and delete all review progress for it? This cannot be undone.';
+  }
+
+  @override
+  String get addRemoveRemoveButton => 'Remove';
+
+  @override
+  String addRemoveAlreadyInPool(String char) {
+    return '$char is already in your learning pool.';
+  }
+
+  @override
+  String addRemoveSlideshowTitle(int current, int total) {
+    return 'New kanji ($current/$total)';
+  }
+
+  @override
+  String get addRemoveSlideshowComposita => 'Selected composita:';
+
+  @override
+  String get addRemoveSlideshowNext => 'Next';
+
+  @override
+  String get addRemoveSlideshowDone => 'Done';
+
+  @override
+  String get kanjiDetailEditComposita => 'Edit composita';
+
+  @override
+  String get kanjiDetailAddToLearning => 'Add to learning';
+
+  @override
+  String get learningNewCardsPerDay => 'New cards/day:';
+
+  @override
+  String get learningMaxReviewsPerDay => 'Max reviews/day:';
+
+  @override
+  String learningWaitingCards(int count) {
+    return '$count waiting';
+  }
+
+  @override
+  String reviewDailyLimitReached(int count) {
+    return 'Daily limit reached. $count more cards available.';
+  }
+
+  @override
+  String reviewContinueCards(int count) {
+    return 'Continue with $count more';
   }
 }

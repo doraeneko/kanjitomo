@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kanjitomo/app_dependencies.dart';
+import 'package:kanjitomo/core/first_time_dialog.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
 import 'package:kanjitomo/core/db/tables.dart';
 import 'package:kanjitomo/features/review/review_repository.dart';
@@ -18,17 +19,16 @@ void main() {
   testWidgets('shows known/missed/not-started counts and resets on confirm', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
     final deps = AppDependencies(
       database: AppDatabase.forTesting(NativeDatabase.memory()),
     );
     await tester.runAsync(() => deps.load());
     // Statistics is scoped to the current StudyScope (see
-    // statistics_screen.dart) -- 一 is N5, so it needs to actually be in
-    // scope for its readingCloze row to count. No compositaCeiling is set,
-    // so the composita/sentence (C+D) row is expected to show 0 testable
-    // (JLPT mode requires an explicit opt-in -- see compositaEnabled).
-    await deps.studyScope.update(const StudyScope(jlptLevels: {5}));
+    // statistics_screen.dart) -- 一 needs to actually be in scope for its
+    // readingCloze row to count. No compositaCeiling is set, so the
+    // composita/sentence (C+D) row is expected to show 0 testable.
+    await deps.studyScope.update(const StudyScope(characters: {'一'}));
 
     final repo = ReviewRepository(deps.database);
     await repo.gradeCard(character: '一', cardType: CardType.readingCloze, quality: 4);
@@ -46,8 +46,9 @@ void main() {
     expect(find.text('Draw from meaning'), findsOneWidget);
     expect(find.text('Reading (composita/sentence)'), findsOneWidget);
     expect(find.text('Draw in sentence (composita/sentence)'), findsOneWidget);
-    // 一's readingCloze row is known (repetitions > 0 after a q=4 grade).
-    expect(find.textContaining('Known: 1'), findsAtLeastNWidgets(1));
+    // 一's readingCloze row is "learning" (repetitions=1 after a single
+    // q=4 grade, below the knownThreshold of 4 consecutive correct).
+    expect(find.textContaining('Learning: 1'), findsAtLeastNWidgets(1));
 
     // The composita/sentence (C+D) row shows up separately, with nothing
     // testable since no compositaCeiling was ever chosen for this JLPT

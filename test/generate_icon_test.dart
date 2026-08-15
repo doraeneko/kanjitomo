@@ -72,7 +72,7 @@ void _paintCat(Canvas canvas, double s) {
     ),
     textDirection: TextDirection.ltr,
   )..layout();
-  tp.paint(canvas, Offset((s - tp.width) / 2, s * 0.24));
+  tp.paint(canvas, Offset((s - tp.width) / 2, s * 0.18));
 
   // eyes
   final eyeWhite = Paint()..color = Colors.white;

@@ -5,11 +5,17 @@ import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import '../../app_dependencies.dart';
 import '../../data/composita_repository.dart';
+import '../../data/kanji_info_repository.dart';
 import '../../data/sentences_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../learning/composita_picker.dart';
 import '../review/furigana_sentence.dart';
 import '../review/review_repository.dart';
+import '../review/sentence_selection.dart'
+    show isKanji, compositaWithinCeiling, selectCompositaForIntroduction;
+import '../review/study_scope.dart';
 import '../stroke_order/stroke_order_view.dart';
+import '../../widgets/tts_button.dart';
 
 /// Shared kanji-detail content: readings/meaning, stroke order, the user's
 /// personal keyword+story (editable, autosaved -- kept as two separate
@@ -27,11 +33,18 @@ class KanjiDetailContent extends StatefulWidget {
   /// scroll views.
   final bool scrollable;
 
+  /// When `true`, only shows kanji, readings/meaning, keyword, and story --
+  /// omits stroke order, composita list, and example sentences. Used by the
+  /// custom edit screen's bottom sheet where a CompositaPicker follows and
+  /// the full detail would be redundant.
+  final bool compact;
+
   const KanjiDetailContent({
     super.key,
     required this.character,
     required this.deps,
     this.scrollable = true,
+    this.compact = false,
   });
 
   @override
@@ -44,6 +57,7 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
   late final TextEditingController _storyController;
   Timer? _keywordDebounce;
   Timer? _storyDebounce;
+  Set<String>? _selectedComposita;
 
   static const _autosaveDelay = Duration(milliseconds: 500);
 
@@ -77,6 +91,9 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
       });
       _reviewRepo.getNote(widget.character).then((story) {
         if (mounted) _storyController.text = story;
+      });
+      _reviewRepo.customCompositaFor(widget.character).then((selected) {
+        if (mounted) setState(() => _selectedComposita = selected);
       });
     }
   }
@@ -172,6 +189,12 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
                 tooltip: l.copyToClipboard,
                 onPressed: _copyToClipboard,
               ),
+              if (!isKana && !widget.compact)
+                _PoolActionButton(
+                  character: widget.character,
+                  deps: widget.deps,
+                  reviewRepo: _reviewRepo,
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -182,13 +205,23 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
             )
           else if (info != null) ...[
             if (info.on.isNotEmpty)
-              _InfoLine(label: l.kanjiDetailOnyomi, value: info.on.join('、')),
+              _ReadingsLine(
+                label: l.kanjiDetailOnyomi,
+                readings: info.on,
+                character: widget.character,
+                deps: widget.deps,
+              ),
             if (info.kun.isNotEmpty)
-              _InfoLine(label: l.kanjiDetailKunyomi, value: info.kun.join('、')),
+              _ReadingsLine(
+                label: l.kanjiDetailKunyomi,
+                readings: info.kun,
+                character: widget.character,
+                deps: widget.deps,
+              ),
             if (info.meanings.isNotEmpty)
               _InfoLine(label: l.kanjiDetailMeaning, value: info.meanings.join(', ')),
           ],
-          if (strokes != null) ...[
+          if (strokes != null && !widget.compact) ...[
             const SizedBox(height: 16),
             Text(
               l.kanjiDetailStrokeOrder,
@@ -234,24 +267,33 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
               ),
             ),
           ],
-          if (composita.isNotEmpty) ...[
+          if (composita.isNotEmpty && !widget.compact) ...[
             const SizedBox(height: 16),
             Text(
               l.kanjiDetailComposita,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ...composita.map((c) => _CompositaLine(composita: c)),
+            ...composita.map((c) => _CompositaLine(
+              composita: c,
+              isSelected: _selectedComposita?.contains(c.word) ?? false,
+            )),
           ],
-          if (exampleSentences.isNotEmpty) ...[
+          if (exampleSentences.isNotEmpty && !widget.compact) ...[
             const SizedBox(height: 16),
             Text(
               l.kanjiDetailExampleSentences,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            for (final entry in exampleSentences)
-              _ExampleSentenceBlock(composita: entry.$1, sentence: entry.$2),
+            for (var i = 0; i < exampleSentences.length; i++) ...[
+              if (i > 0) const Divider(),
+              _ExampleSentenceBlock(
+                composita: exampleSentences[i].$1,
+                sentence: exampleSentences[i].$2,
+                kanjiLookup: widget.deps.kanjiInfo.lookup,
+              ),
+            ],
           ],
         ],
       );
@@ -288,10 +330,79 @@ class _InfoLine extends StatelessWidget {
   }
 }
 
+/// Like [_InfoLine] but renders each reading as a separate span, italicizing
+/// rare readings (those appearing in ≤2 composita words). KANJIDIC readings
+/// use katakana for on'yomi and hiragana with okurigana dots for kun'yomi;
+/// composita-derived frequencies use plain hiragana stems — this widget
+/// normalizes both sides before comparing.
+class _ReadingsLine extends StatelessWidget {
+  final String label;
+  final List<String> readings;
+  final String character;
+  final AppDependencies deps;
+
+  const _ReadingsLine({
+    required this.label,
+    required this.readings,
+    required this.character,
+    required this.deps,
+  });
+
+  /// Normalize a KANJIDIC reading to a plain hiragana stem for frequency
+  /// lookup: strip the okurigana part after "." (kun readings), then convert
+  /// katakana to hiragana (on readings).
+  static String _normalize(String reading) {
+    // Strip okurigana marker and everything after it.
+    final dotIdx = reading.indexOf('.');
+    final stem = dotIdx >= 0 ? reading.substring(0, dotIdx) : reading;
+    // Katakana → hiragana (offset 0x60).
+    return String.fromCharCodes(stem.runes.map((r) {
+      if (r >= 0x30A1 && r <= 0x30F6) return r - 0x60;
+      return r;
+    }));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final freq = deps.readingFrequency;
+    final spans = <InlineSpan>[];
+    for (var i = 0; i < readings.length; i++) {
+      if (i > 0) spans.add(const TextSpan(text: '、'));
+      final r = readings[i];
+      final normalized = _normalize(r);
+      final rare = freq.isRare(character, normalized);
+      if (rare) {
+        spans.add(TextSpan(
+          text: '[$r]',
+          style: TextStyle(color: Colors.grey.shade500),
+        ));
+      } else {
+        spans.add(TextSpan(text: r));
+      }
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: RichText(
+        text: TextSpan(
+          style: DefaultTextStyle.of(context).style,
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            ...spans,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CompositaLine extends StatelessWidget {
   final Composita composita;
+  final bool isSelected;
 
-  const _CompositaLine({required this.composita});
+  const _CompositaLine({required this.composita, this.isSelected = false});
 
   @override
   Widget build(BuildContext context) {
@@ -301,6 +412,18 @@ class _CompositaLine extends StatelessWidget {
         text: TextSpan(
           style: DefaultTextStyle.of(context).style,
           children: [
+            if (isSelected)
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Icon(
+                    Icons.check,
+                    size: 14,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
             TextSpan(
               text: composita.word,
               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -323,11 +446,134 @@ class _CompositaLine extends StatelessWidget {
   }
 }
 
+/// Shows "Add to learning" or "Edit composita" depending on pool membership.
+class _PoolActionButton extends StatefulWidget {
+  final String character;
+  final AppDependencies deps;
+  final ReviewRepository reviewRepo;
+
+  const _PoolActionButton({
+    required this.character,
+    required this.deps,
+    required this.reviewRepo,
+  });
+
+  @override
+  State<_PoolActionButton> createState() => _PoolActionButtonState();
+}
+
+class _PoolActionButtonState extends State<_PoolActionButton> {
+  @override
+  void initState() {
+    super.initState();
+    widget.deps.studyScope.scope.addListener(_onScopeChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.deps.studyScope.scope.removeListener(_onScopeChanged);
+    super.dispose();
+  }
+
+  void _onScopeChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _inPool =>
+      widget.deps.studyScope.scope.value.characters.contains(widget.character);
+
+  void _addToPool() async {
+    final char = widget.character;
+    final scope = widget.deps.studyScope.scope.value;
+
+    // Auto-select composita (same logic as Add/Remove screen).
+    final bundled = widget.deps.composita.lookup(char);
+    final ceiling = scope.compositaCeiling;
+    final charLevel = widget.deps.jlptLevels.levelOf(char);
+    final eligible = bundled.where((c) {
+      if (!c.word.runes.any((r) => isKanji(r))) return false;
+      return compositaWithinCeiling(c, ceiling, charJlptLevel: charLevel);
+    }).toList();
+    final selected = selectCompositaForIntroduction(
+      char, eligible, scope.maxCompositaPerKanji,
+    );
+    final seen = <String>{};
+    final words = [
+      for (final c in selected)
+        if (seen.add(c.word)) c.word,
+    ];
+
+    // Register composita and create cards.
+    for (final word in words) {
+      await widget.reviewRepo.addCustomComposita(char, word);
+    }
+    await widget.reviewRepo.introduceCardsForCharacters(
+      {char},
+      compositaWordsByChar: {char: words},
+    );
+    await widget.deps.studyScope.addCharacters({char});
+    // Only open the picker if there are composita to adjust; otherwise
+    // the user would see an empty sheet they can only dismiss.
+    if (mounted && bundled.isNotEmpty) _openCompositaPicker();
+  }
+
+  void _openCompositaPicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: CompositaPicker(
+                character: widget.character,
+                composita: widget.deps.composita.lookup(widget.character),
+                reviewRepo: widget.reviewRepo,
+                wordIndex: widget.deps.wordIndex,
+                recognizer: widget.deps.recognizer,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    if (_inPool) {
+      return IconButton(
+        icon: const Icon(Icons.tune, color: Colors.indigo),
+        tooltip: l.kanjiDetailEditComposita,
+        onPressed: _openCompositaPicker,
+      );
+    }
+    return IconButton(
+      icon: const Icon(Icons.add_circle_outline),
+      tooltip: l.kanjiDetailAddToLearning,
+      onPressed: _addToPool,
+    );
+  }
+}
+
 class _ExampleSentenceBlock extends StatelessWidget {
   final Composita composita;
   final ExampleSentence sentence;
+  final KanjiInfo? Function(String char)? kanjiLookup;
 
-  const _ExampleSentenceBlock({required this.composita, required this.sentence});
+  const _ExampleSentenceBlock({
+    required this.composita,
+    required this.sentence,
+    this.kanjiLookup,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -344,7 +590,34 @@ class _ExampleSentenceBlock extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          FuriganaSentence(tokens: sentence.tokens, highlightTargetBox: true),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: FuriganaSentence(
+                  tokens: sentence.tokens,
+                  highlightTargetBox: true,
+                  kanjiLookup: kanjiLookup,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: TtsButton(text: sentence.sentence),
+              ),
+            ],
+          ),
+          if (sentence.source != 'synthetic')
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  sentence.source == 'tatoeba' ? 'Tatoeba' : 'LLM-generated',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+              ),
+            ),
           if (sentence.translation != null) ...[
             const SizedBox(height: 4),
             Text(

@@ -21,7 +21,10 @@ void main() {
 
     expect(find.text('一番'), findsOneWidget);
     expect(find.text('いちばん'), findsOneWidget);
-    expect(find.text('乗り'), findsOneWidget); // base text: the whole word
+    // 乗り is split: kanji stem "乗" with furigana "の" above it, and
+    // trailing okurigana "り" as a separate text (proper ruby placement).
+    expect(find.text('乗'), findsOneWidget);
+    expect(find.text('り'), findsOneWidget);
     // Ruby: only "の", not "のり" -- 乗り's trailing り is already visible
     // okurigana, so standard furigana convention doesn't repeat it in the
     // ruby (乗[の]り, not 乗[のり]り).
@@ -67,7 +70,9 @@ void main() {
 
     expect(find.text('一番'), findsNothing); // base text replaced
     expect(find.byIcon(Icons.edit), findsOneWidget);
-    expect(find.text('乗り'), findsOneWidget); // non-target token unaffected
+    // non-target token unaffected (split into stem + okurigana)
+    expect(find.text('乗'), findsOneWidget);
+    expect(find.text('り'), findsOneWidget);
   });
 
   testWidgets(
@@ -139,6 +144,67 @@ void main() {
         ),
       );
       expect(find.text('いちばん'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'targetCharacter works with irregular readings (rendaku) where '
+    'splitReading fails and the okurigana fallback produces a multi-char stem',
+    (tester) async {
+      // 木枯らし (こがらし): splitReading returns null because 枯's readings
+      // (こ, か) don't match が (rendaku).  The okurigana fallback strips
+      // trailing らし, leaving stem 木枯.  The fix splits the stem so 枯 can
+      // be individually replaced.
+      const irregularTokens = [
+        SentenceToken(surface: '木枯らし', reading: 'こがらし', isTarget: true),
+      ];
+      await tester.pumpWidget(
+        testApp(
+          home: Scaffold(
+            body: FuriganaSentence(
+              tokens: irregularTokens,
+              targetCharacter: '枯',
+              targetReplacement: const Icon(Icons.edit),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.edit), findsOneWidget); // 枯 replaced
+      expect(find.text('木'), findsOneWidget); // other kanji still visible
+      expect(find.text('枯'), findsNothing); // replaced, not visible
+      expect(find.text('らし'), findsOneWidget); // trailing kana still shown
+    },
+  );
+
+  testWidgets(
+    'highlightCharacter works with irregular readings (rendaku fallback)',
+    (tester) async {
+      const irregularTokens = [
+        SentenceToken(surface: '木枯らし', reading: 'こがらし', isTarget: true),
+      ];
+      await tester.pumpWidget(
+        testApp(
+          home: Scaffold(
+            body: FuriganaSentence(
+              tokens: irregularTokens,
+              highlightCharacter: '枯',
+            ),
+          ),
+        ),
+      );
+
+      // 枯 should be visible (not replaced) and highlighted with a red border
+      expect(find.text('枯'), findsOneWidget);
+      expect(find.text('木'), findsOneWidget);
+      final container = tester.widget<Container>(
+        find.ancestor(
+          of: find.text('枯'),
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = container.decoration as BoxDecoration;
+      expect(decoration.border!.top.color, Colors.red);
     },
   );
 

@@ -7,11 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ProStatusRepository {
   static const _key = 'pro.unlocked';
 
-  final ValueNotifier<bool> isProUnlocked = ValueNotifier(false);
+  // TODO: revert to false before release
+  final ValueNotifier<bool> isProUnlocked = ValueNotifier(true);
 
   Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    isProUnlocked.value = prefs.getBool(_key) ?? false;
+    // TODO: revert to reading from prefs before release
+    // final prefs = await SharedPreferences.getInstance();
+    // isProUnlocked.value = prefs.getBool(_key) ?? false;
   }
 
   Future<void> setPro(bool unlocked) async {

@@ -51,6 +51,8 @@ dependencies:
   shared_preferences: ^2.5.5
   path_drawing: ^1.0.1
   in_app_purchase: ^3.2.0
+  flutter_tts: ^4.2.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -92,6 +94,7 @@ flutter:
     - assets/model/classes.json
     - assets/model/inference_config.json
     - assets/kanji_info.json
+    - assets/reading_frequency.json
     - assets/jlpt_levels.json
     - assets/stroke_paths.json
     - assets/rtk_index.json

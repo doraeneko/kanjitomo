@@ -26,7 +26,7 @@ void main() {
 
   test('empty StudyScope returns no due cards, not everything', () async {
     await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
@@ -36,7 +36,7 @@ void main() {
 
   test('introduceNewCards only creates cards for in-scope, not-yet-seen characters', () async {
     final introduced = await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
@@ -45,7 +45,7 @@ void main() {
     // Calling again should introduce none of the same (character, cardType)
     // pairs a second time.
     final again = await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
@@ -54,7 +54,7 @@ void main() {
 
   test('introduceNewCards respects the limit (daily intake cap)', () async {
     final introduced = await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5, 4, 3}),
+      const StudyScope(characters: {'一', '二', '三', '四'}),
       CardType.drawFromMeaning,
       limit: 1,
     );
@@ -65,9 +65,8 @@ void main() {
     'countIntroducible counts candidates without introducing them, unlike '
     'its sibling introduceNewCards',
     () async {
-      // All 4 setUp characters (一,二,三,四) are N3-N5 per setUp, so this
-      // scope matches all of them.
-      const scope = StudyScope(jlptLevels: {5, 4, 3});
+      // All 4 setUp characters (一,二,三,四) per setUp.
+      const scope = StudyScope(characters: {'一', '二', '三', '四'});
       final before = await repo.countIntroducible(
         scope,
         CardType.drawFromMeaning,
@@ -98,7 +97,7 @@ void main() {
 
   test('introduceNewCards restrictToCharacters further narrows candidates', () async {
     final introduced = await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.readingCloze,
       limit: 10,
       restrictToCharacters: {'一'},
@@ -106,7 +105,7 @@ void main() {
     expect(introduced, ['一']);
 
     final none = await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
       restrictToCharacters: {},
@@ -114,60 +113,43 @@ void main() {
     expect(none, isEmpty);
   });
 
-  test('rtk-mode scope selects purely by RTK index cutoff', () async {
+  test('scope with only two characters introduces only those', () async {
     final introduced = await repo.introduceNewCards(
-      const StudyScope(mode: StudyScopeMode.rtk, rtkMaxIndex: 5),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
-    // rtkIndex <= 5: 一(1), 二(2) -- not 三(3000) or 四(4000).
     expect(introduced.toSet(), {'一', '二'});
   });
 
   test(
-    'dueCards returns cards whose dueDate has arrived, plus still-fragile '
-    'cards (repetitions <= 1) regardless of due date',
+    'dueCards returns only cards whose dueDate has arrived — a successfully '
+    'reviewed card (interval=1, dueDate=tomorrow) does not reappear today',
     () async {
       await repo.introduceNewCards(
-        const StudyScope(jlptLevels: {5}),
+        const StudyScope(characters: {'一', '二'}),
         CardType.drawFromMeaning,
         limit: 10,
       );
       // Freshly introduced cards are due immediately (dueDate = now).
-      final due = await repo.dueCards(const StudyScope(jlptLevels: {5}));
+      final due = await repo.dueCards(const StudyScope(characters: {'一', '二'}));
       expect(due.map((c) => c.character).toSet(), {'一', '二'});
 
-      // First success (repetitions 0->1) pushes the due date to tomorrow,
-      // but the card stays in the pool anyway -- a card reviewed
-      // successfully only once shouldn't vanish from review for weeks.
+      // First success (repetitions 0->1) pushes the due date to tomorrow.
+      // Standard SM-2: the card should NOT reappear today.
       await repo.gradeCard(
         character: '一',
         cardType: CardType.drawFromMeaning,
         quality: 5,
       );
       final dueAfterFirstSuccess = await repo.dueCards(
-        const StudyScope(jlptLevels: {5}),
+        const StudyScope(characters: {'一', '二'}),
       );
       expect(
         dueAfterFirstSuccess.map((c) => c.character),
-        contains('一'),
-      );
-
-      // Second success (repetitions 1->2): now "established" -- the due
-      // date is pushed further out and it finally drops out of the pool.
-      await repo.gradeCard(
-        character: '一',
-        cardType: CardType.drawFromMeaning,
-        quality: 5,
-      );
-      final dueAfterSecondSuccess = await repo.dueCards(
-        const StudyScope(jlptLevels: {5}),
-      );
-      expect(
-        dueAfterSecondSuccess.map((c) => c.character),
         isNot(contains('一')),
       );
-      expect(dueAfterSecondSuccess.map((c) => c.character), contains('二'));
+      expect(dueAfterFirstSuccess.map((c) => c.character), contains('二'));
     },
   );
 
@@ -180,17 +162,17 @@ void main() {
       // since introduceNewCards always inserts as "due immediately" --
       // exactly the clustering interleaveByCharacter exists to undo.
       await repo.introduceNewCards(
-        const StudyScope(jlptLevels: {5}),
+        const StudyScope(characters: {'一', '二'}),
         CardType.drawFromMeaning,
         limit: 10,
       );
       await repo.introduceNewCards(
-        const StudyScope(jlptLevels: {5}),
+        const StudyScope(characters: {'一', '二'}),
         CardType.kanjiRecognition,
         limit: 10,
       );
 
-      final due = await repo.dueCards(const StudyScope(jlptLevels: {5}));
+      final due = await repo.dueCards(const StudyScope(characters: {'一', '二'}));
       expect(due, hasLength(4)); // 一 and 二, x2 card types each
 
       for (var i = 1; i < due.length; i++) {
@@ -206,7 +188,7 @@ void main() {
 
   test('gradeCard persists SM-2 state and appends a review_log entry', () async {
     await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
@@ -231,7 +213,7 @@ void main() {
 
   test('gradeCard on an established card increments lapses on failure', () async {
     await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
@@ -246,44 +228,39 @@ void main() {
     expect(card.repetitions, 0);
   });
 
-  test('custom-mode scope introduces cards only for the chosen set', () async {
+  test('scope introduces cards only for the chosen set', () async {
     final introduced = await repo.introduceNewCards(
-      const StudyScope(
-        mode: StudyScopeMode.custom,
-        customCharacters: {'一', '三'},
-      ),
+      const StudyScope(characters: {'一', '三'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
-    // Not 二 or 四, even though they're in-scope by JLPT/RTK -- custom mode
-    // is an alternative to level-based selection, not unioned with it.
     expect(introduced.toSet(), {'一', '三'});
   });
 
-  test('custom-mode scope with an empty set returns no due cards', () async {
+  test('empty scope returns no due cards', () async {
     await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
-    final due = await repo.dueCards(const StudyScope(mode: StudyScopeMode.custom));
+    final due = await repo.dueCards(const StudyScope());
     expect(due, isEmpty);
   });
 
   test('countDueCards counts only due, in-scope cards without side effects', () async {
     await repo.introduceNewCards(
-      const StudyScope(jlptLevels: {5}),
+      const StudyScope(characters: {'一', '二'}),
       CardType.drawFromMeaning,
       limit: 10,
     );
     // Both 一 and 二 are freshly introduced (due today) and in scope.
     expect(
-      await repo.countDueCards(const StudyScope(jlptLevels: {5})),
+      await repo.countDueCards(const StudyScope(characters: {'一', '二'})),
       2,
     );
     // A disjoint scope sees none of them.
     expect(
-      await repo.countDueCards(const StudyScope(jlptLevels: {1})),
+      await repo.countDueCards(const StudyScope(characters: {'三', '四'})),
       0,
     );
     // An empty scope is always 0, same convention as dueCards/introduceNewCards.
@@ -296,9 +273,9 @@ void main() {
 
   test(
     'dueCards/countDueCards cardTypes restricts to a subset -- powers '
-    "ReviewFocus's core/composita/both gating",
+    "core/composita/both card-type gating",
     () async {
-      const scope = StudyScope(jlptLevels: {5});
+      const scope = StudyScope(characters: {'一', '二'});
       await repo.introduceNewCards(scope, CardType.drawFromMeaning, limit: 10);
       await repo.introduceNewCards(scope, CardType.kanjiRecognition, limit: 10);
 
@@ -333,7 +310,7 @@ void main() {
     'charactersWithPassedCard returns only characters with repetitions > 0 '
     'for the given card type, within scope',
     () async {
-      const scope = StudyScope(jlptLevels: {5});
+      const scope = StudyScope(characters: {'一', '二'});
       // No cards at all yet -- empty result.
       expect(
         await repo.charactersWithPassedCard(scope, CardType.drawFromMeaning),
@@ -380,7 +357,7 @@ void main() {
       // Out-of-scope characters are excluded.
       expect(
         await repo.charactersWithPassedCard(
-          const StudyScope(jlptLevels: {1}),
+          const StudyScope(characters: {'三', '四'}),
           CardType.drawFromMeaning,
         ),
         isEmpty,

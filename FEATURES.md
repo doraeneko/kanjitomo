@@ -90,6 +90,12 @@ currently in scope. Before starting, you can:
   many cards are currently due — followed, below the Start button, by the
   full list of in-scope kanji (tap any to jump to its detail).
 
+If you skip reviewing for two or more days, the app automatically holds
+off on introducing new kanji until you've cleared your backlog of due
+cards — you can still add more manually via "Learn more" if you want.
+A single day off is normal (yesterday's cards come back for their first
+review) and doesn't trigger this.
+
 During review, each card is one of four kinds:
 
 - **Draw from meaning** — shown the meaning/readings (+ your keyword, if

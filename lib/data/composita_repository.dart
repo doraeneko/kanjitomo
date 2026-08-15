@@ -20,6 +20,9 @@ class Composita {
   // distinct rather than merging into one field.
   final int? inferredJlptLevel;
   final int frequencyRank; // 1=most frequent .. 4=untagged/rare
+  /// Pre-computed per-character reading split (parallel to word's characters).
+  /// Null when the build script couldn't split this word.
+  final List<String>? splits;
 
   const Composita({
     required this.word,
@@ -28,6 +31,7 @@ class Composita {
     required this.jlptLevel,
     required this.inferredJlptLevel,
     required this.frequencyRank,
+    this.splits,
   });
 
   /// The real tag if there is one, else the heuristic estimate, else null.
@@ -44,6 +48,7 @@ class Composita {
       jlptLevel: json['jlptLevel'] as int?,
       inferredJlptLevel: json['inferredJlptLevel'] as int?,
       frequencyRank: json['frequencyRank'] as int,
+      splits: (json['splits'] as List?)?.cast<String>(),
     );
   }
 }

@@ -268,6 +268,21 @@ is chosen fresh each time in `ReviewStartScreen` and controls which
 kanji-only card types, `composita` to composita card types, `both` applies
 no restriction.
 
+### Backlog prevention (new-card suppression after extended absence)
+
+When a user skips reviewing for 2+ days, due cards pile up. To prevent
+overwhelming the user with new material on top of a large backlog,
+`_introduceNewCardsForToday()` in `review_session_screen.dart` checks
+the gap between `review.last_intro_date` (persisted in
+`SharedPreferences`) and today: if **2 or more days** have passed AND
+there are already due cards waiting, automatic new-card introduction is
+skipped so old reviews get cleared first. The user can still explicitly
+add more via the "Learn more" button (`bypassDailyCap`).
+
+A **single-day** gap is not treated as a backlog — that's normal SM-2
+behaviour (yesterday's newly introduced cards come back after 1 day on
+their first review).
+
 ### SM-2 scheduling
 
 `features/review/sm2.dart` is a pure, zero-dependency port of the classic

@@ -6,8 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kanjitomo/app_dependencies.dart';
+import 'package:kanjitomo/core/first_time_dialog.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
 import 'package:kanjitomo/core/db/tables.dart';
+import 'package:kanjitomo/features/review/review_repository.dart';
 import 'package:kanjitomo/features/review/review_session_screen.dart';
 import 'package:kanjitomo/features/review/study_scope.dart';
 
@@ -20,44 +22,39 @@ void main() {
     'drawFromMeaning shows the seeded story, and "Don\'t know" reveals full '
     'kanji info as a miss',
     (tester) async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
       await tester.runAsync(() => deps.load());
-      // rtkMaxIndex: 1 keeps the scope down to just 一 (rtkIndex 1), so the
-      // freshly-introduced drawFromMeaning card is unambiguous.
+      // Scope limited to just 一, so the pre-introduced drawFromMeaning
+      // card is unambiguous.
       await deps.studyScope.update(
-        const StudyScope(mode: StudyScopeMode.rtk, rtkMaxIndex: 1),
+        const StudyScope(characters: {'一'}),
       );
 
-      // 一 also has sentence coverage, so _loadQueue()'s own
-      // introduceNewCards would otherwise seed readingCloze/drawInSentence/
-      // kanjiRecognition cards for it too, and they'd compete with the
-      // drawFromMeaning card this test cares about for "which card is shown
-      // first". Far-future due dates keep them out of introduceNewCards'
-      // and dueCards' way -- repetitions: 2 ("established") also keeps them
-      // out of dueCards' separate always-include-fragile-cards allowance,
-      // since otherwise a never-graded (repetitions 0, still "fragile") row
-      // would be pulled back in regardless of its due date. Same technique
-      // as review_session_reading_cloze_test.dart.
+      // Pre-introduce the drawFromMeaning card (due now). Park the other
+      // card types far in the future so they don't compete for "which card
+      // is shown first".
+      final reviewRepo = ReviewRepository(deps.database);
+      await reviewRepo.introduceCardsForCharacters(
+        {'一'},
+        compositaWordsByChar: {'一': ['一向']},
+      );
+
+      // Push kanjiRecognition and composita cards far into the future so
+      // only drawFromMeaning is due.
       final farFuture = DateTime.now().add(const Duration(days: 30));
-      for (final otherType in [
-        CardType.readingCloze,
-        CardType.drawInSentence,
-        CardType.kanjiRecognition,
-      ]) {
-        await deps.database
-            .into(deps.database.reviewCards)
-            .insert(
-              ReviewCardsCompanion.insert(
-                character: '一',
-                cardType: otherType,
-                dueDate: farFuture,
-                repetitions: const Value(2),
-              ),
-            );
-      }
+      await (deps.database.update(deps.database.reviewCards)
+            ..where(
+              (t) =>
+                  t.character.equals('一') &
+                  t.cardType.equalsValue(CardType.drawFromMeaning).not(),
+            ))
+          .write(ReviewCardsCompanion(
+        dueDate: Value(farFuture),
+        repetitions: const Value(2),
+      ));
 
       await tester.pumpWidget(
         testApp(home: ReviewSessionScreen(deps: deps)),
@@ -72,20 +69,15 @@ void main() {
       );
       await tester.pump();
 
-      // 一 was freshly introduced by _introduceNewCardsForToday (the
-      // drawFromMeaning card), so the new-kanji slideshow appears first.
-      expect(find.text('New kanji (1/1)'), findsOneWidget);
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Start review'));
-      await tester.pump();
-
-      expect(find.text('Review (1/1) \u2014 New'), findsOneWidget);
+      // Review starts directly (no slideshow -- that's in AddRemoveScreen now).
+      expect(find.text('Review \u2014 1/1 \u2014 New'), findsOneWidget);
       // Only the bundled keyword (seeded into kanji_notes on first load,
       // see AppDatabase.seedStories) shows up alongside the readings --
       // not the fuller story, which would give too much away pre-draw.
       expect(find.textContaining('Keyword: eins'), findsOneWidget);
-      expect(find.widgetWithText(TextButton, "Don't know"), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, "Don't know"), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(TextButton, "Don't know"));
+      await tester.tap(find.widgetWithText(OutlinedButton, "Don't know"));
       await tester.pump();
 
       // No "Not quite." text on any miss (including "Don't know") -- the
@@ -95,11 +87,12 @@ void main() {
       expect(find.text('Answer: 一'), findsOneWidget);
       expect(find.textContaining('You picked:'), findsNothing); // no pick made
 
-      // Full kanji-editor info shown on a miss -- same KanjiDetailContent
-      // widget as the kanji browser/lookup detail screen, not just the
-      // bare character. Readings render via raw RichText/TextSpan (see
-      // KanjiDetailContent's _InfoLine), not a plain Text widget, so check
-      // the rendered plain text directly rather than find.textContaining.
+      // Details auto-expand on wrong answers -- no "Show details" tap needed.
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Full kanji-editor info shown automatically -- same KanjiDetailContent
+      // widget as the kanji browser/lookup detail screen. Readings render via
+      // raw RichText/TextSpan, so check the rendered plain text directly.
       expect(
         find.byWidgetPredicate(
           (w) => w is RichText && w.text.toPlainText().contains('イチ'),

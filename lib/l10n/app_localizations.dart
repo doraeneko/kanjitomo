@@ -115,7 +115,7 @@ abstract class AppLocalizations {
   /// AppBar title on lookup screen
   ///
   /// In en, this message translates to:
-  /// **'漢字とも'**
+  /// **'漢字友'**
   String get lookupTitle;
 
   /// Tab label for word lookup
@@ -268,6 +268,12 @@ abstract class AppLocalizations {
   /// **'Select'**
   String get learningSelect;
 
+  /// Button label for settings/edit
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get learningSettings;
+
   /// Button label for statistics
   ///
   /// In en, this message translates to:
@@ -277,43 +283,25 @@ abstract class AppLocalizations {
   /// AppBar title for help screen
   ///
   /// In en, this message translates to:
-  /// **'Help'**
+  /// **'Help & About'**
   String get helpTitle;
 
   /// Introduction paragraph on help screen
   ///
   /// In en, this message translates to:
-  /// **'kanjitomo helps you learn to read and write Japanese kanji: draw a character to look it up, then track your progress in Learning.'**
+  /// **'Kanjitomo helps you recognize, read, and write Japanese kanji — all offline, no account required.\n\n• Lookup — Draw any kanji to instantly look it up, with readings, meanings, stroke order, and example words.\n• Word Lookup — Build words character-by-character and search the full JMdict dictionary.\n• Learning — Add kanji to your pool (by JLPT level, RTK order, or drawing) and study with spaced repetition across four card types: draw from meaning, recognize kanji, reading cloze, and draw in sentence.\n• JLPT-like Quiz — Test yourself with multiple-choice questions matching the JLPT format.\n• Browse — Search all 2,140 Jōyō kanji by reading, meaning, or stroke count, with progress tracking.\n\nThe app includes over 60,000 vocabulary words and 6,000+ example sentences, all organized by JLPT level. Add your own keywords and mnemonics to make each kanji stick.\n\nReadings shown in [square brackets] are rare — they appear in only one or two words. Focus on the unbracketed readings first.'**
   String get helpIntro;
 
-  /// Section title on help screen
+  /// Acknowledgement text before the licenses button
   ///
   /// In en, this message translates to:
-  /// **'Learning'**
-  String get helpLearningTitle;
-
-  /// Learning section description on help screen
-  ///
-  /// In en, this message translates to:
-  /// **'Pick JLPT or Custom, then Review, Edit, or check Statistics. A kanji turns green once both its reading (kanji recognition) and writing (draw from meaning) have been passed at least once. Composita/sentence testing (reading and drawing kanji within real words) is tracked separately and doesn\'t affect that green status.'**
-  String get helpLearningDescription;
-
-  /// Section title on help screen
-  ///
-  /// In en, this message translates to:
-  /// **'Review'**
-  String get helpReviewTitle;
-
-  /// Review section description on help screen
-  ///
-  /// In en, this message translates to:
-  /// **'New kanji are introduced in RTK (Remembering the Kanji) order, starting with numbers and basic radicals, then building progressively on shared components. You can set how many new kanji to introduce per day on the review start screen.'**
-  String get helpReviewDescription;
+  /// **'Kanjitomo would not be possible without these wonderful open-source projects and data sets:'**
+  String get helpAcknowledgement;
 
   /// Button to open licenses page
   ///
   /// In en, this message translates to:
-  /// **'Open source licenses'**
+  /// **'All licenses'**
   String get helpOpenSourceLicenses;
 
   /// AppBar title for JLPT edit screen
@@ -445,7 +433,7 @@ abstract class AppLocalizations {
   /// Title of the composita picker
   ///
   /// In en, this message translates to:
-  /// **'{character}: Composita for testing'**
+  /// **'{character}: Composita'**
   String compositaPickerTitle(String character);
 
   /// Explanation text in composita picker
@@ -463,13 +451,13 @@ abstract class AppLocalizations {
   /// Segment label for adding single kanji to custom set
   ///
   /// In en, this message translates to:
-  /// **'By kanji'**
+  /// **'Add kanji'**
   String get customEditAddByKanji;
 
   /// Segment label for adding words/composita to custom set
   ///
   /// In en, this message translates to:
-  /// **'By word'**
+  /// **'Add composita'**
   String get customEditAddByWord;
 
   /// Hint text for composita picker search field
@@ -477,6 +465,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search JMdict for a word...'**
   String get compositaPickerSearchHint;
+
+  /// Button to open draw-to-build-word screen for composita
+  ///
+  /// In en, this message translates to:
+  /// **'Draw composita'**
+  String get compositaPickerDrawButton;
+
+  /// Title of the draw composita screen
+  ///
+  /// In en, this message translates to:
+  /// **'Draw composita for {char}'**
+  String compositaPickerDrawTitle(String char);
 
   /// Button to add a word from JMdict search
   ///
@@ -652,17 +652,17 @@ abstract class AppLocalizations {
   /// **'Review'**
   String get reviewTitle;
 
-  /// AppBar title during review with progress
+  /// AppBar title during review showing progress
   ///
   /// In en, this message translates to:
-  /// **'Review ({current}/{total})'**
-  String reviewHeader(int current, int total);
+  /// **'Review — {done}/{total}'**
+  String reviewHeader(int done, int total);
 
-  /// AppBar title during review for a new card
+  /// AppBar title during review for a new card showing progress
   ///
   /// In en, this message translates to:
-  /// **'Review ({current}/{total}) — New'**
-  String reviewHeaderNew(int current, int total);
+  /// **'Review — {done}/{total} — New'**
+  String reviewHeaderNew(int done, int total);
 
   /// Shown when queue is exhausted
   ///
@@ -717,6 +717,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue'**
   String get reviewContinue;
+
+  /// Button to expand kanji details in feedback
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get reviewShowDetails;
 
   /// On'yomi reading line in review
   ///
@@ -841,7 +847,7 @@ abstract class AppLocalizations {
   /// Number of cards due
   ///
   /// In en, this message translates to:
-  /// **'{count} due now'**
+  /// **'{count} facts due now'**
   String reviewStartDueNow(int count);
 
   /// Count of seen vs unseen kanji in scope
@@ -874,36 +880,6 @@ abstract class AppLocalizations {
   /// **'Nothing selected'**
   String get reviewStartNothingSelected;
 
-  /// Section title for quiz focus
-  ///
-  /// In en, this message translates to:
-  /// **'What to quiz'**
-  String get reviewStartWhatToQuiz;
-
-  /// Segment label for core focus
-  ///
-  /// In en, this message translates to:
-  /// **'Kanji only'**
-  String get reviewStartKanjiOnly;
-
-  /// Segment label for composita focus
-  ///
-  /// In en, this message translates to:
-  /// **'Composita'**
-  String get reviewStartComposita;
-
-  /// Segment label for both focus
-  ///
-  /// In en, this message translates to:
-  /// **'Both'**
-  String get reviewStartBoth;
-
-  /// Warning when composita not enabled
-  ///
-  /// In en, this message translates to:
-  /// **'No composita/sentence testing is enabled for this scope yet — set a composita ceiling while editing it in the Learning section.'**
-  String get reviewStartCompositaOff;
-
   /// Label for daily new cap input
   ///
   /// In en, this message translates to:
@@ -913,8 +889,14 @@ abstract class AppLocalizations {
   /// Button to start the review session
   ///
   /// In en, this message translates to:
-  /// **'Start Review'**
+  /// **'Review'**
   String get reviewStartButton;
+
+  /// Heading for the kanji pool list on the review start screen
+  ///
+  /// In en, this message translates to:
+  /// **'Learning pool ({count})'**
+  String reviewStartPoolHeading(int count);
 
   /// Button to continue a review session when cards are due
   ///
@@ -976,16 +958,16 @@ abstract class AppLocalizations {
   /// **'Draw in sentence (composita/sentence)'**
   String get statisticsDrawInSentence;
 
-  /// Legend label for known cards
+  /// Legend label for learnt cards (4+ consecutive correct)
   ///
   /// In en, this message translates to:
-  /// **'Known'**
+  /// **'Learnt'**
   String get statisticsKnown;
 
-  /// Legend label for missed cards
+  /// Legend label for cards still being learned
   ///
   /// In en, this message translates to:
-  /// **'Missed'**
+  /// **'Learning'**
   String get statisticsMissed;
 
   /// Legend label for not started cards
@@ -1179,6 +1161,720 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Free tier limited to {limit} kanji'**
   String customEditLimitReached(int limit);
+
+  /// Button label and screen title for adding kanji/composita to custom set
+  ///
+  /// In en, this message translates to:
+  /// **'Add elements'**
+  String get customEditAddElements;
+
+  /// Section title for due date distribution
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming reviews'**
+  String get dueOverviewTitle;
+
+  /// Label for overdue bucket
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get dueOverviewOverdue;
+
+  /// Label for today bucket
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dueOverviewToday;
+
+  /// Label for tomorrow bucket
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get dueOverviewTomorrow;
+
+  /// Label for this week bucket
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get dueOverviewThisWeek;
+
+  /// Label for later bucket
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get dueOverviewLater;
+
+  /// Label for not started bucket
+  ///
+  /// In en, this message translates to:
+  /// **'Not started'**
+  String get dueOverviewNotStarted;
+
+  /// Compact due date summary on review start screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow: {tomorrow} · This week: {week} · Later: {later}'**
+  String dueOverviewCompact(int tomorrow, int week, int later);
+
+  /// Button label for quiz on learning screen
+  ///
+  /// In en, this message translates to:
+  /// **'JLPT-like Quiz'**
+  String get learningQuiz;
+
+  /// AppBar title for quiz start screen
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz'**
+  String get quizStartTitle;
+
+  /// Label for question count picker
+  ///
+  /// In en, this message translates to:
+  /// **'Number of questions:'**
+  String get quizStartQuestionCount;
+
+  /// Button to start the quiz
+  ///
+  /// In en, this message translates to:
+  /// **'Start Quiz'**
+  String get quizStartButton;
+
+  /// Progress indicator during quiz
+  ///
+  /// In en, this message translates to:
+  /// **'Question {current}/{total}'**
+  String quizProgress(int current, int total);
+
+  /// Prompt for reading question type
+  ///
+  /// In en, this message translates to:
+  /// **'What is the reading of the highlighted word?'**
+  String get quizPickReading;
+
+  /// Prompt for kanji question type
+  ///
+  /// In en, this message translates to:
+  /// **'Which word fits in the sentence?'**
+  String get quizPickKanji;
+
+  /// Feedback when answer is correct
+  ///
+  /// In en, this message translates to:
+  /// **'Correct!'**
+  String get quizCorrect;
+
+  /// Feedback when answer is wrong
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong — the answer is:'**
+  String get quizWrong;
+
+  /// Button to advance to next question
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get quizNext;
+
+  /// Title of results screen
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz Results'**
+  String get quizResultTitle;
+
+  /// Score summary
+  ///
+  /// In en, this message translates to:
+  /// **'{correct}/{total} correct'**
+  String quizResultScore(int correct, int total);
+
+  /// Button to return from quiz results
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get quizDone;
+
+  /// Shown when scope has too few composita for a quiz
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough words in scope for a quiz.'**
+  String get quizNotEnoughWords;
+
+  /// Informational text when user returns with a backlog of due cards
+  ///
+  /// In en, this message translates to:
+  /// **'You have {count} cards to review from previous days.'**
+  String reviewStartBacklogInfo(int count);
+
+  /// Button to start review without introducing new cards
+  ///
+  /// In en, this message translates to:
+  /// **'Review backlog first'**
+  String get reviewStartReviewBacklog;
+
+  /// Button to start review and also introduce new cards despite backlog
+  ///
+  /// In en, this message translates to:
+  /// **'Also learn {count} new kanji'**
+  String reviewStartBacklogAndNew(int count);
+
+  /// Dialog text asking whether to introduce new kanji
+  ///
+  /// In en, this message translates to:
+  /// **'You have {dueCount} cards due for review. Want to add {newCount} new kanji? That results in {totalCount} facts to review.'**
+  String reviewStartNewKanjiDialog(int dueCount, int newCount, int totalCount);
+
+  /// Confirm button in new kanji dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get reviewStartDialogYes;
+
+  /// Decline button in new kanji dialog
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get reviewStartDialogNo;
+
+  /// Fact count estimate shown next to learn-more on queue-exhausted screen
+  ///
+  /// In en, this message translates to:
+  /// **'That adds {factCount} new facts'**
+  String reviewLearnMoreEstimate(int factCount);
+
+  /// Tooltip for undo button in review AppBar
+  ///
+  /// In en, this message translates to:
+  /// **'Redo previous card'**
+  String get reviewUndoTooltip;
+
+  /// Section title for max composita per kanji setting
+  ///
+  /// In en, this message translates to:
+  /// **'Composita words per kanji'**
+  String get jlptEditCompositaPerKanji;
+
+  /// Switch label to restrict quiz to kanji the user has already reviewed
+  ///
+  /// In en, this message translates to:
+  /// **'Only quiz seen kanji'**
+  String get quizOnlySeenKanji;
+
+  /// Label for maximum backlog setting
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum backlog:'**
+  String get reviewMaxBacklog;
+
+  /// Helper text below the max backlog field
+  ///
+  /// In en, this message translates to:
+  /// **'0 = no limit'**
+  String get reviewMaxBacklogHint;
+
+  /// First-time dialog title for lookup screen
+  ///
+  /// In en, this message translates to:
+  /// **'Draw to recognize'**
+  String get ftdLookupTitle;
+
+  /// First-time dialog message for lookup screen
+  ///
+  /// In en, this message translates to:
+  /// **'Draw a kanji stroke by stroke on the canvas. The app recognizes it after each stroke and shows the best matches. Tap a result to see its full detail — readings, meaning, stroke order, and more.\n\nTry it now — minimize this card and draw something!'**
+  String get ftdLookupMessage;
+
+  /// First-time dialog title for word lookup screen
+  ///
+  /// In en, this message translates to:
+  /// **'Word lookup'**
+  String get ftdWordLookupTitle;
+
+  /// First-time dialog message for word lookup screen
+  ///
+  /// In en, this message translates to:
+  /// **'Build a word one character at a time by drawing each one, or type directly into the text field. The app looks up the word in the dictionary and shows its reading and meaning.\n\nMinimize this card to try it out!'**
+  String get ftdWordLookupMessage;
+
+  /// First-time dialog title for learning screen
+  ///
+  /// In en, this message translates to:
+  /// **'Learning'**
+  String get ftdLearningTitle;
+
+  /// First-time dialog message for learning screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add kanji to your learning pool from JLPT levels, RTK order, or by drawing. Review uses spaced repetition to test reading and writing. You can also take quick quizzes and track your progress with statistics.'**
+  String get ftdLearningMessage;
+
+  /// First-time dialog title for kanji browser screen
+  ///
+  /// In en, this message translates to:
+  /// **'Kanji browser'**
+  String get ftdBrowserTitle;
+
+  /// First-time dialog message for kanji browser screen
+  ///
+  /// In en, this message translates to:
+  /// **'Browse all Jōyō kanji in a searchable table. Search by reading (hiragana or katakana), meaning (English), stroke count, or the character itself. Colored dots show your review progress — green for known, orange for missed.'**
+  String get ftdBrowserMessage;
+
+  /// First-time dialog title for review session screen
+  ///
+  /// In en, this message translates to:
+  /// **'Review session'**
+  String get ftdReviewSessionTitle;
+
+  /// First-time dialog message for review session screen
+  ///
+  /// In en, this message translates to:
+  /// **'Four card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nGrade yourself with Again (missed) or Good (recalled).'**
+  String get ftdReviewSessionMessage;
+
+  /// Dismiss button for first-time dialogs
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get ftdGotIt;
+
+  /// Button to reset all first-time dialog tips
+  ///
+  /// In en, this message translates to:
+  /// **'Reset help'**
+  String get helpResetTips;
+
+  /// Snackbar after resetting tips
+  ///
+  /// In en, this message translates to:
+  /// **'Help reset — the welcome tour will appear again next time.'**
+  String get helpResetTipsDone;
+
+  /// Title on welcome screen
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Kanjitomo'**
+  String get welcomeTitle;
+
+  /// Subtitle on welcome screen
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize, read, and write Japanese kanji'**
+  String get welcomeSubtitle;
+
+  /// Button to start guided tour
+  ///
+  /// In en, this message translates to:
+  /// **'Take a tour'**
+  String get welcomeTakeTour;
+
+  /// Button to skip welcome tour
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get welcomeSkip;
+
+  /// Button on final tour step
+  ///
+  /// In en, this message translates to:
+  /// **'Start learning!'**
+  String get welcomeDone;
+
+  /// Button to advance tour
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get tourNext;
+
+  /// Button to go back in tour
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get tourBack;
+
+  /// Button to permanently dismiss welcome screen
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show again'**
+  String get welcomeDontShowAgain;
+
+  /// Brief feature summary on the welcome screen
+  ///
+  /// In en, this message translates to:
+  /// **'Draw any kanji to recognize and look it up instantly. Study over 60,000 vocabulary words with real example sentences using spaced repetition. Browse all Jōyō kanji — completely offline.'**
+  String get welcomeFeatureList;
+
+  /// Help text for review start screen
+  ///
+  /// In en, this message translates to:
+  /// **'Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew kanji are introduced in RTK order (building on shared radicals). You can set how many new kanji per day.\n\nIf you skip 2+ days and have a backlog of due cards, new kanji are paused until you catch up. Use \"Learn more\" inside a session to override this.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji\'s shape, meaning, and components.'**
+  String get helpReviewStart;
+
+  /// Help text for JLPT edit screen
+  ///
+  /// In en, this message translates to:
+  /// **'Select one or more JLPT levels. All kanji from the selected levels are combined into your study scope.\n\nComposita ceiling controls which vocabulary words are tested:\n• Off — no word/sentence testing, only bare kanji\n• N5–N1 — only test words at or easier than this level\nThe ceiling is independent of kanji levels (e.g. study N3 kanji with N5 words only).\n\nNew kanji/day: how many new characters to introduce each day (default 10).\n\nMax backlog: optional limit on how many due cards can pile up before new kanji stop being introduced. Set to 0 to disable the limit.\n\nComposita/kanji: how many words per character are tested (2–5, default 4).\n\nChanging levels takes effect immediately. Review progress is shared between JLPT and Custom mode — a kanji reviewed in one mode counts as reviewed in the other.'**
+  String get helpJlptEdit;
+
+  /// Help text for custom edit screen
+  ///
+  /// In en, this message translates to:
+  /// **'Build your own study list by drawing kanji one at a time.\n\nTap a kanji to choose which vocabulary words (composita) to test for it. Unlike JLPT mode, nothing is auto-included — you explicitly pick each word.\n\nLong-press a kanji to remove it from your list.\n\nReview progress is shared between JLPT and Custom mode — a kanji reviewed in one mode counts as reviewed in the other.'**
+  String get helpCustomEdit;
+
+  /// Help text for quiz screen
+  ///
+  /// In en, this message translates to:
+  /// **'The quiz is a quick multiple-choice self-test. It has no effect on your spaced-repetition progress.\n\nTwo question types are randomly mixed:\n• Kanji → Reading: a sentence with a kanji highlighted; pick its reading\n• Reading → Kanji: a sentence with readings shown; pick which kanji word fits\n\nOnly kanji you have already reviewed at least once are included.'**
+  String get helpQuiz;
+
+  /// Help text for statistics screen
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 3 times in a row\n• Learning (orange): reviewed but not yet at 3 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 3 consecutive correct answers again.\n\nKanji grid: each kanji shows a colored dot.\n• Green: both reading and writing learnt\n• Orange: at least one direction started\n• Gray: not yet reviewed\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.'**
+  String get helpStatistics;
+
+  /// Help text for learning screen
+  ///
+  /// In en, this message translates to:
+  /// **'This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven\'t reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.'**
+  String get helpLearning;
+
+  /// Button label for buy me a coffee link
+  ///
+  /// In en, this message translates to:
+  /// **'Support development'**
+  String get helpSupportDevelopment;
+
+  /// Text above the support button
+  ///
+  /// In en, this message translates to:
+  /// **'Kanjitomo is free and always will be. If you find it useful, consider buying me a coffee!'**
+  String get helpSupportDescription;
+
+  /// Button label for bug report email
+  ///
+  /// In en, this message translates to:
+  /// **'Report a bug'**
+  String get helpReportBug;
+
+  /// Text above the bug report button
+  ///
+  /// In en, this message translates to:
+  /// **'Found a problem? Send us an email and we\'ll look into it.'**
+  String get helpReportBugDescription;
+
+  /// Pre-filled email subject for bug reports
+  ///
+  /// In en, this message translates to:
+  /// **'Kanjitomo bug report'**
+  String get helpBugEmailSubject;
+
+  /// Section title for the unified learning pool
+  ///
+  /// In en, this message translates to:
+  /// **'Your learning pool'**
+  String get learningPoolStats;
+
+  /// Count of kanji in the learning pool
+  ///
+  /// In en, this message translates to:
+  /// **'{count} kanji in pool'**
+  String learningKanjiCount(int count);
+
+  /// Count of seen kanji in pool
+  ///
+  /// In en, this message translates to:
+  /// **'{seen} seen'**
+  String learningSeen(int seen);
+
+  /// Count of due cards
+  ///
+  /// In en, this message translates to:
+  /// **'{due} cards due'**
+  String learningDue(int due);
+
+  /// Button to open add/remove kanji screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add/Remove'**
+  String get learningAddRemove;
+
+  /// Quick-add button for JLPT kanji
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} JLPT N{level}'**
+  String learningQuickAddJlpt(int count, int level);
+
+  /// Quick-add button for RTK kanji
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} RTK'**
+  String learningQuickAddRtk(int count);
+
+  /// Hint below quick-add buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut — adds kanji in RTK order.'**
+  String get learningQuickAddHint;
+
+  /// Button to open detailed add/remove screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add / Remove (detailed)'**
+  String get learningDetailedAdd;
+
+  /// AppBar title for add/remove screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add / Remove kanji'**
+  String get addRemoveTitle;
+
+  /// Section title for adding by JLPT
+  ///
+  /// In en, this message translates to:
+  /// **'Add by JLPT level'**
+  String get addRemoveAddByJlpt;
+
+  /// Help text for the JLPT tab
+  ///
+  /// In en, this message translates to:
+  /// **'Add kanji grouped by JLPT level (N5 = easiest, N1 = hardest). Pick a level and how many to add — they\'ll be added in Heisig (RTK) order for efficient memorization. Compound words are auto-selected based on your settings below.'**
+  String get addRemoveJlptHelp;
+
+  /// Label for the count text field when adding kanji
+  ///
+  /// In en, this message translates to:
+  /// **'Number of kanji'**
+  String get addRemoveKanjiCount;
+
+  /// Tip shown on JLPT and RTK add tabs
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: Add just a few new kanji each day for the best retention.'**
+  String get addRemoveAddTip;
+
+  /// Button to add kanji from a JLPT level
+  ///
+  /// In en, this message translates to:
+  /// **'Add JLPT kanji'**
+  String get addRemoveAddJlptButton;
+
+  /// Section title for adding by RTK
+  ///
+  /// In en, this message translates to:
+  /// **'Add by RTK order'**
+  String get addRemoveAddByRtk;
+
+  /// Help text for the RTK tab
+  ///
+  /// In en, this message translates to:
+  /// **'Add kanji in Heisig\'s Remembering the Kanji (RTK) order, regardless of JLPT level. Good if you\'re following the RTK book or want to learn kanji by building on shared components.'**
+  String get addRemoveRtkHelp;
+
+  /// Button to add kanji by RTK order
+  ///
+  /// In en, this message translates to:
+  /// **'Add RTK kanji'**
+  String get addRemoveAddRtkButton;
+
+  /// Section title for draw-to-add
+  ///
+  /// In en, this message translates to:
+  /// **'Add by drawing'**
+  String get addRemoveDrawToAdd;
+
+  /// Help text for the draw tab
+  ///
+  /// In en, this message translates to:
+  /// **'Draw any kanji to add it to your learning pool. Useful for adding a specific character you encountered. Compound words are auto-selected based on your settings below.'**
+  String get addRemoveDrawHelp;
+
+  /// Section title for composita settings
+  ///
+  /// In en, this message translates to:
+  /// **'Composita settings'**
+  String get addRemoveCompositaSettings;
+
+  /// Label for composita ceiling setting
+  ///
+  /// In en, this message translates to:
+  /// **'Vocabulary level limit'**
+  String get addRemoveCompositaCeiling;
+
+  /// Help text explaining the composita ceiling
+  ///
+  /// In en, this message translates to:
+  /// **'Only use compound words (composita) up to this JLPT level for review sentences. Lower levels use simpler vocabulary. \"Off\" allows all levels.'**
+  String get addRemoveCompositaCeilingHelp;
+
+  /// Label when composita ceiling is off
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get addRemoveCeilingOff;
+
+  /// Label for max composita per kanji setting
+  ///
+  /// In en, this message translates to:
+  /// **'Words per kanji'**
+  String get addRemoveMaxComposita;
+
+  /// Help text explaining max composita per kanji
+  ///
+  /// In en, this message translates to:
+  /// **'How many compound words to auto-select per kanji for review. More words means more variety but also more cards to review.'**
+  String get addRemoveMaxCompositaHelp;
+
+  /// Sort pool by RTK index
+  ///
+  /// In en, this message translates to:
+  /// **'RTK order'**
+  String get addRemovePoolSortRtk;
+
+  /// Sort pool by date added
+  ///
+  /// In en, this message translates to:
+  /// **'Date added'**
+  String get addRemovePoolSortAdded;
+
+  /// Sort pool by last modification date
+  ///
+  /// In en, this message translates to:
+  /// **'Last modified'**
+  String get addRemovePoolSortModified;
+
+  /// Section title for the pool list with count
+  ///
+  /// In en, this message translates to:
+  /// **'Learning pool ({count})'**
+  String addRemovePoolTitle(int count);
+
+  /// Shown when the learning pool is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No kanji in your learning pool yet.'**
+  String get addRemovePoolEmpty;
+
+  /// Help tip in the learning pool tab
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a kanji to edit its composita, story, or keyword. Long-press to remove.'**
+  String get addRemovePoolTip;
+
+  /// Search field label in learning pool tab
+  ///
+  /// In en, this message translates to:
+  /// **'Search pool'**
+  String get addRemovePoolSearch;
+
+  /// Button to remove all kanji from pool
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get addRemoveClearAll;
+
+  /// Dialog title for clearing the pool
+  ///
+  /// In en, this message translates to:
+  /// **'Clear learning pool?'**
+  String get addRemoveConfirmClearTitle;
+
+  /// Dialog content for clearing the pool
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all {count} kanji and delete all review progress? This cannot be undone.'**
+  String addRemoveConfirmClearContent(int count);
+
+  /// Dialog title for removing a kanji from pool
+  ///
+  /// In en, this message translates to:
+  /// **'Remove kanji?'**
+  String get addRemoveConfirmRemoveTitle;
+
+  /// Dialog content for removing a kanji from pool
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {char} and delete all review progress for it? This cannot be undone.'**
+  String addRemoveConfirmRemoveContent(String char);
+
+  /// Remove button in confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get addRemoveRemoveButton;
+
+  /// Snackbar when drawn kanji is already in pool
+  ///
+  /// In en, this message translates to:
+  /// **'{char} is already in your learning pool.'**
+  String addRemoveAlreadyInPool(String char);
+
+  /// AppBar title during new kanji slideshow from add/remove
+  ///
+  /// In en, this message translates to:
+  /// **'New kanji ({current}/{total})'**
+  String addRemoveSlideshowTitle(int current, int total);
+
+  /// Label for selected composita in slideshow
+  ///
+  /// In en, this message translates to:
+  /// **'Selected composita:'**
+  String get addRemoveSlideshowComposita;
+
+  /// Button to advance slideshow
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get addRemoveSlideshowNext;
+
+  /// Button to finish slideshow
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get addRemoveSlideshowDone;
+
+  /// Button to edit composita for a kanji
+  ///
+  /// In en, this message translates to:
+  /// **'Edit composita'**
+  String get kanjiDetailEditComposita;
+
+  /// Button to add kanji to the learning pool
+  ///
+  /// In en, this message translates to:
+  /// **'Add to learning'**
+  String get kanjiDetailAddToLearning;
+
+  /// Label for max new (never-reviewed) cards per review
+  ///
+  /// In en, this message translates to:
+  /// **'New cards/day:'**
+  String get learningNewCardsPerDay;
+
+  /// Label for max total cards per review session
+  ///
+  /// In en, this message translates to:
+  /// **'Max reviews/day:'**
+  String get learningMaxReviewsPerDay;
+
+  /// Number of never-reviewed cards waiting to be introduced
+  ///
+  /// In en, this message translates to:
+  /// **'{count} waiting'**
+  String learningWaitingCards(int count);
+
+  /// Shown when the session cap is hit but more cards exist
+  ///
+  /// In en, this message translates to:
+  /// **'Daily limit reached. {count} more cards available.'**
+  String reviewDailyLimitReached(int count);
+
+  /// Button to load more cards beyond the daily cap
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with {count} more'**
+  String reviewContinueCards(int count);
 }
 
 class _AppLocalizationsDelegate

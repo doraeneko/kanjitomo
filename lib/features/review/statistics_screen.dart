@@ -6,9 +6,11 @@ import '../../app_dependencies.dart';
 import '../../core/db/tables.dart';
 import '../../data/composita_repository.dart';
 import '../../l10n/app_localizations.dart';
+import '../kanji_browser/kanji_detail_screen.dart';
 import 'review_repository.dart';
 import 'sentence_selection.dart';
 import 'study_scope.dart';
+import '../../widgets/help_info_button.dart';
 
 /// Known/unknown breakdown per card type -- "both directions" (reading via
 /// kanjiRecognition, writing via drawFromMeaning) -- plus a separate C+D
@@ -30,6 +32,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   late final ReviewRepository _reviewRepo;
   Map<CardType, CardTypeStats>? _stats;
   CompositaCoverage? _compositaCoverage;
+  Map<String, int>? _dueDist;
+  Map<String, KanjiProgress>? _progress;
 
   @override
   void initState() {
@@ -39,17 +43,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Set<String> _scopeCharacters(StudyScope scope) {
-    return widget.deps.kanjiInfo.characters.where((char) {
-      final jlptLevel = widget.deps.jlptLevels.levelOf(char);
-      final rtkIndex = widget.deps.rtkIndex.indexOf(char);
-      final levelRank = widget.deps.kanjiLevelRank.rankOf(char);
-      return scope.matches(
-        character: char,
-        jlptLevel: jlptLevel,
-        rtkIndex: rtkIndex,
-        levelRank: levelRank,
-      );
-    }).toSet();
+    return scope.characters;
   }
 
   Future<void> _load() async {
@@ -66,9 +60,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     // compositaCeiling chosen has nothing testable, not "everything".
     final wordsByCharacter = <String, Set<String>>{};
     if (compositaEnabled(scope)) {
-      final customComposita = scope.mode == StudyScopeMode.custom
-          ? await _reviewRepo.customCompositaForCharacters(characters)
-          : const <String, Set<String>>{};
+      final customComposita = await _reviewRepo.customCompositaForCharacters(characters);
       final userComposita = await _reviewRepo.allUserCompositaByChar();
       for (final char in characters) {
         final bundled = widget.deps.composita.lookup(char);
@@ -78,6 +70,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           merged,
           scope,
           customComposita[char] ?? const {},
+          charJlptLevel: widget.deps.jlptLevels.levelOf(char),
         );
         if (eligible.isNotEmpty) {
           wordsByCharacter[char] = eligible.map((c) => c.word).toSet();
@@ -88,10 +81,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       wordsByCharacter,
     );
 
+    final dueDist = await _reviewRepo.dueDateDistribution(scope);
+
+    final progress = await _reviewRepo.overallProgress();
+
     if (!mounted) return;
     setState(() {
       _stats = stats;
       _compositaCoverage = compositaCoverage;
+      _dueDist = dueDist;
+      _progress = progress;
     });
   }
 
@@ -146,7 +145,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final stats = _stats;
     final composita = _compositaCoverage;
     return Scaffold(
-      appBar: AppBar(title: Text(l.statisticsTitle)),
+      appBar: AppBar(
+        title: Text(l.statisticsTitle),
+        actions: [HelpInfoButton(helpText: l.helpStatistics)],
+      ),
       body: stats == null || composita == null
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
@@ -155,9 +157,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_dueDist != null) _buildDueOverview(l, _dueDist!),
                     for (final cardType in CardType.values)
                       _buildRow(l, _label(l, cardType), stats[cardType]!),
                     _buildCompositaRow(l, composita),
+                    if (_progress != null)
+                      _buildKanjiGrid(l),
                     const SizedBox(height: 24),
                     Center(
                       child: OutlinedButton(
@@ -169,6 +174,62 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildDueOverview(AppLocalizations l, Map<String, int> dist) {
+    final buckets = [
+      (l.dueOverviewOverdue, dist['overdue']!, Colors.red),
+      (l.dueOverviewToday, dist['today']!, Colors.orange),
+      (l.dueOverviewTomorrow, dist['tomorrow']!, Colors.blue),
+      (l.dueOverviewThisWeek, dist['thisWeek']!, Colors.indigo),
+      (l.dueOverviewLater, dist['later']!, Colors.grey),
+      (l.dueOverviewNotStarted, dist['notStarted']!, Colors.grey.shade400),
+    ];
+    final maxValue = buckets.fold<int>(0, (m, b) => b.$2 > m ? b.$2 : m);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l.dueOverviewTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          for (final (label, value, color) in buckets)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 90,
+                    child: Text(label, style: const TextStyle(fontSize: 13)),
+                  ),
+                  SizedBox(
+                    width: 36,
+                    child: Text(
+                      '$value',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (maxValue > 0 && value > 0)
+                    Container(
+                      height: 14,
+                      width: 120 * (value / maxValue),
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -193,7 +254,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   s.missed.toDouble(),
                   s.notStarted.toDouble(),
                 ],
-                colors: [Colors.green, Colors.red, Colors.grey.shade400],
+                colors: [Colors.green, Colors.orange, Colors.grey.shade400],
               ),
               const SizedBox(width: 20),
               Expanded(
@@ -201,7 +262,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _legendRow(l, l.statisticsKnown, s.known, Colors.green, total),
-                    _legendRow(l, l.statisticsMissed, s.missed, Colors.red, total),
+                    _legendRow(l, l.statisticsMissed, s.missed, Colors.orange, total),
                     _legendRow(
                       l,
                       l.statisticsNotStarted,
@@ -276,6 +337,83 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKanjiGrid(AppLocalizations l) {
+    final scope = widget.deps.studyScope.scope.value;
+    final chars = _scopeCharacters(scope).toList();
+    // Sort by RTK index (same order used for introduction).
+    chars.sort((a, b) {
+      final ai = widget.deps.rtkIndex.indexOf(a) ?? 99999;
+      final bi = widget.deps.rtkIndex.indexOf(b) ?? 99999;
+      return ai.compareTo(bi);
+    });
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l.statisticsInspectAllKanji,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 2,
+            runSpacing: 2,
+            children: chars.map((char) {
+              final progress = _progress?[char];
+              final Color dotColor;
+              if (progress != null &&
+                  progress.reading == CardProgress.known &&
+                  progress.writing == CardProgress.known) {
+                dotColor = Colors.green;
+              } else if (progress != null &&
+                  (progress.reading != CardProgress.none ||
+                   progress.writing != CardProgress.none)) {
+                dotColor = Colors.orange;
+              } else {
+                dotColor = Colors.grey.shade300;
+              }
+              return GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => KanjiDetailScreen(
+                        character: char,
+                        deps: widget.deps,
+                      ),
+                    ),
+                  );
+                },
+                child: SizedBox(
+                  width: 36,
+                  height: 44,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        char,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: dotColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

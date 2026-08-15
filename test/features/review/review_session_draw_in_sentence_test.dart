@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kanjitomo/app_dependencies.dart';
+import 'package:kanjitomo/core/first_time_dialog.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
 import 'package:kanjitomo/core/db/tables.dart';
 import 'package:kanjitomo/features/review/review_session_screen.dart';
@@ -29,22 +30,20 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
       await tester.runAsync(() => deps.load());
 
-      // rtkMaxIndex: 1 keeps the scope down to just 一 (rtkIndex 1) -- same
-      // "avoid competing auto-introduced cards" reasoning as
-      // review_session_reading_cloze_test.dart.
-      const scope = StudyScope(mode: StudyScopeMode.rtk, rtkMaxIndex: 1);
+      // Scope limited to just 一 -- same "avoid competing auto-introduced
+      // cards" reasoning as review_session_reading_cloze_test.dart.
+      const scope = StudyScope(characters: {'一'});
       await deps.studyScope.update(scope);
 
       final now = DateTime.now();
       for (final otherType in [
         CardType.drawFromMeaning,
-        CardType.readingCloze,
         CardType.kanjiRecognition,
       ]) {
         await deps.database
@@ -58,19 +57,35 @@ void main() {
               ),
             );
       }
-      // The actual card under test: due now, previously reviewed once so it
-      // appears as a review (not a freshly introduced new card). 一's
-      // highest-ranked composita word with sentence coverage is 一向
-      // (confirmed directly against the bundled assets), read いっこう,
-      // translated "That's just fine with me."
+      // Park the readingCloze card far in the future too (needs compositaWord
+      // now that each composita word is its own card).
+      await deps.database
+          .into(deps.database.reviewCards)
+          .insert(
+            ReviewCardsCompanion.insert(
+              character: '一',
+              cardType: CardType.readingCloze,
+              compositaWord: const Value('一応'),
+              dueDate: now.add(const Duration(days: 30)),
+              repetitions: const Value(2),
+            ),
+          );
+      // The actual card under test: due now, previously reviewed so it
+      // appears as a review (not a freshly introduced new card). 一応 is
+      // a high-ranked composita word for 一 with sentence coverage
+      // (confirmed directly against the bundled assets), read いちおう,
+      // translated "Yeah, there was some sort of reply from them."
+      // repetitions: 0 keeps the sentence rotation at index 0 (the first
+      // mined sentence), while lastReviewedAt prevents the "— New" marker.
       await deps.database
           .into(deps.database.reviewCards)
           .insert(
             ReviewCardsCompanion.insert(
               character: '一',
               cardType: CardType.drawInSentence,
+              compositaWord: const Value('一応'),
               dueDate: now,
-              repetitions: const Value(1),
+              repetitions: const Value(0),
               lastReviewedAt: Value(now.subtract(const Duration(days: 1))),
             ),
           );
@@ -84,9 +99,9 @@ void main() {
       await tester.pump();
 
       // The pre-seeded card was not introduced by _introduceNewCardsForToday
-      // (it was inserted directly with repetitions: 1), so no slideshow and
-      // no "— New" marker -- straight to a normal review.
-      expect(find.text('Review (1/1)'), findsOneWidget);
+      // (it was inserted directly with repetitions: 0 + lastReviewedAt), so
+      // no slideshow and no "— New" marker -- straight to a normal review.
+      expect(find.text('Review \u2014 1/1'), findsOneWidget);
 
       // The frontside (before any stroke is drawn): "Show translation" is
       // available immediately, same as readingCloze.
@@ -94,10 +109,16 @@ void main() {
         find.widgetWithText(TextButton, 'Show translation'),
         findsOneWidget,
       );
-      expect(find.text("That's just fine with me."), findsNothing);
+      expect(
+        find.text('Yeah, there was some sort of reply from them.'),
+        findsNothing,
+      );
       await tester.tap(find.widgetWithText(TextButton, 'Show translation'));
       await tester.pump();
-      expect(find.text("That's just fine with me."), findsOneWidget);
+      expect(
+        find.text('Yeah, there was some sort of reply from them.'),
+        findsOneWidget,
+      );
       expect(
         find.widgetWithText(TextButton, 'Hide translation'),
         findsOneWidget,
@@ -123,19 +144,18 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
       await tester.runAsync(() => deps.load());
 
-      const scope = StudyScope(mode: StudyScopeMode.rtk, rtkMaxIndex: 1);
+      const scope = StudyScope(characters: {'一'});
       await deps.studyScope.update(scope);
 
       final now = DateTime.now();
       for (final otherType in [
         CardType.drawFromMeaning,
-        CardType.readingCloze,
         CardType.kanjiRecognition,
       ]) {
         await deps.database
@@ -154,9 +174,21 @@ void main() {
           .insert(
             ReviewCardsCompanion.insert(
               character: '一',
+              cardType: CardType.readingCloze,
+              compositaWord: const Value('一応'),
+              dueDate: now.add(const Duration(days: 30)),
+              repetitions: const Value(2),
+            ),
+          );
+      await deps.database
+          .into(deps.database.reviewCards)
+          .insert(
+            ReviewCardsCompanion.insert(
+              character: '一',
               cardType: CardType.drawInSentence,
+              compositaWord: const Value('一応'),
               dueDate: now,
-              repetitions: const Value(1),
+              repetitions: const Value(0),
               lastReviewedAt: Value(now.subtract(const Duration(days: 1))),
             ),
           );
@@ -170,15 +202,18 @@ void main() {
       await tester.pump();
 
       // The pre-seeded card was not introduced by _introduceNewCardsForToday
-      // (it was inserted directly with repetitions: 1), so no slideshow --
-      // straight to a normal review.
+      // (it was inserted directly with repetitions: 0 + lastReviewedAt), so
+      // no slideshow -- straight to a normal review.
 
       // tester.tap's default warnIfMissed:true makes a hit-test mismatch
       // (the actual bug found here) throw instead of silently tapping the
       // wrong widget -- so this assertion alone is the regression check.
       await tester.tap(find.widgetWithText(TextButton, 'Show translation'));
       await tester.pump();
-      expect(find.text("That's just fine with me."), findsOneWidget);
+      expect(
+        find.text('Yeah, there was some sort of reply from them.'),
+        findsOneWidget,
+      );
     },
   );
 }

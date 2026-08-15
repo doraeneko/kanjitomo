@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kanjitomo/app_dependencies.dart';
+import 'package:kanjitomo/core/first_time_dialog.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
 import 'package:kanjitomo/main.dart';
 
@@ -14,7 +15,7 @@ void main() {
     // shared_preferences (used by StudyScopeRepository) has no platform
     // implementation registered in a plain widget test -- mock it, the
     // package's own documented pattern for this exact situation.
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
 
     // The real AppDatabase needs path_provider (unavailable here) to locate
     // its on-disk file; an in-memory database sidesteps that without

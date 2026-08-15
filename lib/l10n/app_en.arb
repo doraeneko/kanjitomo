@@ -10,7 +10,7 @@
     "placeholders": { "error": { "type": "String" } }
   },
 
-  "lookupTitle": "漢字とも",
+  "lookupTitle": "漢字友",
   "@lookupTitle": { "description": "AppBar title on lookup screen" },
 
   "lookupWords": "Words",
@@ -97,28 +97,22 @@
   "learningSelect": "Select",
   "@learningSelect": { "description": "Button label for edit/select" },
 
+  "learningSettings": "Settings",
+  "@learningSettings": { "description": "Button label for settings/edit" },
+
   "learningStatistics": "Statistics",
   "@learningStatistics": { "description": "Button label for statistics" },
 
-  "helpTitle": "Help",
+  "helpTitle": "Help & About",
   "@helpTitle": { "description": "AppBar title for help screen" },
 
-  "helpIntro": "kanjitomo helps you learn to read and write Japanese kanji: draw a character to look it up, then track your progress in Learning.",
+  "helpIntro": "Kanjitomo helps you recognize, read, and write Japanese kanji — all offline, no account required.\n\n• Lookup — Draw any kanji to instantly look it up, with readings, meanings, stroke order, and example words.\n• Word Lookup — Build words character-by-character and search the full JMdict dictionary.\n• Learning — Add kanji to your pool (by JLPT level, RTK order, or drawing) and study with spaced repetition across four card types: draw from meaning, recognize kanji, reading cloze, and draw in sentence.\n• JLPT-like Quiz — Test yourself with multiple-choice questions matching the JLPT format.\n• Browse — Search all 2,140 Jōyō kanji by reading, meaning, or stroke count, with progress tracking.\n\nThe app includes over 60,000 vocabulary words and 6,000+ example sentences, all organized by JLPT level. Add your own keywords and mnemonics to make each kanji stick.\n\nReadings shown in [square brackets] are rare — they appear in only one or two words. Focus on the unbracketed readings first.",
   "@helpIntro": { "description": "Introduction paragraph on help screen" },
 
-  "helpLearningTitle": "Learning",
-  "@helpLearningTitle": { "description": "Section title on help screen" },
+  "helpAcknowledgement": "Kanjitomo would not be possible without these wonderful open-source projects and data sets:",
+  "@helpAcknowledgement": { "description": "Acknowledgement text before the licenses button" },
 
-  "helpLearningDescription": "Pick JLPT or Custom, then Review, Edit, or check Statistics. A kanji turns green once both its reading (kanji recognition) and writing (draw from meaning) have been passed at least once. Composita/sentence testing (reading and drawing kanji within real words) is tracked separately and doesn't affect that green status.",
-  "@helpLearningDescription": { "description": "Learning section description on help screen" },
-
-  "helpReviewTitle": "Review",
-  "@helpReviewTitle": { "description": "Section title on help screen" },
-
-  "helpReviewDescription": "New kanji are introduced in RTK (Remembering the Kanji) order, starting with numbers and basic radicals, then building progressively on shared components. You can set how many new kanji to introduce per day on the review start screen.",
-  "@helpReviewDescription": { "description": "Review section description on help screen" },
-
-  "helpOpenSourceLicenses": "Open source licenses",
+  "helpOpenSourceLicenses": "All licenses",
   "@helpOpenSourceLicenses": { "description": "Button to open licenses page" },
 
   "jlptEditTitle": "Edit JLPT scope",
@@ -205,7 +199,7 @@
   "dialogClear": "Clear",
   "@dialogClear": { "description": "Clear button in confirmation dialogs" },
 
-  "compositaPickerTitle": "{character}: Composita for testing",
+  "compositaPickerTitle": "{character}: Composita",
   "@compositaPickerTitle": {
     "description": "Title of the composita picker",
     "placeholders": { "character": { "type": "String" } }
@@ -217,14 +211,23 @@
   "compositaPickerEmpty": "No composita found for this kanji.",
   "@compositaPickerEmpty": { "description": "Shown when kanji has no composita" },
 
-  "customEditAddByKanji": "By kanji",
+  "customEditAddByKanji": "Add kanji",
   "@customEditAddByKanji": { "description": "Segment label for adding single kanji to custom set" },
 
-  "customEditAddByWord": "By word",
+  "customEditAddByWord": "Add composita",
   "@customEditAddByWord": { "description": "Segment label for adding words/composita to custom set" },
 
   "compositaPickerSearchHint": "Search JMdict for a word...",
   "@compositaPickerSearchHint": { "description": "Hint text for composita picker search field" },
+
+  "compositaPickerDrawButton": "Draw composita",
+  "@compositaPickerDrawButton": { "description": "Button to open draw-to-build-word screen for composita" },
+
+  "compositaPickerDrawTitle": "Draw composita for {char}",
+  "@compositaPickerDrawTitle": {
+    "description": "Title of the draw composita screen",
+    "placeholders": { "char": { "type": "String" } }
+  },
 
   "compositaPickerAdd": "Add",
   "@compositaPickerAdd": { "description": "Button to add a word from JMdict search" },
@@ -328,20 +331,20 @@
   "reviewTitle": "Review",
   "@reviewTitle": { "description": "AppBar title for review screens" },
 
-  "reviewHeader": "Review ({current}/{total})",
+  "reviewHeader": "Review — {done}/{total}",
   "@reviewHeader": {
-    "description": "AppBar title during review with progress",
+    "description": "AppBar title during review showing progress",
     "placeholders": {
-      "current": { "type": "int" },
+      "done": { "type": "int" },
       "total": { "type": "int" }
     }
   },
 
-  "reviewHeaderNew": "Review ({current}/{total}) — New",
+  "reviewHeaderNew": "Review — {done}/{total} — New",
   "@reviewHeaderNew": {
-    "description": "AppBar title during review for a new card",
+    "description": "AppBar title during review for a new card showing progress",
     "placeholders": {
-      "current": { "type": "int" },
+      "done": { "type": "int" },
       "total": { "type": "int" }
     }
   },
@@ -384,6 +387,9 @@
 
   "reviewContinue": "Continue",
   "@reviewContinue": { "description": "Button to continue after feedback" },
+
+  "reviewShowDetails": "Show details",
+  "@reviewShowDetails": { "description": "Button to expand kanji details in feedback" },
 
   "reviewOnyomi": "On'yomi: {readings}",
   "@reviewOnyomi": {
@@ -466,7 +472,7 @@
   "reviewStartCountingDue": "Counting due cards…",
   "@reviewStartCountingDue": { "description": "Shown while due count is loading" },
 
-  "reviewStartDueNow": "{count} due now",
+  "reviewStartDueNow": "{count} facts due now",
   "@reviewStartDueNow": {
     "description": "Number of cards due",
     "placeholders": { "count": { "type": "int" } }
@@ -496,26 +502,19 @@
   "reviewStartNothingSelected": "Nothing selected",
   "@reviewStartNothingSelected": { "description": "Scope description when nothing selected" },
 
-  "reviewStartWhatToQuiz": "What to quiz",
-  "@reviewStartWhatToQuiz": { "description": "Section title for quiz focus" },
-
-  "reviewStartKanjiOnly": "Kanji only",
-  "@reviewStartKanjiOnly": { "description": "Segment label for core focus" },
-
-  "reviewStartComposita": "Composita",
-  "@reviewStartComposita": { "description": "Segment label for composita focus" },
-
-  "reviewStartBoth": "Both",
-  "@reviewStartBoth": { "description": "Segment label for both focus" },
-
-  "reviewStartCompositaOff": "No composita/sentence testing is enabled for this scope yet — set a composita ceiling while editing it in the Learning section.",
-  "@reviewStartCompositaOff": { "description": "Warning when composita not enabled" },
-
   "reviewStartNewKanjiPerDay": "New kanji per day:",
   "@reviewStartNewKanjiPerDay": { "description": "Label for daily new cap input" },
 
-  "reviewStartButton": "Start Review",
+  "reviewStartButton": "Review",
   "@reviewStartButton": { "description": "Button to start the review session" },
+
+  "reviewStartPoolHeading": "Learning pool ({count})",
+  "@reviewStartPoolHeading": {
+    "description": "Heading for the kanji pool list on the review start screen",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
 
   "reviewContinueButton": "Continue Review",
   "@reviewContinueButton": { "description": "Button to continue a review session when cards are due" },
@@ -550,11 +549,11 @@
   "statisticsDrawInSentence": "Draw in sentence (composita/sentence)",
   "@statisticsDrawInSentence": { "description": "Card type label" },
 
-  "statisticsKnown": "Known",
-  "@statisticsKnown": { "description": "Legend label for known cards" },
+  "statisticsKnown": "Learnt",
+  "@statisticsKnown": { "description": "Legend label for learnt cards (4+ consecutive correct)" },
 
-  "statisticsMissed": "Missed",
-  "@statisticsMissed": { "description": "Legend label for missed cards" },
+  "statisticsMissed": "Learning",
+  "@statisticsMissed": { "description": "Legend label for cards still being learned" },
 
   "statisticsNotStarted": "Not started",
   "@statisticsNotStarted": { "description": "Legend label for not started cards" },
@@ -682,5 +681,443 @@
   "@customEditLimitReached": {
     "description": "Snackbar when free user hits custom set cap",
     "placeholders": { "limit": { "type": "int" } }
+  },
+
+  "customEditAddElements": "Add elements",
+  "@customEditAddElements": { "description": "Button label and screen title for adding kanji/composita to custom set" },
+
+  "dueOverviewTitle": "Upcoming reviews",
+  "@dueOverviewTitle": { "description": "Section title for due date distribution" },
+
+  "dueOverviewOverdue": "Overdue",
+  "@dueOverviewOverdue": { "description": "Label for overdue bucket" },
+
+  "dueOverviewToday": "Today",
+  "@dueOverviewToday": { "description": "Label for today bucket" },
+
+  "dueOverviewTomorrow": "Tomorrow",
+  "@dueOverviewTomorrow": { "description": "Label for tomorrow bucket" },
+
+  "dueOverviewThisWeek": "This week",
+  "@dueOverviewThisWeek": { "description": "Label for this week bucket" },
+
+  "dueOverviewLater": "Later",
+  "@dueOverviewLater": { "description": "Label for later bucket" },
+
+  "dueOverviewNotStarted": "Not started",
+  "@dueOverviewNotStarted": { "description": "Label for not started bucket" },
+
+  "dueOverviewCompact": "Tomorrow: {tomorrow} · This week: {week} · Later: {later}",
+  "@dueOverviewCompact": {
+    "description": "Compact due date summary on review start screen",
+    "placeholders": {
+      "tomorrow": { "type": "int" },
+      "week": { "type": "int" },
+      "later": { "type": "int" }
+    }
+  },
+
+  "learningQuiz": "JLPT-like Quiz",
+  "@learningQuiz": { "description": "Button label for quiz on learning screen" },
+
+  "quizStartTitle": "Quiz",
+  "@quizStartTitle": { "description": "AppBar title for quiz start screen" },
+
+  "quizStartQuestionCount": "Number of questions:",
+  "@quizStartQuestionCount": { "description": "Label for question count picker" },
+
+  "quizStartButton": "Start Quiz",
+  "@quizStartButton": { "description": "Button to start the quiz" },
+
+  "quizProgress": "Question {current}/{total}",
+  "@quizProgress": {
+    "description": "Progress indicator during quiz",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "quizPickReading": "What is the reading of the highlighted word?",
+  "@quizPickReading": { "description": "Prompt for reading question type" },
+
+  "quizPickKanji": "Which word fits in the sentence?",
+  "@quizPickKanji": { "description": "Prompt for kanji question type" },
+
+  "quizCorrect": "Correct!",
+  "@quizCorrect": { "description": "Feedback when answer is correct" },
+
+  "quizWrong": "Wrong — the answer is:",
+  "@quizWrong": { "description": "Feedback when answer is wrong" },
+
+  "quizNext": "Next",
+  "@quizNext": { "description": "Button to advance to next question" },
+
+  "quizResultTitle": "Quiz Results",
+  "@quizResultTitle": { "description": "Title of results screen" },
+
+  "quizResultScore": "{correct}/{total} correct",
+  "@quizResultScore": {
+    "description": "Score summary",
+    "placeholders": {
+      "correct": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "quizDone": "Done",
+  "@quizDone": { "description": "Button to return from quiz results" },
+
+  "quizNotEnoughWords": "Not enough words in scope for a quiz.",
+  "@quizNotEnoughWords": { "description": "Shown when scope has too few composita for a quiz" },
+
+  "reviewStartBacklogInfo": "You have {count} cards to review from previous days.",
+  "@reviewStartBacklogInfo": {
+    "description": "Informational text when user returns with a backlog of due cards",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewStartReviewBacklog": "Review backlog first",
+  "@reviewStartReviewBacklog": { "description": "Button to start review without introducing new cards" },
+
+  "reviewStartBacklogAndNew": "Also learn {count} new kanji",
+  "@reviewStartBacklogAndNew": {
+    "description": "Button to start review and also introduce new cards despite backlog",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewStartNewKanjiDialog": "You have {dueCount} cards due for review. Want to add {newCount} new kanji? That results in {totalCount} facts to review.",
+  "@reviewStartNewKanjiDialog": {
+    "description": "Dialog text asking whether to introduce new kanji",
+    "placeholders": {
+      "dueCount": { "type": "int" },
+      "newCount": { "type": "int" },
+      "totalCount": { "type": "int" }
+    }
+  },
+
+  "reviewStartDialogYes": "Yes",
+  "@reviewStartDialogYes": { "description": "Confirm button in new kanji dialog" },
+
+  "reviewStartDialogNo": "No",
+  "@reviewStartDialogNo": { "description": "Decline button in new kanji dialog" },
+
+  "reviewLearnMoreEstimate": "That adds {factCount} new facts",
+  "@reviewLearnMoreEstimate": {
+    "description": "Fact count estimate shown next to learn-more on queue-exhausted screen",
+    "placeholders": { "factCount": { "type": "int" } }
+  },
+
+  "reviewUndoTooltip": "Redo previous card",
+  "@reviewUndoTooltip": { "description": "Tooltip for undo button in review AppBar" },
+
+  "jlptEditCompositaPerKanji": "Composita words per kanji",
+  "@jlptEditCompositaPerKanji": { "description": "Section title for max composita per kanji setting" },
+
+  "quizOnlySeenKanji": "Only quiz seen kanji",
+  "@quizOnlySeenKanji": { "description": "Switch label to restrict quiz to kanji the user has already reviewed" },
+
+  "reviewMaxBacklog": "Maximum backlog:",
+  "@reviewMaxBacklog": { "description": "Label for maximum backlog setting" },
+
+  "reviewMaxBacklogHint": "0 = no limit",
+  "@reviewMaxBacklogHint": { "description": "Helper text below the max backlog field" },
+
+  "ftdLookupTitle": "Draw to recognize",
+  "@ftdLookupTitle": { "description": "First-time dialog title for lookup screen" },
+
+  "ftdLookupMessage": "Draw a kanji stroke by stroke on the canvas. The app recognizes it after each stroke and shows the best matches. Tap a result to see its full detail — readings, meaning, stroke order, and more.\n\nTry it now — minimize this card and draw something!",
+  "@ftdLookupMessage": { "description": "First-time dialog message for lookup screen" },
+
+  "ftdWordLookupTitle": "Word lookup",
+  "@ftdWordLookupTitle": { "description": "First-time dialog title for word lookup screen" },
+
+  "ftdWordLookupMessage": "Build a word one character at a time by drawing each one, or type directly into the text field. The app looks up the word in the dictionary and shows its reading and meaning.\n\nMinimize this card to try it out!",
+  "@ftdWordLookupMessage": { "description": "First-time dialog message for word lookup screen" },
+
+  "ftdLearningTitle": "Learning",
+  "@ftdLearningTitle": { "description": "First-time dialog title for learning screen" },
+
+  "ftdLearningMessage": "Add kanji to your learning pool from JLPT levels, RTK order, or by drawing. Review uses spaced repetition to test reading and writing. You can also take quick quizzes and track your progress with statistics.",
+  "@ftdLearningMessage": { "description": "First-time dialog message for learning screen" },
+
+  "ftdBrowserTitle": "Kanji browser",
+  "@ftdBrowserTitle": { "description": "First-time dialog title for kanji browser screen" },
+
+  "ftdBrowserMessage": "Browse all Jōyō kanji in a searchable table. Search by reading (hiragana or katakana), meaning (English), stroke count, or the character itself. Colored dots show your review progress — green for known, orange for missed.",
+  "@ftdBrowserMessage": { "description": "First-time dialog message for kanji browser screen" },
+
+  "ftdReviewSessionTitle": "Review session",
+  "@ftdReviewSessionTitle": { "description": "First-time dialog title for review session screen" },
+
+  "ftdReviewSessionMessage": "Four card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nGrade yourself with Again (missed) or Good (recalled).",
+  "@ftdReviewSessionMessage": { "description": "First-time dialog message for review session screen" },
+
+  "ftdGotIt": "Got it",
+  "@ftdGotIt": { "description": "Dismiss button for first-time dialogs" },
+
+  "helpResetTips": "Reset help",
+  "@helpResetTips": { "description": "Button to reset all first-time dialog tips" },
+
+  "helpResetTipsDone": "Help reset — the welcome tour will appear again next time.",
+  "@helpResetTipsDone": { "description": "Snackbar after resetting tips" },
+
+  "welcomeTitle": "Welcome to Kanjitomo",
+  "@welcomeTitle": { "description": "Title on welcome screen" },
+
+  "welcomeSubtitle": "Recognize, read, and write Japanese kanji",
+  "@welcomeSubtitle": { "description": "Subtitle on welcome screen" },
+
+  "welcomeTakeTour": "Take a tour",
+  "@welcomeTakeTour": { "description": "Button to start guided tour" },
+
+  "welcomeSkip": "Skip",
+  "@welcomeSkip": { "description": "Button to skip welcome tour" },
+
+  "welcomeDone": "Start learning!",
+  "@welcomeDone": { "description": "Button on final tour step" },
+
+  "tourNext": "Next",
+  "@tourNext": { "description": "Button to advance tour" },
+
+  "tourBack": "Back",
+  "@tourBack": { "description": "Button to go back in tour" },
+
+  "welcomeDontShowAgain": "Don't show again",
+  "@welcomeDontShowAgain": { "description": "Button to permanently dismiss welcome screen" },
+
+  "welcomeFeatureList": "Draw any kanji to recognize and look it up instantly. Study over 60,000 vocabulary words with real example sentences using spaced repetition. Browse all Jōyō kanji — completely offline.",
+  "@welcomeFeatureList": { "description": "Brief feature summary on the welcome screen" },
+
+  "helpReviewStart": "Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew kanji are introduced in RTK order (building on shared radicals). You can set how many new kanji per day.\n\nIf you skip 2+ days and have a backlog of due cards, new kanji are paused until you catch up. Use \"Learn more\" inside a session to override this.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji's shape, meaning, and components.",
+  "@helpReviewStart": { "description": "Help text for review start screen" },
+
+  "helpJlptEdit": "Select one or more JLPT levels. All kanji from the selected levels are combined into your study scope.\n\nComposita ceiling controls which vocabulary words are tested:\n• Off — no word/sentence testing, only bare kanji\n• N5–N1 — only test words at or easier than this level\nThe ceiling is independent of kanji levels (e.g. study N3 kanji with N5 words only).\n\nNew kanji/day: how many new characters to introduce each day (default 10).\n\nMax backlog: optional limit on how many due cards can pile up before new kanji stop being introduced. Set to 0 to disable the limit.\n\nComposita/kanji: how many words per character are tested (2–5, default 4).\n\nChanging levels takes effect immediately. Review progress is shared between JLPT and Custom mode — a kanji reviewed in one mode counts as reviewed in the other.",
+  "@helpJlptEdit": { "description": "Help text for JLPT edit screen" },
+
+  "helpCustomEdit": "Build your own study list by drawing kanji one at a time.\n\nTap a kanji to choose which vocabulary words (composita) to test for it. Unlike JLPT mode, nothing is auto-included — you explicitly pick each word.\n\nLong-press a kanji to remove it from your list.\n\nReview progress is shared between JLPT and Custom mode — a kanji reviewed in one mode counts as reviewed in the other.",
+  "@helpCustomEdit": { "description": "Help text for custom edit screen" },
+
+  "helpQuiz": "The quiz is a quick multiple-choice self-test. It has no effect on your spaced-repetition progress.\n\nTwo question types are randomly mixed:\n• Kanji → Reading: a sentence with a kanji highlighted; pick its reading\n• Reading → Kanji: a sentence with readings shown; pick which kanji word fits\n\nOnly kanji you have already reviewed at least once are included.",
+  "@helpQuiz": { "description": "Help text for quiz screen" },
+
+  "helpStatistics": "Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 3 times in a row\n• Learning (orange): reviewed but not yet at 3 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 3 consecutive correct answers again.\n\nKanji grid: each kanji shows a colored dot.\n• Green: both reading and writing learnt\n• Orange: at least one direction started\n• Gray: not yet reviewed\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.",
+  "@helpStatistics": { "description": "Help text for statistics screen" },
+
+  "helpLearning": "This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven't reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.",
+  "@helpLearning": { "description": "Help text for learning screen" },
+
+  "helpSupportDevelopment": "Support development",
+  "@helpSupportDevelopment": { "description": "Button label for buy me a coffee link" },
+
+  "helpSupportDescription": "Kanjitomo is free and always will be. If you find it useful, consider buying me a coffee!",
+  "@helpSupportDescription": { "description": "Text above the support button" },
+
+  "helpReportBug": "Report a bug",
+  "@helpReportBug": { "description": "Button label for bug report email" },
+
+  "helpReportBugDescription": "Found a problem? Send us an email and we'll look into it.",
+  "@helpReportBugDescription": { "description": "Text above the bug report button" },
+
+  "helpBugEmailSubject": "Kanjitomo bug report",
+  "@helpBugEmailSubject": { "description": "Pre-filled email subject for bug reports" },
+
+  "learningPoolStats": "Your learning pool",
+  "@learningPoolStats": { "description": "Section title for the unified learning pool" },
+
+  "learningKanjiCount": "{count} kanji in pool",
+  "@learningKanjiCount": {
+    "description": "Count of kanji in the learning pool",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "learningSeen": "{seen} seen",
+  "@learningSeen": {
+    "description": "Count of seen kanji in pool",
+    "placeholders": { "seen": { "type": "int" } }
+  },
+
+  "learningDue": "{due} cards due",
+  "@learningDue": {
+    "description": "Count of due cards",
+    "placeholders": { "due": { "type": "int" } }
+  },
+
+  "learningAddRemove": "Add/Remove",
+  "@learningAddRemove": { "description": "Button to open add/remove kanji screen" },
+
+  "learningQuickAddJlpt": "+{count} JLPT N{level}",
+  "@learningQuickAddJlpt": {
+    "description": "Quick-add button for JLPT kanji",
+    "placeholders": {
+      "count": { "type": "int" },
+      "level": { "type": "int" }
+    }
+  },
+
+  "learningQuickAddRtk": "+{count} RTK",
+  "@learningQuickAddRtk": {
+    "description": "Quick-add button for RTK kanji",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "learningQuickAddHint": "Shortcut — adds kanji in RTK order.",
+  "@learningQuickAddHint": { "description": "Hint below quick-add buttons" },
+  "learningDetailedAdd": "Add / Remove (detailed)",
+  "@learningDetailedAdd": { "description": "Button to open detailed add/remove screen" },
+
+  "addRemoveTitle": "Add / Remove kanji",
+  "@addRemoveTitle": { "description": "AppBar title for add/remove screen" },
+
+  "addRemoveAddByJlpt": "Add by JLPT level",
+  "@addRemoveAddByJlpt": { "description": "Section title for adding by JLPT" },
+
+  "addRemoveJlptHelp": "Add kanji grouped by JLPT level (N5 = easiest, N1 = hardest). Pick a level and how many to add — they'll be added in Heisig (RTK) order for efficient memorization. Compound words are auto-selected based on your settings below.",
+  "@addRemoveJlptHelp": { "description": "Help text for the JLPT tab" },
+
+  "addRemoveKanjiCount": "Number of kanji",
+  "@addRemoveKanjiCount": { "description": "Label for the count text field when adding kanji" },
+
+  "addRemoveAddTip": "Tip: Add just a few new kanji each day for the best retention.",
+  "@addRemoveAddTip": { "description": "Tip shown on JLPT and RTK add tabs" },
+
+  "addRemoveAddJlptButton": "Add JLPT kanji",
+  "@addRemoveAddJlptButton": { "description": "Button to add kanji from a JLPT level" },
+
+  "addRemoveAddByRtk": "Add by RTK order",
+  "@addRemoveAddByRtk": { "description": "Section title for adding by RTK" },
+
+  "addRemoveRtkHelp": "Add kanji in Heisig's Remembering the Kanji (RTK) order, regardless of JLPT level. Good if you're following the RTK book or want to learn kanji by building on shared components.",
+  "@addRemoveRtkHelp": { "description": "Help text for the RTK tab" },
+
+  "addRemoveAddRtkButton": "Add RTK kanji",
+  "@addRemoveAddRtkButton": { "description": "Button to add kanji by RTK order" },
+
+  "addRemoveDrawToAdd": "Add by drawing",
+  "@addRemoveDrawToAdd": { "description": "Section title for draw-to-add" },
+
+  "addRemoveDrawHelp": "Draw any kanji to add it to your learning pool. Useful for adding a specific character you encountered. Compound words are auto-selected based on your settings below.",
+  "@addRemoveDrawHelp": { "description": "Help text for the draw tab" },
+
+  "addRemoveCompositaSettings": "Composita settings",
+  "@addRemoveCompositaSettings": { "description": "Section title for composita settings" },
+
+  "addRemoveCompositaCeiling": "Vocabulary level limit",
+  "@addRemoveCompositaCeiling": { "description": "Label for composita ceiling setting" },
+
+  "addRemoveCompositaCeilingHelp": "Only use compound words (composita) up to this JLPT level for review sentences. Lower levels use simpler vocabulary. \"Off\" allows all levels.",
+  "@addRemoveCompositaCeilingHelp": { "description": "Help text explaining the composita ceiling" },
+
+  "addRemoveCeilingOff": "Off",
+  "@addRemoveCeilingOff": { "description": "Label when composita ceiling is off" },
+
+  "addRemoveMaxComposita": "Words per kanji",
+  "@addRemoveMaxComposita": { "description": "Label for max composita per kanji setting" },
+
+  "addRemoveMaxCompositaHelp": "How many compound words to auto-select per kanji for review. More words means more variety but also more cards to review.",
+  "@addRemoveMaxCompositaHelp": { "description": "Help text explaining max composita per kanji" },
+
+  "addRemovePoolSortRtk": "RTK order",
+  "@addRemovePoolSortRtk": { "description": "Sort pool by RTK index" },
+
+  "addRemovePoolSortAdded": "Date added",
+  "@addRemovePoolSortAdded": { "description": "Sort pool by date added" },
+
+  "addRemovePoolSortModified": "Last modified",
+  "@addRemovePoolSortModified": { "description": "Sort pool by last modification date" },
+
+  "addRemovePoolTitle": "Learning pool ({count})",
+  "@addRemovePoolTitle": {
+    "description": "Section title for the pool list with count",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "addRemovePoolEmpty": "No kanji in your learning pool yet.",
+  "@addRemovePoolEmpty": { "description": "Shown when the learning pool is empty" },
+
+  "addRemovePoolTip": "Tap a kanji to edit its composita, story, or keyword. Long-press to remove.",
+  "@addRemovePoolTip": { "description": "Help tip in the learning pool tab" },
+
+  "addRemovePoolSearch": "Search pool",
+  "@addRemovePoolSearch": { "description": "Search field label in learning pool tab" },
+
+  "addRemoveClearAll": "Clear all",
+  "@addRemoveClearAll": { "description": "Button to remove all kanji from pool" },
+
+  "addRemoveConfirmClearTitle": "Clear learning pool?",
+  "@addRemoveConfirmClearTitle": { "description": "Dialog title for clearing the pool" },
+
+  "addRemoveConfirmClearContent": "Remove all {count} kanji and delete all review progress? This cannot be undone.",
+  "@addRemoveConfirmClearContent": {
+    "description": "Dialog content for clearing the pool",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "addRemoveConfirmRemoveTitle": "Remove kanji?",
+  "@addRemoveConfirmRemoveTitle": { "description": "Dialog title for removing a kanji from pool" },
+
+  "addRemoveConfirmRemoveContent": "Remove {char} and delete all review progress for it? This cannot be undone.",
+  "@addRemoveConfirmRemoveContent": {
+    "description": "Dialog content for removing a kanji from pool",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "addRemoveRemoveButton": "Remove",
+  "@addRemoveRemoveButton": { "description": "Remove button in confirmation dialog" },
+
+  "addRemoveAlreadyInPool": "{char} is already in your learning pool.",
+  "@addRemoveAlreadyInPool": {
+    "description": "Snackbar when drawn kanji is already in pool",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "addRemoveSlideshowTitle": "New kanji ({current}/{total})",
+  "@addRemoveSlideshowTitle": {
+    "description": "AppBar title during new kanji slideshow from add/remove",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "addRemoveSlideshowComposita": "Selected composita:",
+  "@addRemoveSlideshowComposita": { "description": "Label for selected composita in slideshow" },
+
+  "addRemoveSlideshowNext": "Next",
+  "@addRemoveSlideshowNext": { "description": "Button to advance slideshow" },
+
+  "addRemoveSlideshowDone": "Done",
+  "@addRemoveSlideshowDone": { "description": "Button to finish slideshow" },
+
+  "kanjiDetailEditComposita": "Edit composita",
+  "@kanjiDetailEditComposita": { "description": "Button to edit composita for a kanji" },
+
+  "kanjiDetailAddToLearning": "Add to learning",
+  "@kanjiDetailAddToLearning": { "description": "Button to add kanji to the learning pool" },
+
+  "learningNewCardsPerDay": "New cards/day:",
+  "@learningNewCardsPerDay": { "description": "Label for max new (never-reviewed) cards per review" },
+
+  "learningMaxReviewsPerDay": "Max reviews/day:",
+  "@learningMaxReviewsPerDay": { "description": "Label for max total cards per review session" },
+
+  "learningWaitingCards": "{count} waiting",
+  "@learningWaitingCards": {
+    "description": "Number of never-reviewed cards waiting to be introduced",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewDailyLimitReached": "Daily limit reached. {count} more cards available.",
+  "@reviewDailyLimitReached": {
+    "description": "Shown when the session cap is hit but more cards exist",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "reviewContinueCards": "Continue with {count} more",
+  "@reviewContinueCards": {
+    "description": "Button to load more cards beyond the daily cap",
+    "placeholders": { "count": { "type": "int" } }
   }
 }

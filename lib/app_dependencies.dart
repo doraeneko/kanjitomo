@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'core/db/app_database.dart';
 import 'core/kanji_recognizer.dart';
 import 'data/composita_repository.dart';
 import 'data/jlpt_levels_repository.dart';
 import 'data/kanji_info_repository.dart';
+import 'data/reading_frequency_repository.dart';
 import 'data/kanji_level_rank_repository.dart';
 import 'data/rtk_index_repository.dart';
 import 'data/sentences_repository.dart';
@@ -24,9 +27,12 @@ class AppDependencies {
   /// AppDatabase.forTesting(NativeDatabase.memory()) instead, since the
   /// real one needs path_provider, which has no platform implementation in
   /// a plain widget test.
-  AppDependencies({AppDatabase? database}) : database = database ?? AppDatabase();
+  AppDependencies({AppDatabase? database})
+      : database = database ?? AppDatabase(),
+        _skipPurchaseInit = database != null;
 
   final AppDatabase database;
+  final bool _skipPurchaseInit;
   final KanjiRecognizer recognizer = KanjiRecognizer();
   late final Future<void> recognizerReady;
   final KanjiInfoRepository kanjiInfo = KanjiInfoRepository();
@@ -38,9 +44,16 @@ class AppDependencies {
   final StoriesRepository stories = StoriesRepository();
   final StrokePathsRepository strokePaths = StrokePathsRepository();
   final WordIndexRepository wordIndex = WordIndexRepository();
+  final ReadingFrequencyRepository readingFrequency = ReadingFrequencyRepository();
   final StudyScopeRepository studyScope = StudyScopeRepository();
   final ProStatusRepository proStatus = ProStatusRepository();
   final PurchaseService purchaseService = PurchaseService();
+
+  // Bump this whenever bundled JSON assets change so syncKanjiStatic /
+  // seedStories re-run. On a fresh install the version is absent, so the
+  // seed always runs the first time.
+  static const _dataVersion = 2;
+  static const _dataVersionKey = 'app.data_version';
 
   /// Loads every bundled JSON asset and syncs the database. Also kicks off
   /// [recognizer.load()] in parallel (without awaiting it) -- ONNX session
@@ -63,30 +76,47 @@ class AppDependencies {
       stories.load(),
       strokePaths.load(),
       wordIndex.load(),
+      readingFrequency.load(),
       studyScope.load(),
       proStatus.load(),
     ]);
-    await database.syncKanjiStatic(
-      jlptLevels: jlptLevels.all,
-      rtkIndex: rtkIndex.all,
-      levelRank: kanjiLevelRank.all,
-    );
-    await database.seedStories(
-      stories.all.map(
-        (char, seed) => MapEntry(char, (keyword: seed.keyword, story: seed.story)),
-      ),
+
+    // Only run the heavy DB seed / sync when the data version changed (or
+    // on first install). This skips ~4000 row upserts on every subsequent
+    // cold start, saving several hundred ms on mid-range devices.
+    final prefs = await SharedPreferences.getInstance();
+    final seeded = prefs.getInt(_dataVersionKey) ?? 0;
+    if (seeded < _dataVersion) {
+      await database.syncKanjiStatic(
+        jlptLevels: jlptLevels.all,
+        rtkIndex: rtkIndex.all,
+        levelRank: kanjiLevelRank.all,
+      );
+      await database.seedStories(
+        stories.all.map(
+          (char, seed) => MapEntry(char, (keyword: seed.keyword, story: seed.story)),
+        ),
+      );
+      await prefs.setInt(_dataVersionKey, _dataVersion);
+    }
+
+    await studyScope.migrateIfNeeded(
+      charsInLevels: jlptLevels.charsInLevels,
     );
     // Fire-and-forget: store connection is not needed for startup and may
     // fail silently in environments without a billing service (tests,
     // desktop). The paywall sheet handles the case where product details
-    // haven't loaded yet. Guarded zone absorbs any async platform channel
-    // errors that escape the try/catch inside init() itself (the Android
-    // billing client's eager connection attempt fires callbacks in a
-    // separate microtask).
-    runZonedGuarded(
-      () => purchaseService.init(proStatus),
-      (_, __) {},
-    );
+    // haven't loaded yet. Skipped entirely when a test database was
+    // provided -- InAppPurchase.instance eagerly starts a platform-channel
+    // billing-client connection whose async callbacks escape
+    // runZonedGuarded (they're dispatched on the root zone), which causes
+    // spurious "test failed after it had already completed" failures.
+    if (!_skipPurchaseInit) {
+      runZonedGuarded(
+        () => purchaseService.init(proStatus),
+        (_, __) {},
+      );
+    }
   }
 
   Future<void> dispose() async {
