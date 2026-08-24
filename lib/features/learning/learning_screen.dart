@@ -207,7 +207,7 @@ class _LearningScreenState extends State<LearningScreen> {
                   height: 52,
                   child: ElevatedButton.icon(
                     key: const ValueKey('review'),
-                    onPressed: () => _openReview(context),
+                    onPressed: charCount > 0 ? () => _openReview(context) : null,
                     icon: const Icon(Icons.play_circle_filled),
                     label: Text(
                       _dueCount != null && _dueCount! > 0
@@ -224,7 +224,7 @@ class _LearningScreenState extends State<LearningScreen> {
                   height: 52,
                   child: ElevatedButton.icon(
                     key: const ValueKey('quiz'),
-                    onPressed: () => _openQuiz(context),
+                    onPressed: charCount > 0 ? () => _openQuiz(context) : null,
                     icon: const Icon(Icons.quiz),
                     label: Text(
                       l.learningQuiz,

@@ -38,7 +38,7 @@ class CompositaPicker extends StatefulWidget {
 }
 
 class _CompositaPickerState extends State<CompositaPicker> {
-  static const _maxDisplayed = 10;
+  // No display cap — show all composita so selected ones are never hidden.
 
   Set<String>? _selected; // null while loading
   List<Composita> _userComposita = [];
@@ -204,9 +204,6 @@ class _CompositaPickerState extends State<CompositaPicker> {
     final selected = _selected;
     final l = AppLocalizations.of(context)!;
     final allComposita = _allComposita;
-    final displayed = allComposita.length > _maxDisplayed
-        ? allComposita.sublist(0, _maxDisplayed)
-        : allComposita;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,23 +279,36 @@ class _CompositaPickerState extends State<CompositaPicker> {
             _buildSearchResult(entry, l),
           ],
           const Divider(),
-          // ── Composita list (max 10) ─────────────────────────
+          // ── Composita list ─────────────────────────
           if (allComposita.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text(l.compositaPickerEmpty),
             )
           else
-            for (final c in displayed)
+            for (final c in allComposita)
               CheckboxListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 value: selected.contains(c.word),
                 onChanged: (v) => _toggle(c.word, v),
-                title: Text(
-                  '${c.word} (${c.reading})'
-                  '${_userWords.contains(c.word) ? ' *' : ''}',
-                ),
+                title: Text.rich(TextSpan(
+                  children: [
+                    TextSpan(text: '${c.word} (${c.reading})'),
+                    if (_userWords.contains(c.word))
+                      const TextSpan(text: ' *'),
+                    if (c.effectiveJlptLevel != null)
+                      TextSpan(
+                        text: c.isLevelInferred
+                            ? ' [N${c.effectiveJlptLevel}?]'
+                            : ' [N${c.effectiveJlptLevel}]',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                )),
                 subtitle: Text(c.meaning),
               ),
         ],
@@ -475,7 +485,7 @@ class _DrawCompositaScreenState extends State<_DrawCompositaScreen> {
                           child: TextField(
                             controller: _wordController,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 24),
+                            style: const TextStyle(fontSize: 24, fontFamily: 'NotoSansJP'),
                             decoration: InputDecoration(
                               labelText: l.wordLookupWordLabel,
                               border: const OutlineInputBorder(),
@@ -530,6 +540,7 @@ class _DrawCompositaScreenState extends State<_DrawCompositaScreen> {
                 primary,
                 style: const TextStyle(
                   fontSize: 20,
+                  fontFamily: 'NotoSansJP',
                   fontWeight: FontWeight.bold,
                 ),
               ),

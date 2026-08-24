@@ -145,6 +145,7 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
           char,
           eligible,
           scope.maxCompositaPerKanji,
+          kanjiInfo: widget.deps.kanjiInfo.lookup(char),
         );
         // Deduplicate by word — the DB key is (character, word), so two
         // entries with the same word but different readings collapse into one.
@@ -202,15 +203,19 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
 
     if (!mounted) return;
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => IntroSlideshowScreen(
-          deps: widget.deps,
-          characters: chars,
-          compositaByChar: compositaByChar,
+    // Skip the slideshow for large batches — tapping through 50+ slides
+    // isn't useful. The user can always review individual kanji in the pool.
+    if (chars.length <= 10) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => IntroSlideshowScreen(
+            deps: widget.deps,
+            characters: chars,
+            compositaByChar: compositaByChar,
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   Future<void> _addByDraw(List<Prediction> _, String picked) async {
@@ -295,6 +300,27 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
     );
     if (confirmed != true) return;
 
+    // Second confirmation — this is destructive and irreversible.
+    if (!mounted) return;
+    final reallyConfirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('本当に？'),
+        content: Text(l.addRemoveClearSecondConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.dialogCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('本当！'),
+          ),
+        ],
+      ),
+    );
+    if (reallyConfirmed != true) return;
+
     await _reviewRepo.deleteProgressForCharacters(pool);
     await widget.deps.studyScope.removeCharacters(pool);
     _compositaCounts.clear();
@@ -330,77 +356,6 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
         );
       },
     ).then((_) => _loadCompositaCounts());
-  }
-
-  void _updateCompositaCeiling(int? ceiling) {
-    widget.deps.studyScope.update(
-      _scope.copyWith(
-        compositaCeiling: ceiling,
-        clearCompositaCeiling: ceiling == null,
-      ),
-    );
-    setState(() {});
-  }
-
-  void _updateMaxComposita(int max) {
-    widget.deps.studyScope.update(
-      _scope.copyWith(maxCompositaPerKanji: max),
-    );
-    setState(() {});
-  }
-
-  // ── Composita settings widget (shared by JLPT and RTK tabs) ──────────
-
-  Widget _buildCompositaSettings(AppLocalizations l) {
-    final scope = _scope;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l.addRemoveCompositaSettings,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(l.addRemoveCompositaCeiling,
-            style: const TextStyle(fontWeight: FontWeight.w500)),
-        Text(l.addRemoveCompositaCeilingHelp,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          children: [
-            ChoiceChip(
-              label: Text(l.addRemoveCeilingOff),
-              selected: scope.compositaCeiling == null,
-              onSelected: (_) => _updateCompositaCeiling(null),
-            ),
-            for (final level in [5, 4, 3, 2])
-              ChoiceChip(
-                label: Text('N$level'),
-                selected: scope.compositaCeiling == level,
-                onSelected: (_) => _updateCompositaCeiling(level),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(l.addRemoveMaxComposita,
-            style: const TextStyle(fontWeight: FontWeight.w500)),
-        Text(l.addRemoveMaxCompositaHelp,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final n in [2, 3, 4, 5])
-              ChoiceChip(
-                label: Text('$n'),
-                selected: scope.maxCompositaPerKanji == n,
-                onSelected: (_) => _updateMaxComposita(n),
-              ),
-          ],
-        ),
-      ],
-    );
   }
 
   // ── Tab bodies ────────────────────────────────────────────────────────
@@ -485,10 +440,6 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        const Divider(),
-        const SizedBox(height: 8),
-        _buildCompositaSettings(l),
       ],
     );
   }
@@ -525,10 +476,6 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 24),
-        const Divider(),
-        const SizedBox(height: 8),
-        _buildCompositaSettings(l),
       ],
     );
   }
@@ -545,10 +492,6 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
             onPicked: _addByDraw,
           ),
         ),
-        const SizedBox(height: 24),
-        const Divider(),
-        const SizedBox(height: 8),
-        _buildCompositaSettings(l),
       ],
     );
   }
@@ -803,6 +746,13 @@ class IntroSlideshowScreenState extends State<IntroSlideshowScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l.addRemoveSlideshowTitle(_index + 1, widget.characters.length)),
+        actions: [
+          if (!_isLast)
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l.welcomeSkip),
+            ),
+        ],
       ),
       body: SafeArea(
         child: Column(

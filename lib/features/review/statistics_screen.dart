@@ -34,6 +34,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   CompositaCoverage? _compositaCoverage;
   Map<String, int>? _dueDist;
   Map<String, KanjiProgress>? _progress;
+  Map<String, Set<String>>? _wordsByCharacter;
 
   @override
   void initState() {
@@ -91,6 +92,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       _compositaCoverage = compositaCoverage;
       _dueDist = dueDist;
       _progress = progress;
+      _wordsByCharacter = wordsByCharacter;
     });
   }
 
@@ -380,8 +382,14 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               } else {
                 dotColor = Colors.grey.shade300;
               }
+
+              // Second dot: composita progress per character.
+              final eligibleWords = _wordsByCharacter?[char];
+              final bool hasComposita = eligibleWords != null && eligibleWords.isNotEmpty;
+
               return GestureDetector(
-                onTap: () {
+                onTap: () => _showProgressDialog(char),
+                onLongPress: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => KanjiDetailScreen(
@@ -393,7 +401,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 },
                 child: SizedBox(
                   width: 36,
-                  height: 44,
+                  height: hasComposita ? 50 : 44,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -401,13 +409,26 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         char,
                         style: const TextStyle(fontSize: 20),
                       ),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: dotColor,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: dotColor,
+                            ),
+                          ),
+                          if (hasComposita) ...[
+                            const SizedBox(width: 2),
+                            _CompositaDot(
+                              character: char,
+                              eligibleWords: eligibleWords,
+                              reviewRepo: _reviewRepo,
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -417,6 +438,150 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _showProgressDialog(String char) async {
+    final eligibleWords = _wordsByCharacter?[char] ?? {};
+    final detail = await _reviewRepo.detailedProgressFor(
+      char,
+      eligibleWords: eligibleWords,
+    );
+    final info = widget.deps.kanjiInfo.lookup(char);
+    if (!mounted) return;
+    final l = AppLocalizations.of(context)!;
+    final meaning = info?.meanings.join(', ') ?? '';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Text(char, style: const TextStyle(fontSize: 36)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                meaning,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _progressRow(
+              l.progressDetailRecognition,
+              detail.recognitionStarted,
+              detail.recognitionReps,
+              KanjiProgressDetail.knownThreshold,
+              l,
+            ),
+            const SizedBox(height: 8),
+            _progressRow(
+              l.progressDetailDrawing,
+              detail.drawingStarted,
+              detail.drawingReps,
+              KanjiProgressDetail.knownThreshold,
+              l,
+            ),
+            if (detail.compositaTestable > 0) ...[
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 4),
+              _compositaProgressRow(
+                l.progressDetailComposita,
+                detail.compositaReadingTested,
+                detail.compositaWritingTested,
+                detail.compositaTestable,
+                l,
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => KanjiDetailScreen(
+                    character: char,
+                    deps: widget.deps,
+                  ),
+                ),
+              );
+            },
+            child: Text(l.progressDetailViewFull),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l.dialogCancel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _progressRow(
+    String label,
+    bool started,
+    int reps,
+    int threshold,
+    AppLocalizations l,
+  ) {
+    final Icon icon;
+    final String status;
+    if (!started) {
+      icon = Icon(Icons.circle_outlined, color: Colors.grey.shade400, size: 18);
+      status = l.progressDetailNotStarted;
+    } else if (reps >= threshold) {
+      icon = const Icon(Icons.check_circle, color: Colors.green, size: 18);
+      status = l.progressDetailStatus(reps, threshold);
+    } else {
+      icon = const Icon(Icons.timelapse, color: Colors.orange, size: 18);
+      status = l.progressDetailStatus(reps, threshold);
+    }
+    return Row(
+      children: [
+        icon,
+        const SizedBox(width: 8),
+        Expanded(child: Text(label)),
+        Text(status, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _compositaProgressRow(
+    String label,
+    int readingTested,
+    int writingTested,
+    int testable,
+    AppLocalizations l,
+  ) {
+    final allDone =
+        readingTested >= testable && writingTested >= testable;
+    final anyStarted = readingTested > 0 || writingTested > 0;
+    final Icon icon;
+    if (allDone) {
+      icon = const Icon(Icons.check_circle, color: Colors.green, size: 18);
+    } else if (anyStarted) {
+      icon = const Icon(Icons.timelapse, color: Colors.orange, size: 18);
+    } else {
+      icon = Icon(Icons.circle_outlined, color: Colors.grey.shade400, size: 18);
+    }
+    return Row(
+      children: [
+        icon,
+        const SizedBox(width: 8),
+        Expanded(child: Text(label)),
+        Text(
+          '${l.statisticsReadingTested}: $readingTested/$testable\n'
+          '${l.statisticsWritingTested}: $writingTested/$testable',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          textAlign: TextAlign.right,
+        ),
+      ],
     );
   }
 
@@ -495,4 +660,63 @@ class _PieChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PieChartPainter oldDelegate) =>
       oldDelegate.values != values || oldDelegate.colors != colors;
+}
+
+/// Async-loaded composita dot for the kanji grid. Queries composita progress
+/// for a single character and renders a colored dot: green if all eligible
+/// words tested in both directions, orange if at least one tested, grey
+/// otherwise.
+class _CompositaDot extends StatefulWidget {
+  final String character;
+  final Set<String> eligibleWords;
+  final ReviewRepository reviewRepo;
+
+  const _CompositaDot({
+    required this.character,
+    required this.eligibleWords,
+    required this.reviewRepo,
+  });
+
+  @override
+  State<_CompositaDot> createState() => _CompositaDotState();
+}
+
+class _CompositaDotState extends State<_CompositaDot> {
+  Color _color = Colors.grey;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadColor();
+  }
+
+  Future<void> _loadColor() async {
+    final coverage = await widget.reviewRepo.compositaProgressFor({
+      widget.character: widget.eligibleWords,
+    });
+    if (!mounted) return;
+    final Color color;
+    if (coverage.testedReading >= coverage.testable &&
+        coverage.testedWriting >= coverage.testable &&
+        coverage.testable > 0) {
+      color = Colors.green;
+    } else if (coverage.testedReading > 0 || coverage.testedWriting > 0) {
+      color = Colors.orange;
+    } else {
+      color = Colors.grey;
+    }
+    setState(() => _color = color);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _color,
+      ),
+    );
+  }
 }

@@ -9,7 +9,8 @@ state, `StudyScope`) or call repository methods directly and `setState`.
 
 ```
 lib/
-  main.dart                 – app entrypoint, license registry, startup screen
+  main.dart                 – app entrypoint, license registry, startup screen,
+                               theme presets + global ValueNotifier<Color>
   app_dependencies.dart     – the one DI container, owns every repository
   core/                     – recognition pipeline + database, no UI
     kanji_recognizer.dart
@@ -84,6 +85,16 @@ owns:
   `rtkIndex`, `kanjiLevelRank`, `composita`, `sentences`, `stories`,
   `strokePaths`, `wordIndex`).
 - `studyScope` — the one shared, observed piece of app state (see below).
+
+## Theme system
+
+Five preset color themes (Indigo, Teal, Sakura, Forest, Amber) are defined in
+`main.dart` as a `Map<String, Color> themePresets`. A global
+`ValueNotifier<Color> themeColorNotifier` drives `MaterialApp`'s
+`colorSchemeSeed` via a `ValueListenableBuilder`, so changing the notifier
+recolors the entire app instantly. The chosen theme key is persisted in
+`SharedPreferences` under `'app.color_theme'` and restored in `main()` before
+`runApp`. The picker UI lives on the Help & About screen (`help_screen.dart`).
 
 `AppDependencies.load()` parallel-loads every JSON-backed repository, then
 syncs two derived pieces of state into the database:
@@ -230,34 +241,35 @@ so C-only testing (no D coverage) still runs through the exact same
 ### `StudyScope` — what's in scope
 
 `features/review/study_scope.dart` defines which characters (and, for
-composita, which words) are currently being studied. Exactly one mode is
-active at a time:
+composita, which words) are currently being studied. The scope is a flat
+set of characters with two composita-related settings:
 
-- **`jlpt`** — one or more JLPT levels, plus an independent
-  `compositaCeiling` (the hardest JLPT level a composita *word* is allowed
-  to be, gating C/D separately from which kanji *levels* are selected — a
-  kanji's own level and a word containing it can differ). New-card pacing is
-  handled by a configurable "new kanji per day" cap (default 10, chosen in
-  `ReviewStartScreen` and persisted via `shared_preferences`) rather than
-  manual chunking.
-- **`custom`** — an explicit, hand-picked `Set<String>` of characters, each
-  with its own hand-picked set of composita words (`CustomComposita`) — no
-  ceiling concept, since the whole point is a curated list.
-- **`rtk`** — an RTK-ordinal cutoff. Kept in the data/schema layer but
-  deliberately **hidden from every current screen** (a product decision to
-  de-emphasize RTK, not a removal — the enum value, `RtkIndexRepository`,
-  and `StudyScope.matches`'s rtk branch are all still fully functional and
-  tested).
+- **`compositaCeiling`** — the vocabulary level limit. When adding kanji,
+  only compound words whose inferred JLPT level is at or easier than this
+  ceiling are auto-selected. A word's inferred level is the level of its
+  *hardest* constituent kanji (e.g. 胃腸 is inferred as N1 because 腸 is
+  N1, even though 胃 is N3). Words with an explicit JLPT tag use that
+  instead. Setting this to null ("Off") allows all levels.
+- **`maxCompositaPerKanji`** — how many words to auto-select per kanji
+  (2–5, default 4).
+
+Kanji are added via three paths (JLPT batch, RTK order, or drawing).
+On addition, `selectCompositaForIntroduction` auto-picks words: it first
+greedily covers distinct readings of the kanji (preferring the most
+frequent word for each reading), then fills remaining slots by frequency.
+The selected words are stored in `custom_composita`. Once stored, reviews
+use exactly those words — the ceiling is no longer consulted for that
+character. Users can always override the selection via the composita picker.
 
 `StudyScope` is persisted via `shared_preferences` (a handful of scalars, no
 drift table — `StudyScopeRepository`) and exposed as a `ValueNotifier<StudyScope>`,
 the one piece of state observed reactively across screens (kanji browser
-grid filtering, the review launcher, both edit screens).
+grid filtering, the review launcher, the learning hub).
 
 `sentence_selection.dart` sits between `StudyScope` and the review engine,
 translating "what's the scope" into "which composita/sentences are
-actually eligible right now": `compositaEnabled`, `jlptCeilingFor`,
-`compositaWithinCeiling`, `eligibleComposita`, `pickUntested`.
+actually eligible right now": `compositaEnabled`, `compositaWithinCeiling`,
+`eligibleComposita`, `pickUntested`.
 
 ### `ReviewFocus` — what's being quizzed this session
 

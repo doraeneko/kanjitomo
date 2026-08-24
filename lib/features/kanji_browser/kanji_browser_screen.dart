@@ -302,6 +302,7 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
                     char,
                     style: TextStyle(
                       fontSize: 22,
+                      fontFamily: 'NotoSansJP',
                       color: inPool ? Colors.indigo : null,
                       fontWeight: inPool ? FontWeight.bold : null,
                     ),

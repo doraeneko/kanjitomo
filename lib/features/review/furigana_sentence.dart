@@ -146,12 +146,12 @@ class _RubyUnit extends StatelessWidget {
         children: token.surface.split('').map((char) {
           return char == targetCharacter
               ? replacement!
-              : Text(char, style: TextStyle(fontSize: fontSize));
+              : Text(char, style: TextStyle(fontSize: fontSize, fontFamily: 'NotoSansJP', fontWeight: FontWeight.bold));
         }).toList(),
       );
     }
     return replacement ??
-        Text(token.surface, style: TextStyle(fontSize: fontSize));
+        Text(token.surface, style: TextStyle(fontSize: fontSize, fontFamily: 'NotoSansJP', fontWeight: FontWeight.bold));
   }
 
   /// The ruby text to show above this token. Any trailing okurigana
@@ -232,9 +232,10 @@ class _RubyUnit extends StatelessWidget {
   /// between adjacent furigana readings.
   Widget _buildSplitRow(List<_CharReading> segments) {
     final rubyHeight = furiganaFontSize * 1.4;
-    final baseStyle = TextStyle(fontSize: fontSize);
+    final baseStyle = TextStyle(fontSize: fontSize, fontFamily: 'NotoSansJP', fontWeight: FontWeight.bold);
     final furiStyle = TextStyle(
       fontSize: furiganaFontSize,
+      fontFamily: 'NotoSansJP',
       color: emphasize ? Colors.red : null,
       fontWeight: emphasize ? FontWeight.bold : null,
     );
@@ -327,7 +328,7 @@ class _RubyUnit extends StatelessWidget {
       base = Row(
         mainAxisSize: MainAxisSize.min,
         children: token.surface.split('').map((char) {
-          final w = Text(char, style: TextStyle(fontSize: fontSize));
+          final w = Text(char, style: TextStyle(fontSize: fontSize, fontFamily: 'NotoSansJP', fontWeight: FontWeight.bold));
           if (char == highlightCharacter) {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -467,6 +468,7 @@ class _RubyUnit extends StatelessWidget {
                   _displayReading,
                   style: TextStyle(
                     fontSize: furiganaFontSize,
+                    fontFamily: 'NotoSansJP',
                     color: emphasize ? Colors.red : null,
                     fontWeight: emphasize ? FontWeight.bold : null,
                   ),

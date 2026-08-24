@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/db/app_database.dart';
 import '../../core/db/tables.dart';
 import '../../data/composita_repository.dart';
+import '../../data/sentences_repository.dart';
 import 'sm2.dart';
 import 'study_scope.dart';
 
@@ -38,6 +39,51 @@ class CompositaCoverage {
     required this.testedReading,
     required this.testedWriting,
   });
+}
+
+/// Per-card-type progress detail for a single character, shown in the
+/// statistics screen's tap-to-inspect dialog. Reports the SM-2 repetitions
+/// count (consecutive correct answers) against the known threshold for each
+/// core direction (A: drawFromMeaning, B: kanjiRecognition).
+class KanjiProgressDetail {
+  /// B: kanjiRecognition — consecutive correct answers so far.
+  final int recognitionReps;
+
+  /// A: drawFromMeaning — consecutive correct answers so far.
+  final int drawingReps;
+
+  /// Whether the character has been reviewed at all for recognition.
+  final bool recognitionStarted;
+
+  /// Whether the character has been reviewed at all for drawing.
+  final bool drawingStarted;
+
+  /// The threshold to be considered "known" (same as overallProgress).
+  static const int knownThreshold = 2;
+
+  /// How many composita words are testable for this character (0 if none).
+  final int compositaTestable;
+
+  /// How many of those composita words have been tested at least once
+  /// in the reading direction.
+  final int compositaReadingTested;
+
+  /// How many of those composita words have been tested at least once
+  /// in the writing direction.
+  final int compositaWritingTested;
+
+  const KanjiProgressDetail({
+    required this.recognitionReps,
+    required this.drawingReps,
+    required this.recognitionStarted,
+    required this.drawingStarted,
+    this.compositaTestable = 0,
+    this.compositaReadingTested = 0,
+    this.compositaWritingTested = 0,
+  });
+
+  bool get recognitionKnown => recognitionReps >= knownThreshold;
+  bool get drawingKnown => drawingReps >= knownThreshold;
 }
 
 /// Status of one direction's cards for a character, collapsing that
@@ -714,11 +760,11 @@ class ReviewRepository {
         ))
         .get();
     // Group by character. "Known" = at least one card has been answered
-    // correctly knownThreshold times in a row (repetitions >= 4). A fail
+    // correctly knownThreshold times in a row (repetitions >= 2). A fail
     // (quality < 3) resets repetitions to 0 via SM-2, so the user must
-    // pass the card 4 consecutive times to earn "known". "Learning" =
+    // pass the card 2 consecutive times to earn "known". "Learning" =
     // reviewed but not yet at the threshold. "Not started" = never reviewed.
-    const knownThreshold = 3;
+    const knownThreshold = 2;
     final byChar = <String, List<ReviewCard>>{};
     for (final r in rows) {
       byChar.putIfAbsent(r.character, () => []).add(r);
@@ -740,6 +786,16 @@ class ReviewRepository {
       missed: missed,
       notStarted: characters.length - byChar.length,
     );
+  }
+
+  /// Deletes a single review card by its composite primary key.
+  Future<void> deleteCard(ReviewCard card) async {
+    await (db.delete(db.reviewCards)
+          ..where((t) =>
+              t.character.equals(card.character) &
+              t.cardType.equalsValue(card.cardType) &
+              t.compositaWord.equals(card.compositaWord)))
+        .go();
   }
 
   /// Wipes all review progress (every card's SM-2 state and the review
@@ -764,7 +820,7 @@ class ReviewRepository {
   /// (composita/sentence testing, "C+D") are tracked separately via
   /// [CompositaProgress] and never gate this.
   Future<Map<String, KanjiProgress>> overallProgress() async {
-    const knownThreshold = 3;
+    const knownThreshold = 2;
     final rows = await db.select(db.reviewCards).get();
     final reading = <String, CardProgress>{};
     final writing = <String, CardProgress>{};
@@ -790,6 +846,66 @@ class ReviewRepository {
           writing: writing[char] ?? CardProgress.none,
         ),
     };
+  }
+
+  /// Per-character detail for the statistics dialog: how many consecutive
+  /// correct answers the character has for each core direction (A/B), and
+  /// whether it's been started at all. Used by the tap-to-inspect dialog.
+  Future<KanjiProgressDetail> detailedProgressFor(
+    String character, {
+    Set<String> eligibleWords = const {},
+  }) async {
+    final rows = await (db.select(db.reviewCards)..where(
+          (t) => t.character.equals(character),
+        ))
+        .get();
+
+    int recognitionReps = 0;
+    bool recognitionStarted = false;
+    int drawingReps = 0;
+    bool drawingStarted = false;
+
+    for (final row in rows) {
+      if (row.cardType == CardType.kanjiRecognition) {
+        recognitionReps = row.repetitions;
+        recognitionStarted = row.lastReviewedAt != null;
+      } else if (row.cardType == CardType.drawFromMeaning) {
+        drawingReps = row.repetitions;
+        drawingStarted = row.lastReviewedAt != null;
+      }
+    }
+
+    int compositaTestable = eligibleWords.length;
+    int compositaReadingTested = 0;
+    int compositaWritingTested = 0;
+
+    if (eligibleWords.isNotEmpty) {
+      final chars = {character};
+      final testedReading = await testedCompositaWordsFor(
+        chars,
+        CompositaDirection.reading,
+      );
+      final testedWriting = await testedCompositaWordsFor(
+        chars,
+        CompositaDirection.writing,
+      );
+      final readingDone = testedReading[character] ?? const {};
+      final writingDone = testedWriting[character] ?? const {};
+      compositaReadingTested =
+          eligibleWords.where(readingDone.contains).length;
+      compositaWritingTested =
+          eligibleWords.where(writingDone.contains).length;
+    }
+
+    return KanjiProgressDetail(
+      recognitionReps: recognitionReps,
+      drawingReps: drawingReps,
+      recognitionStarted: recognitionStarted,
+      drawingStarted: drawingStarted,
+      compositaTestable: compositaTestable,
+      compositaReadingTested: compositaReadingTested,
+      compositaWritingTested: compositaWritingTested,
+    );
   }
 
   /// Records that [word]'s [direction] (as tested for [character]) has been
@@ -1278,6 +1394,130 @@ class ReviewRepository {
     await (db.delete(db.customComposita)
           ..where((t) => t.character.isIn(chars)))
         .go();
+  }
+
+  // ── User sentences (user-authored example sentences for composita) ────
+
+  /// Adds a user-authored example sentence for [word].
+  Future<int> addUserSentence(
+    String word,
+    String sentence,
+    String? translation,
+  ) async {
+    return db
+        .into(db.userSentences)
+        .insert(
+          UserSentencesCompanion.insert(
+            word: word,
+            sentence: sentence,
+            translation: Value(translation),
+          ),
+        );
+  }
+
+  /// Deletes a single user sentence by its autoIncrement id.
+  Future<void> removeUserSentence(int id) async {
+    await (db.delete(db.userSentences)..where((t) => t.id.equals(id)))
+        .go();
+  }
+
+  /// All user sentences for [word], converted to [ExampleSentence] objects
+  /// with source 'user'. The [reading] is attached to the target token so
+  /// FuriganaSentence can render furigana on the composita word.
+  Future<List<({int id, ExampleSentence sentence})>> userSentencesFor(
+    String word,
+    String reading,
+  ) async {
+    final rows = await (db.select(db.userSentences)
+          ..where((t) => t.word.equals(word)))
+        .get();
+    return rows
+        .map((r) => (
+              id: r.id,
+              sentence: _tokenizeUserSentence(
+                r.sentence,
+                word,
+                reading,
+                translation: r.translation,
+              ),
+            ))
+        .toList();
+  }
+
+  /// Batch-loads all user sentences grouped by word -- for the review
+  /// session's up-front load so _sentenceForWord can merge them with
+  /// bundled sentences without per-card DB round-trips.
+  Future<Map<String, List<ExampleSentence>>> allUserSentencesByWord() async {
+    final rows = await db.select(db.userSentences).get();
+    final result = <String, List<ExampleSentence>>{};
+    for (final row in rows) {
+      // Reading is unknown here — will be filled in by _sentenceForWord
+      // which knows the composita's reading. Store with empty reading for
+      // now; the caller replaces the target token's reading.
+      result
+          .putIfAbsent(row.word, () => [])
+          .add(_tokenizeUserSentence(
+            row.sentence,
+            row.word,
+            '', // placeholder — caller fills in the real reading
+            translation: row.translation,
+          ));
+    }
+    return result;
+  }
+
+  /// Simple string-based tokenization: find [targetWord] in [sentence],
+  /// split into before/target/after tokens. No morphological analyzer
+  /// needed — sufficient for user-added content.
+  static ExampleSentence _tokenizeUserSentence(
+    String sentence,
+    String targetWord,
+    String reading, {
+    String? translation,
+  }) {
+    final idx = sentence.indexOf(targetWord);
+    final tokens = <SentenceToken>[];
+    if (idx < 0) {
+      // Word not found (shouldn't happen with validation, but defensive).
+      tokens.add(SentenceToken(
+        surface: sentence,
+        reading: '',
+        isTarget: false,
+      ));
+      tokens.add(SentenceToken(
+        surface: targetWord,
+        reading: reading,
+        isTarget: true,
+      ));
+    } else {
+      if (idx > 0) {
+        tokens.add(SentenceToken(
+          surface: sentence.substring(0, idx),
+          reading: '',
+          isTarget: false,
+        ));
+      }
+      tokens.add(SentenceToken(
+        surface: targetWord,
+        reading: reading,
+        isTarget: true,
+      ));
+      final afterIdx = idx + targetWord.length;
+      if (afterIdx < sentence.length) {
+        tokens.add(SentenceToken(
+          surface: sentence.substring(afterIdx),
+          reading: '',
+          isTarget: false,
+        ));
+      }
+    }
+    return ExampleSentence(
+      sentence: sentence,
+      tokens: tokens,
+      jlptLevel: 5,
+      source: 'user',
+      translation: translation,
+    );
   }
 
   /// Creates A+B+C+D cards immediately for [chars] with dueDate=now.

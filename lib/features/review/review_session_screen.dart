@@ -109,6 +109,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   Map<String, Set<String>> _testedWords = {};
   Map<String, Set<String>> _customComposita = {};
   Map<String, List<Composita>> _userComposita = {};
+  Map<String, List<ExampleSentence>> _userSentences = {};
   Set<String> _seenCharacters = {};
   _GradeSnapshot? _lastGradeSnapshot;
   int _remainingBeyondCap = 0;
@@ -132,15 +133,71 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     final scope = widget.deps.studyScope.scope.value;
     _customComposita = await _reviewRepo.customCompositaForCharacters(scope.characters);
     _userComposita = await _reviewRepo.allUserCompositaByChar();
+    _userSentences = await _reviewRepo.allUserSentencesByWord();
+
+    // One-time cleanup: remove composita whose per-character reading doesn't
+    // match any known on/kun reading (jukujikun). These may have been
+    // auto-selected before the jukujikun filter was added.
+    for (final char in _customComposita.keys.toList()) {
+      final kanjiInfo = widget.deps.kanjiInfo.lookup(char);
+      if (kanjiInfo == null) continue;
+      final knownReadings = <String>{};
+      for (final on in kanjiInfo.on) {
+        knownReadings.add(katakanaToHiragana(on));
+      }
+      for (final kun in kanjiInfo.kun) {
+        final dot = kun.indexOf('.');
+        knownReadings.add(dot >= 0 ? kun.substring(0, dot) : kun);
+      }
+      knownReadings.addAll(
+        knownReadings.map((r) => r.endsWith('-') ? r.substring(0, r.length - 1) : r).toList(),
+      );
+      if (knownReadings.isEmpty) continue;
+
+      final bundled = widget.deps.composita.lookup(char);
+      final merged = mergeComposita(bundled, _userComposita[char]);
+      final compositaByWord = {for (final c in merged) c.word: c};
+
+      final selected = _customComposita[char];
+      if (selected == null) continue;
+      for (final word in selected.toList()) {
+        final composita = compositaByWord[word];
+        if (composita == null) continue;
+        final reading = kanjiReadingIn(char, composita);
+        if (!knownReadings.contains(reading)) {
+          await _reviewRepo.removeCustomComposita(char, word);
+          await _reviewRepo.deleteCompositaCardsForWord(char, word);
+          selected.remove(word);
+        }
+      }
+    }
 
     // Two sources merged into one queue:
     // 1. Previously-reviewed cards that are due again.
     // 2. Never-reviewed cards (introduced when kanji were added to pool).
-    final reviews = await _reviewRepo.dueCards(
+    final allReviews = await _reviewRepo.dueCards(
       scope,
       excludeNeverReviewed: true,
     );
-    final neverReviewed = await _reviewRepo.cardsNeverReviewed(scope);
+    final allNeverReviewed = await _reviewRepo.cardsNeverReviewed(scope);
+    // Filter out composita cards whose word is not in custom_composita.
+    // Cards can linger in review_cards if they were created before the
+    // user changed their composita selection.
+    bool isSelectedComposita(ReviewCard c) {
+      if (c.compositaWord.isEmpty) return true; // A/B cards, always keep
+      final selected = _customComposita[c.character];
+      return selected != null && selected.contains(c.compositaWord);
+    }
+    final reviews = allReviews.where(isSelectedComposita).toList();
+    final neverReviewed = allNeverReviewed.where(isSelectedComposita).toList();
+    // Delete orphaned composita cards from the DB so they don't accumulate.
+    final orphaned = [
+      ...allReviews.where((c) => !isSelectedComposita(c)),
+      ...allNeverReviewed.where((c) => !isSelectedComposita(c)),
+    ];
+    for (final card in orphaned) {
+      await _reviewRepo.deleteCard(card);
+    }
     // Sort never-reviewed cards so basic kanji cards (draw from meaning,
     // recognition) come before composita cards (reading cloze, draw in
     // sentence). This way you learn the kanji before being tested on its
@@ -148,8 +205,8 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     const _cardTypeOrder = {
       CardType.drawFromMeaning: 0,
       CardType.kanjiRecognition: 1,
-      CardType.readingCloze: 2,
-      CardType.drawInSentence: 3,
+      CardType.readingCloze: 2, // C and D share the same priority —
+      CardType.drawInSentence: 2, // both are composita cards, interleaved.
     };
     neverReviewed.sort((a, b) =>
         (_cardTypeOrder[a.cardType] ?? 9)
@@ -319,15 +376,38 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     // Filter sentences whose target token reading matches the composita's
     // reading — prevents mismatches like 入る(はいる) in a 気に入る(きにいる)
     // sentence.
-    final realSentences = widget.deps.sentences.lookup(composita.word);
     final expectedReading = composita.reading;
+
+    // User sentences first — patch in the real reading (stored with empty
+    // placeholder at batch-load time since the composita wasn't known yet).
+    final userForWord = (_userSentences[composita.word] ?? []).map((s) {
+      return ExampleSentence(
+        sentence: s.sentence,
+        tokens: s.tokens.map((t) => t.isTarget
+            ? SentenceToken(
+                surface: t.surface,
+                reading: expectedReading,
+                isTarget: true,
+              )
+            : t).toList(),
+        jlptLevel: s.jlptLevel,
+        source: s.source,
+        translation: s.translation,
+      );
+    }).toList();
+
+    final realSentences = widget.deps.sentences.lookup(composita.word);
     final matching = realSentences.where((s) {
       final target = s.tokens.where((t) => t.isTarget).firstOrNull;
       return target == null || target.reading == expectedReading;
     }).toList();
+
+    // Merge: user sentences first, then reading-matched bundled sentences.
+    final allSentences = [...userForWord, ...matching];
+
     // Don't fall back to mismatched sentences — use synthetic instead.
-    final sentence = matching.isNotEmpty
-        ? matching[repetitions % matching.length]
+    final sentence = allSentences.isNotEmpty
+        ? allSentences[repetitions % allSentences.length]
         : syntheticSentenceFor(composita);
     return _ExampleSentenceRef(composita: composita, sentence: sentence);
   }
@@ -606,7 +686,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
             if (_lastGradeSnapshot != null &&
                 _feedback == null)
               IconButton(
-                icon: const Icon(Icons.undo),
+                icon: const Icon(Icons.replay),
                 tooltip: l.reviewUndoTooltip,
                 onPressed: _undoLastGrade,
               ),
@@ -652,6 +732,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     final scope = widget.deps.studyScope.scope.value;
     _customComposita = await _reviewRepo.customCompositaForCharacters(scope.characters);
     _userComposita = await _reviewRepo.allUserCompositaByChar();
+    _userSentences = await _reviewRepo.allUserSentencesByWord();
 
     final reviews = await _reviewRepo.dueCards(
       scope,
@@ -779,6 +860,73 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     }
   }
 
+  Future<void> _showAddSentenceDialog(String word) async {
+    final l = AppLocalizations.of(context)!;
+    final sentenceController = TextEditingController();
+    final translationController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.addSentenceButton),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: sentenceController,
+                decoration: InputDecoration(
+                  hintText: l.addSentenceHint(word),
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v == null || !v.contains(word)) {
+                    return l.addSentenceValidation(word);
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: translationController,
+                decoration: InputDecoration(
+                  hintText: l.addSentenceTranslationHint,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.dialogCancel),
+          ),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(ctx).pop(true);
+              }
+            },
+            child: Text(l.addSentenceButton),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true && mounted) {
+      final sentence = sentenceController.text;
+      final translation = translationController.text.isEmpty
+          ? null
+          : translationController.text;
+      await _reviewRepo.addUserSentence(word, sentence, translation);
+      // Reload user sentences into memory.
+      _userSentences = await _reviewRepo.allUserSentencesByWord();
+    }
+  }
+
   Widget _buildFeedback(_DrawFeedback feedback) {
     final l = AppLocalizations.of(context)!;
     // No "Not quite"/miss text on a wrong answer -- the icon (red X) plus
@@ -793,10 +941,27 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       ),
       if (!feedback.correct) ...[
         const SizedBox(height: 16),
-        Text(l.reviewAnswer(feedback.target), style: const TextStyle(fontSize: 40)),
+        Text(l.reviewAnswer(feedback.target), style: const TextStyle(fontSize: 40, fontFamily: 'NotoSansJP')),
         if (feedback.userPick != null) ...[
           const SizedBox(height: 8),
-          Text(l.reviewYouPicked(feedback.userPick!)),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.ideographic,
+            children: [
+              Text(l.reviewYouPicked(''), style: const TextStyle(fontSize: 18)),
+              Text(
+                feedback.userPick!,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontFamily: 'NotoSansJP',
+                  decoration: TextDecoration.lineThrough,
+                  decorationColor: Colors.red,
+                  decorationThickness: 2,
+                ),
+              ),
+            ],
+          ),
         ],
       ],
     ];
@@ -870,6 +1035,14 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
                 highlightChar: feedback.target,
               ),
             ),
+            const SizedBox(height: 4),
+            Center(
+              child: TextButton.icon(
+                onPressed: () => _showAddSentenceDialog(composita.word),
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(AppLocalizations.of(context)!.addSentenceButton),
+              ),
+            ),
           ],
         ],
         const SizedBox(height: 8),
@@ -938,7 +1111,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     String reading, {
     String? highlightChar,
   }) {
-    const wordStyle = TextStyle(fontSize: 28, color: Colors.black87);
+    const wordStyle = TextStyle(fontSize: 28, color: Colors.black87, fontFamily: 'NotoSansJP');
     const detailStyle = TextStyle(fontSize: 14, color: Colors.black87);
     // Build the composita word as individual characters, with kanji tappable.
     // The tested character (highlightChar) gets a red underline.
@@ -1093,7 +1266,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
                 Center(
                   child: Text(
                     card.character,
-                    style: const TextStyle(fontSize: 72),
+                    style: const TextStyle(fontSize: 72, fontFamily: 'NotoSansJP'),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -1307,6 +1480,14 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
                     targetReading,
                     highlightChar: card.character,
                   ),
+                  const SizedBox(height: 4),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => _showAddSentenceDialog(ref.composita.word),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: Text(l.addSentenceButton),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   _compositaKanjiRow(ref.composita),
                 ],
@@ -1373,6 +1554,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
                     text: char,
                     style: const TextStyle(
                       fontSize: 18,
+                      fontFamily: 'NotoSansJP',
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,
                       decorationColor: Colors.grey,

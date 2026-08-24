@@ -1,10 +1,27 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_dependencies.dart';
 import 'features/home_screen.dart';
 import 'l10n/app_localizations.dart';
+
+// ── Color theme presets ─────────────────────────────────────────────────
+const String kThemePrefKey = 'app.color_theme';
+const String kDefaultTheme = 'indigo';
+
+const Map<String, Color> themePresets = {
+  'indigo': Colors.indigo,
+  'teal': Colors.teal,
+  'sakura': Color(0xFFD81B60),
+  'forest': Color(0xFF2E7D32),
+  'amber': Colors.amber,
+};
+
+/// Global notifier so both MaterialApp and the settings UI can react.
+final ValueNotifier<Color> themeColorNotifier =
+    ValueNotifier(themePresets[kDefaultTheme]!);
 
 Future<void> main() async {
   // Portrait only -- every review/edit screen's layout (see
@@ -20,6 +37,11 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  // Restore saved theme before first frame.
+  final prefs = await SharedPreferences.getInstance();
+  final savedTheme = prefs.getString(kThemePrefKey) ?? kDefaultTheme;
+  themeColorNotifier.value =
+      themePresets[savedTheme] ?? themePresets[kDefaultTheme]!;
   _registerThirdPartyLicenses();
   runApp(const KanjitomoApp());
 }
@@ -79,12 +101,24 @@ class KanjitomoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'kanjitomo',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: _AppStartup(deps: deps ?? AppDependencies()),
+    return ValueListenableBuilder<Color>(
+      valueListenable: themeColorNotifier,
+      builder: (context, seedColor, _) {
+        return MaterialApp(
+          title: 'kanjitomo',
+          theme: ThemeData(
+            colorSchemeSeed: seedColor,
+            useMaterial3: true,
+          ),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          // No app-wide locale override — setting locale: Locale('ja') on
+          // DefaultTextStyle causes Samsung devices to use their CJK font
+          // (OneUISansKR) for ALL text including English UI. Instead,
+          // NotoSansJP is applied directly to Japanese text widgets.
+          home: _AppStartup(deps: deps ?? AppDependencies()),
+        );
+      },
     );
   }
 }

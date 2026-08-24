@@ -20,6 +20,9 @@ class Composita {
   // distinct rather than merging into one field.
   final int? inferredJlptLevel;
   final int frequencyRank; // 1=most frequent .. 4=untagged/rare
+  /// Fine-grained frequency rank from JMdict's nfXX tags (1-48, each bucket
+  /// = 500 words). Null when no nfXX tag exists. Lower = more frequent.
+  final int? nfRank;
   /// Pre-computed per-character reading split (parallel to word's characters).
   /// Null when the build script couldn't split this word.
   final List<String>? splits;
@@ -31,6 +34,7 @@ class Composita {
     required this.jlptLevel,
     required this.inferredJlptLevel,
     required this.frequencyRank,
+    this.nfRank,
     this.splits,
   });
 
@@ -48,6 +52,7 @@ class Composita {
       jlptLevel: json['jlptLevel'] as int?,
       inferredJlptLevel: json['inferredJlptLevel'] as int?,
       frequencyRank: json['frequencyRank'] as int,
+      nfRank: json['nfRank'] as int?,
       splits: (json['splits'] as List?)?.cast<String>(),
     );
   }
@@ -93,6 +98,12 @@ List<Composita> rankComposita(List<Composita> all) {
     ..sort((a, b) {
       final freq = a.frequencyRank.compareTo(b.frequencyRank);
       if (freq != 0) return freq;
+      // Within the same coarse tier, use the fine-grained nfXX rank
+      // (1-48, lower = more frequent). Words without nfRank sort last.
+      final aNf = a.nfRank ?? 99;
+      final bNf = b.nfRank ?? 99;
+      final nf = aNf.compareTo(bNf);
+      if (nf != 0) return nf;
       final aLevel = a.effectiveJlptLevel ?? 0;
       final bLevel = b.effectiveJlptLevel ?? 0;
       return bLevel.compareTo(aLevel); // easier (higher N) first

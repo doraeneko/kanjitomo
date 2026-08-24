@@ -47,7 +47,7 @@ void main() {
     expect(find.text('Reading (composita/sentence)'), findsOneWidget);
     expect(find.text('Draw in sentence (composita/sentence)'), findsOneWidget);
     // 一's readingCloze row is "learning" (repetitions=1 after a single
-    // q=4 grade, below the knownThreshold of 4 consecutive correct).
+    // q=4 grade, below the knownThreshold of 2 consecutive correct).
     expect(find.textContaining('Learning: 1'), findsAtLeastNWidgets(1));
 
     // The composita/sentence (C+D) row shows up separately, with nothing

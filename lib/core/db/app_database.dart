@@ -14,6 +14,7 @@ part 'app_database.g.dart';
     CompositaProgress,
     CustomComposita,
     UserComposita,
+    UserSentences,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -24,7 +25,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -62,6 +63,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 8) {
         await _migrateToPerCompositaCards(m);
+      }
+      if (from < 9) {
+        await m.createTable(userSentences);
       }
     },
   );

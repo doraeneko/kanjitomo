@@ -12,7 +12,7 @@ import '../learning/composita_picker.dart';
 import '../review/furigana_sentence.dart';
 import '../review/review_repository.dart';
 import '../review/sentence_selection.dart'
-    show isKanji, compositaWithinCeiling, selectCompositaForIntroduction;
+    show isKanji, compositaWithinCeiling, mergeComposita, selectCompositaForIntroduction;
 import '../review/study_scope.dart';
 import '../stroke_order/stroke_order_view.dart';
 import '../../widgets/tts_button.dart';
@@ -58,6 +58,9 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
   Timer? _keywordDebounce;
   Timer? _storyDebounce;
   Set<String>? _selectedComposita;
+  List<Composita> _userComposita = [];
+  /// User-added sentences grouped by word, with their DB ids for deletion.
+  Map<String, List<({int id, ExampleSentence sentence})>> _userSentencesByWord = {};
 
   static const _autosaveDelay = Duration(milliseconds: 500);
 
@@ -95,7 +98,121 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
       _reviewRepo.customCompositaFor(widget.character).then((selected) {
         if (mounted) setState(() => _selectedComposita = selected);
       });
+      _reviewRepo.userCompositaFor(widget.character).then((user) {
+        if (mounted) setState(() => _userComposita = user);
+      });
+      _loadUserSentences();
     }
+  }
+
+  Future<void> _loadUserSentences() async {
+    // Load user sentences for all composita words of this character.
+    final bundled = widget.deps.composita.lookup(widget.character);
+    final user = await _reviewRepo.userCompositaFor(widget.character);
+    final merged = mergeComposita(bundled, user);
+    final result = <String, List<({int id, ExampleSentence sentence})>>{};
+    for (final c in merged) {
+      final sentences = await _reviewRepo.userSentencesFor(c.word, c.reading);
+      if (sentences.isNotEmpty) {
+        result[c.word] = sentences;
+      }
+    }
+    if (mounted) setState(() => _userSentencesByWord = result);
+  }
+
+  Future<void> _showAddSentenceDialog(String word) async {
+    final l = AppLocalizations.of(context)!;
+    final sentenceController = TextEditingController();
+    final translationController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.addSentenceButton),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: sentenceController,
+                decoration: InputDecoration(
+                  hintText: l.addSentenceHint(word),
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (v) {
+                  if (v == null || !v.contains(word)) {
+                    return l.addSentenceValidation(word);
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: translationController,
+                decoration: InputDecoration(
+                  hintText: l.addSentenceTranslationHint,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.dialogCancel),
+          ),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(ctx).pop(true);
+              }
+            },
+            child: Text(l.addSentenceButton),
+          ),
+        ],
+      ),
+    );
+
+    if (saved == true && mounted) {
+      final sentence = sentenceController.text;
+      final translation = translationController.text.isEmpty
+          ? null
+          : translationController.text;
+      await _reviewRepo.addUserSentence(word, sentence, translation);
+      await _loadUserSentences();
+    }
+  }
+
+  void _showWordPickerForSentence(List<Composita> composita) {
+    if (composita.length == 1) {
+      _showAddSentenceDialog(composita.first.word);
+      return;
+    }
+    // Multiple composita — let the user pick which word to add a sentence for.
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final c in composita)
+                ListTile(
+                  title: Text('${c.word} (${c.reading})'),
+                  subtitle: Text(c.meaning, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  onTap: () {
+                    Navigator.of(ctx).pop();
+                    _showAddSentenceDialog(c.word);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _onKeywordChanged(String text) {
@@ -132,32 +249,40 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
     super.dispose();
   }
 
-  // The bundled composita.json is capped PER JLPT level (not one flat
-  // per-kanji cap) so the review engine's JLPT-ceiling filtering has a
-  // genuinely level-balanced set to work with -- a common kanji can now
-  // have well over 100 entries there. This lookup screen re-ranks (see
-  // rankComposita) for display only and caps to [_maxDisplayedComposita]
-  // (the review engine still consumes the full, level-balanced list from
-  // CompositaRepository directly).
-  static const _maxDisplayedComposita = 10;
-
   // Per displayed composita word, not per kanji overall -- SentencesRepository
   // already caps each word's own list at ~5, curated/shortest first, so this
   // just trims further to keep the (last, most space-hungry) section from
   // dwarfing everything above it.
   static const _maxSentencesPerComposita = 2;
 
-  List<Composita> _selectComposita(List<Composita> all) =>
-      rankComposita(all).take(_maxDisplayedComposita).toList();
+  /// Returns all composita for this kanji: user-added first, then bundled
+  /// ranked by frequency. No display cap — the user asked to see all.
+  List<Composita> _selectComposita(List<Composita> all) {
+    final userWords = _userComposita.map((c) => c.word).toSet();
+    final user = all.where((c) => userWords.contains(c.word)).toList();
+    final bundled = all.where((c) => !userWords.contains(c.word)).toList();
+    final ranked = rankComposita(bundled);
+    final seen = <String>{};
+    final result = <Composita>[];
+    for (final c in [...user, ...ranked]) {
+      if (seen.add(c.word)) result.add(c);
+    }
+    return result;
+  }
 
-  List<(Composita, ExampleSentence)> _exampleSentencesFor(
+  List<(Composita, ExampleSentence, int?)> _exampleSentencesFor(
     List<Composita> composita,
   ) {
-    final entries = <(Composita, ExampleSentence)>[];
+    final entries = <(Composita, ExampleSentence, int?)>[];
     for (final c in composita) {
+      // User sentences first, with their DB ids for deletion.
+      final userSentences = _userSentencesByWord[c.word] ?? [];
+      for (final us in userSentences) {
+        entries.add((c, us.sentence, us.id));
+      }
       final sentences = widget.deps.sentences.lookup(c.word);
       for (final s in sentences.take(_maxSentencesPerComposita)) {
-        entries.add((c, s));
+        entries.add((c, s, null));
       }
     }
     return entries;
@@ -171,9 +296,12 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
     final strokes = widget.deps.strokePaths.lookup(widget.character);
     final composita = isKana
         ? const <Composita>[]
-        : _selectComposita(widget.deps.composita.lookup(widget.character));
+        : _selectComposita(mergeComposita(
+            widget.deps.composita.lookup(widget.character),
+            _userComposita,
+          ));
     final exampleSentences = isKana
-        ? const <(Composita, ExampleSentence)>[]
+        ? const <(Composita, ExampleSentence, int?)>[]
         : _exampleSentencesFor(composita);
 
     final column = Column(
@@ -182,7 +310,7 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
         children: [
           Row(
             children: [
-              Text(widget.character, style: const TextStyle(fontSize: 56)),
+              Text(widget.character, style: const TextStyle(fontSize: 56, fontFamily: 'NotoSansJP')),
               const SizedBox(width: 16),
               IconButton(
                 icon: const Icon(Icons.copy),
@@ -292,8 +420,29 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
                 composita: exampleSentences[i].$1,
                 sentence: exampleSentences[i].$2,
                 kanjiLookup: widget.deps.kanjiInfo.lookup,
+                userSentenceId: exampleSentences[i].$3,
+                onDelete: exampleSentences[i].$3 != null
+                    ? () async {
+                        await _reviewRepo.removeUserSentence(
+                            exampleSentences[i].$3!);
+                        await _loadUserSentences();
+                      }
+                    : null,
               ),
             ],
+          ],
+          if (composita.isNotEmpty && !widget.compact) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  // Show a picker dialog for which composita word to add a sentence for.
+                  _showWordPickerForSentence(composita);
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(l.addSentenceButton),
+              ),
+            ),
           ],
         ],
       );
@@ -496,6 +645,7 @@ class _PoolActionButtonState extends State<_PoolActionButton> {
     }).toList();
     final selected = selectCompositaForIntroduction(
       char, eligible, scope.maxCompositaPerKanji,
+      kanjiInfo: widget.deps.kanjiInfo.lookup(char),
     );
     final seen = <String>{};
     final words = [
@@ -568,26 +718,51 @@ class _ExampleSentenceBlock extends StatelessWidget {
   final Composita composita;
   final ExampleSentence sentence;
   final KanjiInfo? Function(String char)? kanjiLookup;
+  final int? userSentenceId;
+  final VoidCallback? onDelete;
 
   const _ExampleSentenceBlock({
     required this.composita,
     required this.sentence,
     this.kanjiLookup,
+    this.userSentenceId,
+    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final isUser = sentence.source == 'user';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            composita.word,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
+          Row(
+            children: [
+              Text(
+                composita.word,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+              if (isUser) ...[
+                const SizedBox(width: 6),
+                Text(
+                  l.userSentenceSource,
+                  style: TextStyle(fontSize: 11, color: Colors.blue.shade400),
+                ),
+              ],
+              const Spacer(),
+              if (isUser && onDelete != null)
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: onDelete,
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           Row(
@@ -607,7 +782,7 @@ class _ExampleSentenceBlock extends StatelessWidget {
               ),
             ],
           ),
-          if (sentence.source != 'synthetic')
+          if (!isUser && sentence.source != 'synthetic')
             Align(
               alignment: Alignment.centerRight,
               child: Padding(

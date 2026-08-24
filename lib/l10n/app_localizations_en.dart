@@ -222,7 +222,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compositaPickerSearchHint => 'Search JMdict for a word...';
 
   @override
-  String get compositaPickerDrawButton => 'Draw composita';
+  String get compositaPickerDrawButton => 'Additional composita';
 
   @override
   String compositaPickerDrawTitle(String char) {
@@ -855,7 +855,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpStatistics =>
-      'Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 3 times in a row\n• Learning (orange): reviewed but not yet at 3 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 3 consecutive correct answers again.\n\nKanji grid: each kanji shows a colored dot.\n• Green: both reading and writing learnt\n• Orange: at least one direction started\n• Gray: not yet reviewed\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.';
+      'Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 2 times in a row\n• Learning (orange): reviewed but not yet at 2 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 2 consecutive correct answers again.\n\nKanji grid: each kanji shows colored dots.\n• First dot — core progress: green (both reading and writing learnt), orange (at least one direction started), gray (not yet reviewed)\n• Second dot — composita progress (only shown when the character has testable composita words): green (all words tested in both directions), orange (at least one tested), gray (none tested)\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.';
 
   @override
   String get helpLearning =>
@@ -960,7 +960,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addRemoveCompositaCeilingHelp =>
-      'Only use compound words (composita) up to this JLPT level for review sentences. Lower levels use simpler vocabulary. \"Off\" allows all levels.';
+      'Limits which compound words are auto-selected when adding kanji. A word\'s level is determined by its hardest kanji (e.g. 胃腸 is N1 because 腸 is N1, even though 胃 is N3). Set to N2 and 胃腸 won\'t be auto-selected, but 胃袋 (N2) will. You can always manually add any word via the composita picker. \"Off\" allows all levels.';
 
   @override
   String get addRemoveCeilingOff => 'Off';
@@ -1006,6 +1006,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String addRemoveConfirmClearContent(int count) {
     return 'Remove all $count kanji and delete all review progress? This cannot be undone.';
   }
+
+  @override
+  String get addRemoveClearSecondConfirm =>
+      'All review progress will be permanently lost. Your keywords and stories are kept.';
 
   @override
   String get addRemoveConfirmRemoveTitle => 'Remove kanji?';
@@ -1063,4 +1067,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String reviewContinueCards(int count) {
     return 'Continue with $count more';
   }
+
+  @override
+  String get progressDetailRecognition => 'Recognition';
+
+  @override
+  String get progressDetailDrawing => 'Drawing';
+
+  @override
+  String progressDetailStatus(int reps, int threshold) {
+    return '$reps/$threshold';
+  }
+
+  @override
+  String get progressDetailNotStarted => 'Not started';
+
+  @override
+  String get progressDetailViewFull => 'View detail';
+
+  @override
+  String get progressDetailComposita => 'Composita';
+
+  @override
+  String get addSentenceButton => 'Add sentence';
+
+  @override
+  String addSentenceHint(String word) {
+    return 'Type a Japanese sentence containing $word';
+  }
+
+  @override
+  String get addSentenceTranslationHint => 'Translation (optional)';
+
+  @override
+  String addSentenceValidation(String word) {
+    return 'Sentence must contain $word';
+  }
+
+  @override
+  String get userSentenceSource => 'User';
+
+  @override
+  String get settingsTheme => 'Theme';
+
+  @override
+  String get themeIndigo => 'Indigo';
+
+  @override
+  String get themeTeal => 'Teal';
+
+  @override
+  String get themeSakura => 'Sakura';
+
+  @override
+  String get themeForest => 'Forest';
+
+  @override
+  String get themeAmber => 'Amber';
 }

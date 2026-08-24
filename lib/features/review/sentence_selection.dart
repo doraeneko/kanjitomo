@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:characters/characters.dart';
 
 import '../../data/composita_repository.dart';
+import '../../data/kanji_info_repository.dart';
 import '../../data/sentences_repository.dart';
+import 'reading_splitter.dart' show katakanaToHiragana;
 import 'study_scope.dart';
 
 final _rng = Random();
@@ -115,9 +117,18 @@ List<Composita> mergeComposita(
 String kanjiReadingIn(String char, Composita composita) {
   final word = composita.word;
   final reading = composita.reading;
-
-  // Find position of the target character among kanji-only characters.
   final wordChars = word.characters.toList();
+
+  // Use pre-computed splits when available — they're accurate per-character
+  // readings from the build script, unlike the naive even-split fallback.
+  final splits = composita.splits;
+  if (splits != null && splits.length == wordChars.length) {
+    for (var i = 0; i < wordChars.length; i++) {
+      if (wordChars[i] == char) return splits[i];
+    }
+  }
+
+  // Fallback: find position of the target character among kanji-only characters.
   final kanjiPositions = <int>[];
   int? targetKanjiIndex;
   for (var i = 0; i < wordChars.length; i++) {
@@ -173,15 +184,20 @@ String kanjiReadingIn(String char, Composita composita) {
 ///
 /// 1. **First pass (greedy reading coverage):** Walk the list in frequency
 ///    order. For each word, extract the approximate reading of [char] within
-///    the word. If that reading hasn't been seen yet, pick it.
+///    the word. If that reading hasn't been seen yet **and** it matches a
+///    known on/kun reading of the kanji, pick it. Jukujikun words (e.g.
+///    河童 かっぱ) where the per-character split doesn't correspond to any
+///    real reading are skipped in this pass — they can still be selected in
+///    the frequency-fill pass.
 /// 2. **Second pass (fill remaining slots):** Fill up to [limit] with the
 ///    next most frequent words not yet picked.
 /// 3. Return the selected composita in their original frequency order.
 List<Composita> selectCompositaForIntroduction(
   String char,
   List<Composita> eligible,
-  int limit,
-) {
+  int limit, {
+  KanjiInfo? kanjiInfo,
+}) {
   // Deduplicate by word first — the DB key is (character, word), so two
   // entries with the same word but different readings (e.g. 旧 read as
   // きゅう vs もと) would collapse into one row anyway. Keep the first
@@ -193,17 +209,56 @@ List<Composita> selectCompositaForIntroduction(
   }
   if (deduped.length <= limit) return deduped;
 
+  // Build set of known readings in hiragana (stripping okurigana markers)
+  // so the first pass can skip jukujikun words whose per-character split
+  // doesn't match any real reading.
+  final knownReadings = <String>{};
+  if (kanjiInfo != null) {
+    for (final on in kanjiInfo.on) {
+      knownReadings.add(katakanaToHiragana(on));
+    }
+    for (final kun in kanjiInfo.kun) {
+      // Strip okurigana after "." (e.g. "まな.ぶ" → "まな")
+      final dot = kun.indexOf('.');
+      knownReadings.add(dot >= 0 ? kun.substring(0, dot) : kun);
+    }
+    // Also strip trailing "-" bound-form marker (e.g. "かわ-" → "かわ")
+    knownReadings.addAll(
+      knownReadings.map((r) => r.endsWith('-') ? r.substring(0, r.length - 1) : r).toList(),
+    );
+  }
+
+  // Count how many eligible words use each reading. Readings that appear
+  // in only one word are likely rare/obscure — not worth chasing in the
+  // greedy diversity pass (they can still be selected in the frequency
+  // fill pass if they rank high enough).
+  final readingCounts = <String, int>{};
+  for (final c in deduped) {
+    final r = kanjiReadingIn(char, c);
+    if (knownReadings.isNotEmpty && !knownReadings.contains(r)) continue;
+    readingCounts[r] = (readingCounts[r] ?? 0) + 1;
+  }
+
   final picked = <int>{};
   final seenReadings = <String>{};
 
-  // First pass: greedily cover distinct readings.
+  // First pass: greedily cover distinct readings, skipping jukujikun
+  // and rare readings (those used by only a single eligible word).
   for (var i = 0; i < deduped.length && picked.length < limit; i++) {
     final reading = kanjiReadingIn(char, deduped[i]);
+    if (knownReadings.isNotEmpty && !knownReadings.contains(reading)) continue;
+    if ((readingCounts[reading] ?? 0) < 2) continue;
     if (seenReadings.add(reading)) picked.add(i);
   }
 
-  // Second pass: fill remaining slots with next most frequent.
+  // Second pass: fill remaining slots with next most frequent, still
+  // skipping jukujikun words whose per-character reading doesn't match
+  // any known on/kun reading.
   for (var i = 0; i < deduped.length && picked.length < limit; i++) {
+    if (knownReadings.isNotEmpty) {
+      final reading = kanjiReadingIn(char, deduped[i]);
+      if (!knownReadings.contains(reading)) continue;
+    }
     picked.add(i); // add returns false for duplicates, set handles it
   }
 

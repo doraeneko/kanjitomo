@@ -469,7 +469,7 @@ abstract class AppLocalizations {
   /// Button to open draw-to-build-word screen for composita
   ///
   /// In en, this message translates to:
-  /// **'Draw composita'**
+  /// **'Additional composita'**
   String get compositaPickerDrawButton;
 
   /// Title of the draw composita screen
@@ -958,7 +958,7 @@ abstract class AppLocalizations {
   /// **'Draw in sentence (composita/sentence)'**
   String get statisticsDrawInSentence;
 
-  /// Legend label for learnt cards (4+ consecutive correct)
+  /// Legend label for learnt cards (2+ consecutive correct)
   ///
   /// In en, this message translates to:
   /// **'Learnt'**
@@ -1531,7 +1531,7 @@ abstract class AppLocalizations {
   /// Help text for statistics screen
   ///
   /// In en, this message translates to:
-  /// **'Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 3 times in a row\n• Learning (orange): reviewed but not yet at 3 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 3 consecutive correct answers again.\n\nKanji grid: each kanji shows a colored dot.\n• Green: both reading and writing learnt\n• Orange: at least one direction started\n• Gray: not yet reviewed\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.'**
+  /// **'Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 2 times in a row\n• Learning (orange): reviewed but not yet at 2 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 2 consecutive correct answers again.\n\nKanji grid: each kanji shows colored dots.\n• First dot — core progress: green (both reading and writing learnt), orange (at least one direction started), gray (not yet reviewed)\n• Second dot — composita progress (only shown when the character has testable composita words): green (all words tested in both directions), orange (at least one tested), gray (none tested)\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.'**
   String get helpStatistics;
 
   /// Help text for learning screen
@@ -1705,7 +1705,7 @@ abstract class AppLocalizations {
   /// Help text explaining the composita ceiling
   ///
   /// In en, this message translates to:
-  /// **'Only use compound words (composita) up to this JLPT level for review sentences. Lower levels use simpler vocabulary. \"Off\" allows all levels.'**
+  /// **'Limits which compound words are auto-selected when adding kanji. A word\'s level is determined by its hardest kanji (e.g. 胃腸 is N1 because 腸 is N1, even though 胃 is N3). Set to N2 and 胃腸 won\'t be auto-selected, but 胃袋 (N2) will. You can always manually add any word via the composita picker. \"Off\" allows all levels.'**
   String get addRemoveCompositaCeilingHelp;
 
   /// Label when composita ceiling is off
@@ -1785,6 +1785,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove all {count} kanji and delete all review progress? This cannot be undone.'**
   String addRemoveConfirmClearContent(int count);
+
+  /// Second confirmation body when clearing the pool
+  ///
+  /// In en, this message translates to:
+  /// **'All review progress will be permanently lost. Your keywords and stories are kept.'**
+  String get addRemoveClearSecondConfirm;
 
   /// Dialog title for removing a kanji from pool
   ///
@@ -1875,6 +1881,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue with {count} more'**
   String reviewContinueCards(int count);
+
+  /// Label for recognition direction in progress detail dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Recognition'**
+  String get progressDetailRecognition;
+
+  /// Label for drawing direction in progress detail dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Drawing'**
+  String get progressDetailDrawing;
+
+  /// Progress fraction shown in detail dialog
+  ///
+  /// In en, this message translates to:
+  /// **'{reps}/{threshold}'**
+  String progressDetailStatus(int reps, int threshold);
+
+  /// Shown when a direction has never been reviewed
+  ///
+  /// In en, this message translates to:
+  /// **'Not started'**
+  String get progressDetailNotStarted;
+
+  /// Button in progress dialog to open full kanji detail
+  ///
+  /// In en, this message translates to:
+  /// **'View detail'**
+  String get progressDetailViewFull;
+
+  /// Label for composita progress in the tap-to-inspect dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Composita'**
+  String get progressDetailComposita;
+
+  /// Button to add a user sentence for a composita word
+  ///
+  /// In en, this message translates to:
+  /// **'Add sentence'**
+  String get addSentenceButton;
+
+  /// Hint text for sentence input field
+  ///
+  /// In en, this message translates to:
+  /// **'Type a Japanese sentence containing {word}'**
+  String addSentenceHint(String word);
+
+  /// Hint text for translation input field
+  ///
+  /// In en, this message translates to:
+  /// **'Translation (optional)'**
+  String get addSentenceTranslationHint;
+
+  /// Validation error when sentence doesn't contain the word
+  ///
+  /// In en, this message translates to:
+  /// **'Sentence must contain {word}'**
+  String addSentenceValidation(String word);
+
+  /// Source label for user-added sentences
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get userSentenceSource;
+
+  /// Label for theme picker in settings
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsTheme;
+
+  /// Name of the Indigo color theme
+  ///
+  /// In en, this message translates to:
+  /// **'Indigo'**
+  String get themeIndigo;
+
+  /// Name of the Teal color theme
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get themeTeal;
+
+  /// Name of the Sakura (pink) color theme
+  ///
+  /// In en, this message translates to:
+  /// **'Sakura'**
+  String get themeSakura;
+
+  /// Name of the Forest (green) color theme
+  ///
+  /// In en, this message translates to:
+  /// **'Forest'**
+  String get themeForest;
+
+  /// Name of the Amber (gold) color theme
+  ///
+  /// In en, this message translates to:
+  /// **'Amber'**
+  String get themeAmber;
 }
 
 class _AppLocalizationsDelegate

@@ -135,3 +135,15 @@ class CustomComposita extends Table {
   @override
   Set<Column> get primaryKey => {character, word};
 }
+
+/// User-authored example sentences for composita words -- lets the user
+/// provide real context for words that lack bundled sentences (~92% of
+/// composita). Each row is one sentence for one word; a word can have
+/// multiple user sentences. Converted to [ExampleSentence] objects with
+/// source: 'user' at review time.
+class UserSentences extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get word => text()();
+  TextColumn get sentence => text()();
+  TextColumn get translation => text().nullable()();
+}

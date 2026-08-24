@@ -9,6 +9,7 @@ import 'package:kanjitomo/app_dependencies.dart';
 import 'package:kanjitomo/core/first_time_dialog.dart';
 import 'package:kanjitomo/core/db/app_database.dart';
 import 'package:kanjitomo/core/db/tables.dart';
+import 'package:kanjitomo/features/review/review_repository.dart';
 import 'package:kanjitomo/features/review/review_session_screen.dart';
 import 'package:kanjitomo/features/review/study_scope.dart';
 
@@ -40,6 +41,10 @@ void main() {
       // cards" reasoning as review_session_reading_cloze_test.dart.
       const scope = StudyScope(characters: {'一'});
       await deps.studyScope.update(scope);
+
+      // Register 一応 as a selected composita so the filter in _loadQueue()
+      // keeps the cards we manually insert below.
+      await ReviewRepository(deps.database).addCustomComposita('一', '一応');
 
       final now = DateTime.now();
       for (final otherType in [
@@ -152,6 +157,8 @@ void main() {
 
       const scope = StudyScope(characters: {'一'});
       await deps.studyScope.update(scope);
+
+      await ReviewRepository(deps.database).addCustomComposita('一', '一応');
 
       final now = DateTime.now();
       for (final otherType in [

@@ -35,6 +35,10 @@ void main() {
       const scope = StudyScope(characters: {'一'});
       await deps.studyScope.update(scope);
 
+      // Register 一応 as a selected composita so the filter in _loadQueue()
+      // keeps the cards we manually insert below.
+      await ReviewRepository(deps.database).addCustomComposita('一', '一応');
+
       final now = DateTime.now();
       // Pre-existing (far-future-due, so dueCards won't return them, and
       // introduceNewCards won't re-introduce them either) rows for the

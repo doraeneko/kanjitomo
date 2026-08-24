@@ -2572,6 +2572,310 @@ class UserCompositaCompanion extends UpdateCompanion<UserCompositaData> {
   }
 }
 
+class $UserSentencesTable extends UserSentences
+    with TableInfo<$UserSentencesTable, UserSentence> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserSentencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _wordMeta = const VerificationMeta('word');
+  @override
+  late final GeneratedColumn<String> word = GeneratedColumn<String>(
+    'word',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sentenceMeta = const VerificationMeta(
+    'sentence',
+  );
+  @override
+  late final GeneratedColumn<String> sentence = GeneratedColumn<String>(
+    'sentence',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _translationMeta = const VerificationMeta(
+    'translation',
+  );
+  @override
+  late final GeneratedColumn<String> translation = GeneratedColumn<String>(
+    'translation',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, word, sentence, translation];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_sentences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UserSentence> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('word')) {
+      context.handle(
+        _wordMeta,
+        word.isAcceptableOrUnknown(data['word']!, _wordMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_wordMeta);
+    }
+    if (data.containsKey('sentence')) {
+      context.handle(
+        _sentenceMeta,
+        sentence.isAcceptableOrUnknown(data['sentence']!, _sentenceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sentenceMeta);
+    }
+    if (data.containsKey('translation')) {
+      context.handle(
+        _translationMeta,
+        translation.isAcceptableOrUnknown(
+          data['translation']!,
+          _translationMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UserSentence map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserSentence(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      word: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}word'],
+      )!,
+      sentence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sentence'],
+      )!,
+      translation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}translation'],
+      ),
+    );
+  }
+
+  @override
+  $UserSentencesTable createAlias(String alias) {
+    return $UserSentencesTable(attachedDatabase, alias);
+  }
+}
+
+class UserSentence extends DataClass implements Insertable<UserSentence> {
+  final int id;
+  final String word;
+  final String sentence;
+  final String? translation;
+  const UserSentence({
+    required this.id,
+    required this.word,
+    required this.sentence,
+    this.translation,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['word'] = Variable<String>(word);
+    map['sentence'] = Variable<String>(sentence);
+    if (!nullToAbsent || translation != null) {
+      map['translation'] = Variable<String>(translation);
+    }
+    return map;
+  }
+
+  UserSentencesCompanion toCompanion(bool nullToAbsent) {
+    return UserSentencesCompanion(
+      id: Value(id),
+      word: Value(word),
+      sentence: Value(sentence),
+      translation: translation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(translation),
+    );
+  }
+
+  factory UserSentence.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserSentence(
+      id: serializer.fromJson<int>(json['id']),
+      word: serializer.fromJson<String>(json['word']),
+      sentence: serializer.fromJson<String>(json['sentence']),
+      translation: serializer.fromJson<String?>(json['translation']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'word': serializer.toJson<String>(word),
+      'sentence': serializer.toJson<String>(sentence),
+      'translation': serializer.toJson<String?>(translation),
+    };
+  }
+
+  UserSentence copyWith({
+    int? id,
+    String? word,
+    String? sentence,
+    Value<String?> translation = const Value.absent(),
+  }) => UserSentence(
+    id: id ?? this.id,
+    word: word ?? this.word,
+    sentence: sentence ?? this.sentence,
+    translation: translation.present ? translation.value : this.translation,
+  );
+  UserSentence copyWithCompanion(UserSentencesCompanion data) {
+    return UserSentence(
+      id: data.id.present ? data.id.value : this.id,
+      word: data.word.present ? data.word.value : this.word,
+      sentence: data.sentence.present ? data.sentence.value : this.sentence,
+      translation: data.translation.present
+          ? data.translation.value
+          : this.translation,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSentence(')
+          ..write('id: $id, ')
+          ..write('word: $word, ')
+          ..write('sentence: $sentence, ')
+          ..write('translation: $translation')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, word, sentence, translation);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserSentence &&
+          other.id == this.id &&
+          other.word == this.word &&
+          other.sentence == this.sentence &&
+          other.translation == this.translation);
+}
+
+class UserSentencesCompanion extends UpdateCompanion<UserSentence> {
+  final Value<int> id;
+  final Value<String> word;
+  final Value<String> sentence;
+  final Value<String?> translation;
+  const UserSentencesCompanion({
+    this.id = const Value.absent(),
+    this.word = const Value.absent(),
+    this.sentence = const Value.absent(),
+    this.translation = const Value.absent(),
+  });
+  UserSentencesCompanion.insert({
+    this.id = const Value.absent(),
+    required String word,
+    required String sentence,
+    this.translation = const Value.absent(),
+  }) : word = Value(word),
+       sentence = Value(sentence);
+  static Insertable<UserSentence> custom({
+    Expression<int>? id,
+    Expression<String>? word,
+    Expression<String>? sentence,
+    Expression<String>? translation,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (word != null) 'word': word,
+      if (sentence != null) 'sentence': sentence,
+      if (translation != null) 'translation': translation,
+    });
+  }
+
+  UserSentencesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? word,
+    Value<String>? sentence,
+    Value<String?>? translation,
+  }) {
+    return UserSentencesCompanion(
+      id: id ?? this.id,
+      word: word ?? this.word,
+      sentence: sentence ?? this.sentence,
+      translation: translation ?? this.translation,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (word.present) {
+      map['word'] = Variable<String>(word.value);
+    }
+    if (sentence.present) {
+      map['sentence'] = Variable<String>(sentence.value);
+    }
+    if (translation.present) {
+      map['translation'] = Variable<String>(translation.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserSentencesCompanion(')
+          ..write('id: $id, ')
+          ..write('word: $word, ')
+          ..write('sentence: $sentence, ')
+          ..write('translation: $translation')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2585,6 +2889,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $UserCompositaTable userComposita = $UserCompositaTable(this);
+  late final $UserSentencesTable userSentences = $UserSentencesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2597,6 +2902,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     compositaProgress,
     customComposita,
     userComposita,
+    userSentences,
   ];
 }
 
@@ -4022,6 +4328,183 @@ typedef $$UserCompositaTableProcessedTableManager =
       UserCompositaData,
       PrefetchHooks Function()
     >;
+typedef $$UserSentencesTableCreateCompanionBuilder =
+    UserSentencesCompanion Function({
+      Value<int> id,
+      required String word,
+      required String sentence,
+      Value<String?> translation,
+    });
+typedef $$UserSentencesTableUpdateCompanionBuilder =
+    UserSentencesCompanion Function({
+      Value<int> id,
+      Value<String> word,
+      Value<String> sentence,
+      Value<String?> translation,
+    });
+
+class $$UserSentencesTableFilterComposer
+    extends Composer<_$AppDatabase, $UserSentencesTable> {
+  $$UserSentencesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get word => $composableBuilder(
+    column: $table.word,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sentence => $composableBuilder(
+    column: $table.sentence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get translation => $composableBuilder(
+    column: $table.translation,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$UserSentencesTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserSentencesTable> {
+  $$UserSentencesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get word => $composableBuilder(
+    column: $table.word,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sentence => $composableBuilder(
+    column: $table.sentence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get translation => $composableBuilder(
+    column: $table.translation,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UserSentencesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserSentencesTable> {
+  $$UserSentencesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get word =>
+      $composableBuilder(column: $table.word, builder: (column) => column);
+
+  GeneratedColumn<String> get sentence =>
+      $composableBuilder(column: $table.sentence, builder: (column) => column);
+
+  GeneratedColumn<String> get translation => $composableBuilder(
+    column: $table.translation,
+    builder: (column) => column,
+  );
+}
+
+class $$UserSentencesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UserSentencesTable,
+          UserSentence,
+          $$UserSentencesTableFilterComposer,
+          $$UserSentencesTableOrderingComposer,
+          $$UserSentencesTableAnnotationComposer,
+          $$UserSentencesTableCreateCompanionBuilder,
+          $$UserSentencesTableUpdateCompanionBuilder,
+          (
+            UserSentence,
+            BaseReferences<_$AppDatabase, $UserSentencesTable, UserSentence>,
+          ),
+          UserSentence,
+          PrefetchHooks Function()
+        > {
+  $$UserSentencesTableTableManager(_$AppDatabase db, $UserSentencesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserSentencesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserSentencesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserSentencesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> word = const Value.absent(),
+                Value<String> sentence = const Value.absent(),
+                Value<String?> translation = const Value.absent(),
+              }) => UserSentencesCompanion(
+                id: id,
+                word: word,
+                sentence: sentence,
+                translation: translation,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String word,
+                required String sentence,
+                Value<String?> translation = const Value.absent(),
+              }) => UserSentencesCompanion.insert(
+                id: id,
+                word: word,
+                sentence: sentence,
+                translation: translation,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UserSentencesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UserSentencesTable,
+      UserSentence,
+      $$UserSentencesTableFilterComposer,
+      $$UserSentencesTableOrderingComposer,
+      $$UserSentencesTableAnnotationComposer,
+      $$UserSentencesTableCreateCompanionBuilder,
+      $$UserSentencesTableUpdateCompanionBuilder,
+      (
+        UserSentence,
+        BaseReferences<_$AppDatabase, $UserSentencesTable, UserSentence>,
+      ),
+      UserSentence,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4040,4 +4523,6 @@ class $AppDatabaseManager {
       $$CustomCompositaTableTableManager(_db, _db.customComposita);
   $$UserCompositaTableTableManager get userComposita =>
       $$UserCompositaTableTableManager(_db, _db.userComposita);
+  $$UserSentencesTableTableManager get userSentences =>
+      $$UserSentencesTableTableManager(_db, _db.userSentences);
 }

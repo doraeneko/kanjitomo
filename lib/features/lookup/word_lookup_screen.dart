@@ -94,6 +94,7 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
       if (eligible.isNotEmpty) {
         final selected = selectCompositaForIntroduction(
           char, eligible, scope.maxCompositaPerKanji,
+          kanjiInfo: widget.deps.kanjiInfo.lookup(char),
         );
         final seen = <String>{};
         result[char] = [
@@ -227,7 +228,7 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
                 },
                 title: Text(
                   char,
-                  style: const TextStyle(fontSize: 28),
+                  style: const TextStyle(fontSize: 28, fontFamily: 'NotoSansJP'),
                 ),
               );
             }).toList(),
@@ -317,7 +318,7 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
                           child: TextField(
                             controller: _wordController,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 28),
+                            style: const TextStyle(fontSize: 28, fontFamily: 'NotoSansJP'),
                             decoration: InputDecoration(
                               labelText: l.wordLookupWordLabel,
                               border: const OutlineInputBorder(),
@@ -360,6 +361,7 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
                                       primary,
                                       style: const TextStyle(
                                         fontSize: 22,
+                                        fontFamily: 'NotoSansJP',
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),

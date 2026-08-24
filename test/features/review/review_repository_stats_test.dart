@@ -20,11 +20,11 @@ void main() {
   tearDown(() => db.close());
 
   test('statsFor counts known, missed, and not-started correctly', () async {
-    // Known (learnt): repetitions >= 3 (3 consecutive correct answers).
-    for (var i = 0; i < 3; i++) {
+    // Known (learnt): repetitions >= 2 (2 consecutive correct answers).
+    for (var i = 0; i < 2; i++) {
       await repo.gradeCard(character: '一', cardType: CardType.drawFromMeaning, quality: 5);
     }
-    // Learning: reviewed but repetitions < 3.
+    // Learning: reviewed but repetitions < 2.
     await repo.gradeCard(character: '二', cardType: CardType.drawFromMeaning, quality: 4);
     // Not started: no row at all for this cardType -- doesn't touch drawFromMeaning.
     await repo.gradeCard(character: '三', cardType: CardType.readingCloze, quality: 4);
@@ -62,9 +62,9 @@ void main() {
     'overallProgress tracks reading (kanjiRecognition) and writing '
     '(drawFromMeaning) as independent directions',
     () async {
-      // 一: kanjiRecognition known (3 correct = threshold), drawFromMeaning
+      // 一: kanjiRecognition known (2 correct = threshold), drawFromMeaning
       // missed (pass then fail resets repetitions to 0).
-      for (var i = 0; i < 3; i++) {
+      for (var i = 0; i < 2; i++) {
         await repo.gradeCard(character: '一', cardType: CardType.kanjiRecognition, quality: 5);
       }
       await repo.gradeCard(character: '一', cardType: CardType.drawFromMeaning, quality: 4);

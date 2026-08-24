@@ -92,11 +92,11 @@ void main() {
   );
 
   test(
-    'overallProgress: kanjiRecognition passed 3x makes reading known; '
-    'drawFromMeaning passed 3x makes writing known',
+    'overallProgress: kanjiRecognition passed 2x makes reading known; '
+    'drawFromMeaning passed 2x makes writing known',
     () async {
-      // "Known" requires 3 consecutive correct answers (knownThreshold).
-      for (var i = 0; i < 3; i++) {
+      // "Known" requires 2 consecutive correct answers (knownThreshold).
+      for (var i = 0; i < 2; i++) {
         await repo.gradeCard(
           character: '一',
           cardType: CardType.kanjiRecognition,

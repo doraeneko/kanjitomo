@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_dependencies.dart';
 import '../../core/first_time_dialog.dart';
 import '../../l10n/app_localizations.dart';
+import '../../main.dart' show kThemePrefKey, themeColorNotifier, themePresets;
 
 /// Help & about screen: take the tour, acknowledgements, licenses,
 /// restore purchases, and reset help.
@@ -32,6 +34,56 @@ class HelpScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
             ],
+            // ── Theme picker ──
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.settingsTheme,
+                        style: const TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 8),
+                    ValueListenableBuilder<Color>(
+                      valueListenable: themeColorNotifier,
+                      builder: (context, currentColor, _) {
+                        String themeName(String key) {
+                          switch (key) {
+                            case 'indigo': return l.themeIndigo;
+                            case 'teal': return l.themeTeal;
+                            case 'sakura': return l.themeSakura;
+                            case 'forest': return l.themeForest;
+                            case 'amber': return l.themeAmber;
+                            default: return key;
+                          }
+                        }
+                        return Wrap(
+                          spacing: 8,
+                          children: themePresets.entries.map((e) {
+                            final selected = e.value == currentColor;
+                            return ChoiceChip(
+                              label: Text(themeName(e.key)),
+                              selected: selected,
+                              avatar: CircleAvatar(
+                                backgroundColor: e.value,
+                                radius: 8,
+                              ),
+                              onSelected: (_) async {
+                                themeColorNotifier.value = e.value;
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString(kThemePrefKey, e.key);
+                              },
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Card(
               color: Colors.amber.shade50,
               child: Padding(

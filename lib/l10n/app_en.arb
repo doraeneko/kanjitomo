@@ -220,7 +220,7 @@
   "compositaPickerSearchHint": "Search JMdict for a word...",
   "@compositaPickerSearchHint": { "description": "Hint text for composita picker search field" },
 
-  "compositaPickerDrawButton": "Draw composita",
+  "compositaPickerDrawButton": "Additional composita",
   "@compositaPickerDrawButton": { "description": "Button to open draw-to-build-word screen for composita" },
 
   "compositaPickerDrawTitle": "Draw composita for {char}",
@@ -550,7 +550,7 @@
   "@statisticsDrawInSentence": { "description": "Card type label" },
 
   "statisticsKnown": "Learnt",
-  "@statisticsKnown": { "description": "Legend label for learnt cards (4+ consecutive correct)" },
+  "@statisticsKnown": { "description": "Legend label for learnt cards (2+ consecutive correct)" },
 
   "statisticsMissed": "Learning",
   "@statisticsMissed": { "description": "Legend label for cards still being learned" },
@@ -901,7 +901,7 @@
   "helpQuiz": "The quiz is a quick multiple-choice self-test. It has no effect on your spaced-repetition progress.\n\nTwo question types are randomly mixed:\n• Kanji → Reading: a sentence with a kanji highlighted; pick its reading\n• Reading → Kanji: a sentence with readings shown; pick which kanji word fits\n\nOnly kanji you have already reviewed at least once are included.",
   "@helpQuiz": { "description": "Help text for quiz screen" },
 
-  "helpStatistics": "Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 3 times in a row\n• Learning (orange): reviewed but not yet at 3 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 3 consecutive correct answers again.\n\nKanji grid: each kanji shows a colored dot.\n• Green: both reading and writing learnt\n• Orange: at least one direction started\n• Gray: not yet reviewed\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.",
+  "helpStatistics": "Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 2 times in a row\n• Learning (orange): reviewed but not yet at 2 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 2 consecutive correct answers again.\n\nKanji grid: each kanji shows colored dots.\n• First dot — core progress: green (both reading and writing learnt), orange (at least one direction started), gray (not yet reviewed)\n• Second dot — composita progress (only shown when the character has testable composita words): green (all words tested in both directions), orange (at least one tested), gray (none tested)\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.",
   "@helpStatistics": { "description": "Help text for statistics screen" },
 
   "helpLearning": "This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven't reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.",
@@ -1007,7 +1007,7 @@
   "addRemoveCompositaCeiling": "Vocabulary level limit",
   "@addRemoveCompositaCeiling": { "description": "Label for composita ceiling setting" },
 
-  "addRemoveCompositaCeilingHelp": "Only use compound words (composita) up to this JLPT level for review sentences. Lower levels use simpler vocabulary. \"Off\" allows all levels.",
+  "addRemoveCompositaCeilingHelp": "Limits which compound words are auto-selected when adding kanji. A word's level is determined by its hardest kanji (e.g. 胃腸 is N1 because 腸 is N1, even though 胃 is N3). Set to N2 and 胃腸 won't be auto-selected, but 胃袋 (N2) will. You can always manually add any word via the composita picker. \"Off\" allows all levels.",
   "@addRemoveCompositaCeilingHelp": { "description": "Help text explaining the composita ceiling" },
 
   "addRemoveCeilingOff": "Off",
@@ -1054,6 +1054,9 @@
     "description": "Dialog content for clearing the pool",
     "placeholders": { "count": { "type": "int" } }
   },
+
+  "addRemoveClearSecondConfirm": "All review progress will be permanently lost. Your keywords and stories are kept.",
+  "@addRemoveClearSecondConfirm": { "description": "Second confirmation body when clearing the pool" },
 
   "addRemoveConfirmRemoveTitle": "Remove kanji?",
   "@addRemoveConfirmRemoveTitle": { "description": "Dialog title for removing a kanji from pool" },
@@ -1119,5 +1122,68 @@
   "@reviewContinueCards": {
     "description": "Button to load more cards beyond the daily cap",
     "placeholders": { "count": { "type": "int" } }
-  }
+  },
+
+  "progressDetailRecognition": "Recognition",
+  "@progressDetailRecognition": { "description": "Label for recognition direction in progress detail dialog" },
+
+  "progressDetailDrawing": "Drawing",
+  "@progressDetailDrawing": { "description": "Label for drawing direction in progress detail dialog" },
+
+  "progressDetailStatus": "{reps}/{threshold}",
+  "@progressDetailStatus": {
+    "description": "Progress fraction shown in detail dialog",
+    "placeholders": {
+      "reps": { "type": "int" },
+      "threshold": { "type": "int" }
+    }
+  },
+
+  "progressDetailNotStarted": "Not started",
+  "@progressDetailNotStarted": { "description": "Shown when a direction has never been reviewed" },
+
+  "progressDetailViewFull": "View detail",
+  "@progressDetailViewFull": { "description": "Button in progress dialog to open full kanji detail" },
+
+  "progressDetailComposita": "Composita",
+  "@progressDetailComposita": { "description": "Label for composita progress in the tap-to-inspect dialog" },
+
+  "addSentenceButton": "Add sentence",
+  "@addSentenceButton": { "description": "Button to add a user sentence for a composita word" },
+
+  "addSentenceHint": "Type a Japanese sentence containing {word}",
+  "@addSentenceHint": {
+    "description": "Hint text for sentence input field",
+    "placeholders": { "word": { "type": "String" } }
+  },
+
+  "addSentenceTranslationHint": "Translation (optional)",
+  "@addSentenceTranslationHint": { "description": "Hint text for translation input field" },
+
+  "addSentenceValidation": "Sentence must contain {word}",
+  "@addSentenceValidation": {
+    "description": "Validation error when sentence doesn't contain the word",
+    "placeholders": { "word": { "type": "String" } }
+  },
+
+  "userSentenceSource": "User",
+  "@userSentenceSource": { "description": "Source label for user-added sentences" },
+
+  "settingsTheme": "Theme",
+  "@settingsTheme": { "description": "Label for theme picker in settings" },
+
+  "themeIndigo": "Indigo",
+  "@themeIndigo": { "description": "Name of the Indigo color theme" },
+
+  "themeTeal": "Teal",
+  "@themeTeal": { "description": "Name of the Teal color theme" },
+
+  "themeSakura": "Sakura",
+  "@themeSakura": { "description": "Name of the Sakura (pink) color theme" },
+
+  "themeForest": "Forest",
+  "@themeForest": { "description": "Name of the Forest (green) color theme" },
+
+  "themeAmber": "Amber",
+  "@themeAmber": { "description": "Name of the Amber (gold) color theme" }
 }

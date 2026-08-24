@@ -359,6 +359,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                             q.choices[q.correctIndex],
                             style: const TextStyle(
                               fontSize: 20,
+                              fontFamily: 'NotoSansJP',
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -402,7 +403,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                       ),
                       child: Text(
                         q.choices[i],
-                        style: const TextStyle(fontSize: 18),
+                        style: const TextStyle(fontSize: 18, fontFamily: 'NotoSansJP'),
                       ),
                     ),
                   ),

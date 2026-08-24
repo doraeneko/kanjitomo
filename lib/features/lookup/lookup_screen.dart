@@ -316,6 +316,7 @@ class _LookupScreenState extends State<LookupScreen> {
                                               p.label,
                                               style: const TextStyle(
                                                 fontSize: 22,
+                                                fontFamily: 'NotoSansJP',
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
@@ -411,6 +412,7 @@ class _AddToCustomButtonState extends State<_AddToCustomButton> {
     }).toList();
     final selected = selectCompositaForIntroduction(
       char, eligible, scope.maxCompositaPerKanji,
+      kanjiInfo: widget.deps.kanjiInfo.lookup(char),
     );
     final seen = <String>{};
     final words = [
