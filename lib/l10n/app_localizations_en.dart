@@ -111,8 +111,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpTitle => 'Help & About';
 
   @override
-  String get helpIntro =>
-      'Kanjitomo helps you recognize, read, and write Japanese kanji — all offline, no account required.\n\n• Lookup — Draw any kanji to instantly look it up, with readings, meanings, stroke order, and example words.\n• Word Lookup — Build words character-by-character and search the full JMdict dictionary.\n• Learning — Add kanji to your pool (by JLPT level, RTK order, or drawing) and study with spaced repetition across four card types: draw from meaning, recognize kanji, reading cloze, and draw in sentence.\n• JLPT-like Quiz — Test yourself with multiple-choice questions matching the JLPT format.\n• Browse — Search all 2,140 Jōyō kanji by reading, meaning, or stroke count, with progress tracking.\n\nThe app includes over 60,000 vocabulary words and 6,000+ example sentences, all organized by JLPT level. Add your own keywords and mnemonics to make each kanji stick.\n\nReadings shown in [square brackets] are rare — they appear in only one or two words. Focus on the unbracketed readings first.';
+  String get helpTagline => 'A kanji learning tool for serious learners';
+
+  @override
+  String get helpFeaturesSection => 'What\'s inside';
+
+  @override
+  String get helpFeatureRecognitionTitle => 'Handwriting Recognition';
+
+  @override
+  String get helpFeatureRecognitionDesc =>
+      'Draw any kanji for instant offline recognition — neural network, 6,500+ characters.';
+
+  @override
+  String get helpFeatureSrsTitle => 'Spaced Repetition (SRS)';
+
+  @override
+  String get helpFeatureSrsDesc =>
+      'Draw kanji from memory, not just recognize them. Four card types build real recall through active writing.';
+
+  @override
+  String get helpFeatureCompositaTitle => 'Composita & Sentences';
+
+  @override
+  String get helpFeatureCompositaDesc =>
+      'You choose which compound words to study. Learn kanji in context with 6,000+ example sentences.';
+
+  @override
+  String get helpFeatureStrokeOrderTitle => 'Stroke Order';
+
+  @override
+  String get helpFeatureStrokeOrderDesc =>
+      'Animated stroke-by-stroke diagrams with a practice canvas for every kanji.';
+
+  @override
+  String get helpFeatureDictionaryTitle => 'Dictionary';
+
+  @override
+  String get helpFeatureDictionaryDesc =>
+      '60,000+ words from JMdict. Draw to look up single kanji or build words character by character.';
+
+  @override
+  String get helpFeatureStoriesTitle => 'Keywords & Stories';
+
+  @override
+  String get helpFeatureStoriesDesc =>
+      'Add your own mnemonics and keywords to each kanji to make them stick.';
+
+  @override
+  String get helpSettingsSection => 'Settings';
 
   @override
   String get helpAcknowledgement =>
@@ -260,6 +307,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wordLookupPickKanjiConfirm => 'Add';
+
+  @override
+  String get wordLookupAlreadyInReview => 'Already in review';
+
+  @override
+  String get wordLookupClearWord => 'Clear word';
 
   @override
   String get kanjiBrowserTitle => 'Kanji browser';
@@ -522,7 +575,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Draw in sentence (composita/sentence)';
 
   @override
-  String get statisticsKnown => 'Learnt';
+  String get statisticsKnown => 'Passed';
 
   @override
   String get statisticsMissed => 'Learning';
@@ -554,6 +607,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsInspectAllKanji => 'Inspect all kanji';
 
   @override
+  String statisticsLearnt(int count, int total) {
+    return '$count / $total learnt';
+  }
+
+  @override
   String get statisticsResetButton => 'Reset statistics';
 
   @override
@@ -565,6 +623,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statisticsResetConfirm => 'Reset';
+
+  @override
+  String get undoStroke => 'Undo stroke';
 
   @override
   String get drawAndPickClearDrawing => 'Clear drawing';
@@ -769,35 +830,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ftdLookupMessage =>
-      'Draw a kanji stroke by stroke on the canvas. The app recognizes it after each stroke and shows the best matches. Tap a result to see its full detail — readings, meaning, stroke order, and more.\n\nTry it now — minimize this card and draw something!';
+      'Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!';
 
   @override
   String get ftdWordLookupTitle => 'Word lookup';
 
   @override
   String get ftdWordLookupMessage =>
-      'Build a word one character at a time by drawing each one, or type directly into the text field. The app looks up the word in the dictionary and shows its reading and meaning.\n\nMinimize this card to try it out!';
+      'Look up compound words in a 60,000+ entry dictionary (JMdict). Draw each character to build the word, or type directly.\n\nMinimize this card to try it out!';
 
   @override
   String get ftdLearningTitle => 'Learning';
 
   @override
   String get ftdLearningMessage =>
-      'Add kanji to your learning pool from JLPT levels, RTK order, or by drawing. Review uses spaced repetition to test reading and writing. You can also take quick quizzes and track your progress with statistics.';
+      'You decide what to study. Add kanji by JLPT level or hand-pick individual characters. Spaced repetition tests you four ways — including drawing from memory, which builds the active recall that passive apps can\'t match.\n\nTrack your progress with detailed statistics.';
 
   @override
   String get ftdBrowserTitle => 'Kanji browser';
 
   @override
   String get ftdBrowserMessage =>
-      'Browse all Jōyō kanji in a searchable table. Search by reading (hiragana or katakana), meaning (English), stroke count, or the character itself. Colored dots show your review progress — green for known, orange for missed.';
+      'Browse all Jōyō kanji in a searchable table. Filter by reading, meaning, or stroke count. Tap any kanji to see its detail — and choose which compound words (composita) you want in your reviews.\n\nColored dots show your review progress at a glance.';
 
   @override
   String get ftdReviewSessionTitle => 'Review session';
 
   @override
   String get ftdReviewSessionMessage =>
-      'Four card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nGrade yourself with Again (missed) or Good (recalled).';
+      'Four card types test different aspects of recall:\n• Draw from meaning — see the keyword, write the kanji from memory\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a compound word in a real sentence\n• Draw in sentence — write a kanji in context\n\nDrawing from memory is harder than multiple choice — that\'s the point. Grade yourself with Again (missed) or Good (recalled).';
 
   @override
   String get ftdGotIt => 'Got it';
@@ -813,7 +874,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeTitle => 'Welcome to Kanjitomo';
 
   @override
-  String get welcomeSubtitle => 'Recognize, read, and write Japanese kanji';
+  String get welcomeSubtitle => 'A kanji learning tool for serious learners';
 
   @override
   String get welcomeTakeTour => 'Take a tour';
@@ -835,11 +896,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeFeatureList =>
-      'Draw any kanji to recognize and look it up instantly. Study over 60,000 vocabulary words with real example sentences using spaced repetition. Browse all Jōyō kanji — completely offline.';
+      'Draw kanji from memory to build real recall — not just recognition. You choose what to study: pick your kanji, your compound words, your pace. Offline, no account, no tracking.';
 
   @override
   String get helpReviewStart =>
-      'Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew kanji are introduced in RTK order (building on shared radicals). You can set how many new kanji per day.\n\nIf you skip 2+ days and have a backlog of due cards, new kanji are paused until you catch up. Use \"Learn more\" inside a session to override this.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji\'s shape, meaning, and components.';
+      'Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew cards per day and max reviews per day are set on the learning hub. Reviews always take priority; new cards fill whatever daily budget remains. Use \"Learn more\" inside a session to add extra cards beyond the daily limit.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji\'s shape, meaning, and components.';
 
   @override
   String get helpJlptEdit =>
@@ -859,7 +920,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpLearning =>
-      'This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven\'t reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.';
+      'This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nAdd/Remove: Add kanji by JLPT level, RTK order, or drawing. Manage your learning pool, composita settings, and individual kanji.\n\nStatistics: View your progress per card type, composita coverage, and a kanji grid with color-coded dots.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven\'t reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.';
 
   @override
   String get helpSupportDevelopment => 'Support development';
@@ -877,6 +938,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpBugEmailSubject => 'Kanjitomo bug report';
+
+  @override
+  String get helpPrivacyPolicy => 'Privacy policy';
 
   @override
   String get learningPoolStats => 'Your learning pool';
@@ -914,6 +978,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get learningDetailedAdd => 'Add / Remove (detailed)';
+
+  @override
+  String get addRemoveBrowseTab => 'Browse';
+
+  @override
+  String get addRemoveBrowseHelp =>
+      'Tap + to add a kanji to your learning pool. Kanji already in your pool show a checkmark.';
 
   @override
   String get addRemoveTitle => 'Add / Remove kanji';
@@ -980,6 +1051,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addRemovePoolSortModified => 'Last modified';
+
+  @override
+  String get addRemovePoolSortMastery => 'Mastery';
 
   @override
   String addRemovePoolTitle(int count) {
@@ -1089,25 +1163,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get progressDetailComposita => 'Composita';
 
   @override
-  String get addSentenceButton => 'Add sentence';
-
-  @override
-  String addSentenceHint(String word) {
-    return 'Type a Japanese sentence containing $word';
-  }
-
-  @override
-  String get addSentenceTranslationHint => 'Translation (optional)';
-
-  @override
-  String addSentenceValidation(String word) {
-    return 'Sentence must contain $word';
-  }
-
-  @override
-  String get userSentenceSource => 'User';
-
-  @override
   String get settingsTheme => 'Theme';
 
   @override
@@ -1124,4 +1179,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeAmber => 'Amber';
+
+  @override
+  String get settingsBrightness => 'Brightness';
+
+  @override
+  String get themeAuto => 'Auto';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get settingsRecognitionModel => 'Recognition model';
+
+  @override
+  String get modelStandard => 'Standard (~3,000 kanji)';
+
+  @override
+  String get modelExtended => 'Extended (~6,500 kanji)';
+
+  @override
+  String get modelSwitching => 'Switching model...';
+
+  @override
+  String get modelSwitched => 'Recognition model switched';
+
+  @override
+  String modelSwitchFailed(String error) {
+    return 'Failed to switch model: $error';
+  }
 }

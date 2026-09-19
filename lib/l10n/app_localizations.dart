@@ -286,11 +286,95 @@ abstract class AppLocalizations {
   /// **'Help & About'**
   String get helpTitle;
 
-  /// Introduction paragraph on help screen
+  /// Short tagline shown below app name on help screen
   ///
   /// In en, this message translates to:
-  /// **'Kanjitomo helps you recognize, read, and write Japanese kanji — all offline, no account required.\n\n• Lookup — Draw any kanji to instantly look it up, with readings, meanings, stroke order, and example words.\n• Word Lookup — Build words character-by-character and search the full JMdict dictionary.\n• Learning — Add kanji to your pool (by JLPT level, RTK order, or drawing) and study with spaced repetition across four card types: draw from meaning, recognize kanji, reading cloze, and draw in sentence.\n• JLPT-like Quiz — Test yourself with multiple-choice questions matching the JLPT format.\n• Browse — Search all 2,140 Jōyō kanji by reading, meaning, or stroke count, with progress tracking.\n\nThe app includes over 60,000 vocabulary words and 6,000+ example sentences, all organized by JLPT level. Add your own keywords and mnemonics to make each kanji stick.\n\nReadings shown in [square brackets] are rare — they appear in only one or two words. Focus on the unbracketed readings first.'**
-  String get helpIntro;
+  /// **'A kanji learning tool for serious learners'**
+  String get helpTagline;
+
+  /// Section divider label for feature highlights
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s inside'**
+  String get helpFeaturesSection;
+
+  /// Feature card title
+  ///
+  /// In en, this message translates to:
+  /// **'Handwriting Recognition'**
+  String get helpFeatureRecognitionTitle;
+
+  /// Feature card description
+  ///
+  /// In en, this message translates to:
+  /// **'Draw any kanji for instant offline recognition — neural network, 6,500+ characters.'**
+  String get helpFeatureRecognitionDesc;
+
+  /// Feature card title
+  ///
+  /// In en, this message translates to:
+  /// **'Spaced Repetition (SRS)'**
+  String get helpFeatureSrsTitle;
+
+  /// Feature card description
+  ///
+  /// In en, this message translates to:
+  /// **'Draw kanji from memory, not just recognize them. Four card types build real recall through active writing.'**
+  String get helpFeatureSrsDesc;
+
+  /// Feature card title
+  ///
+  /// In en, this message translates to:
+  /// **'Composita & Sentences'**
+  String get helpFeatureCompositaTitle;
+
+  /// Feature card description
+  ///
+  /// In en, this message translates to:
+  /// **'You choose which compound words to study. Learn kanji in context with 6,000+ example sentences.'**
+  String get helpFeatureCompositaDesc;
+
+  /// Feature card title
+  ///
+  /// In en, this message translates to:
+  /// **'Stroke Order'**
+  String get helpFeatureStrokeOrderTitle;
+
+  /// Feature card description
+  ///
+  /// In en, this message translates to:
+  /// **'Animated stroke-by-stroke diagrams with a practice canvas for every kanji.'**
+  String get helpFeatureStrokeOrderDesc;
+
+  /// Feature card title
+  ///
+  /// In en, this message translates to:
+  /// **'Dictionary'**
+  String get helpFeatureDictionaryTitle;
+
+  /// Feature card description
+  ///
+  /// In en, this message translates to:
+  /// **'60,000+ words from JMdict. Draw to look up single kanji or build words character by character.'**
+  String get helpFeatureDictionaryDesc;
+
+  /// Feature card title
+  ///
+  /// In en, this message translates to:
+  /// **'Keywords & Stories'**
+  String get helpFeatureStoriesTitle;
+
+  /// Feature card description
+  ///
+  /// In en, this message translates to:
+  /// **'Add your own mnemonics and keywords to each kanji to make them stick.'**
+  String get helpFeatureStoriesDesc;
+
+  /// Section divider label for settings
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get helpSettingsSection;
 
   /// Acknowledgement text before the licenses button
   ///
@@ -525,6 +609,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get wordLookupPickKanjiConfirm;
+
+  /// Label shown when a word is already added as composita for review
+  ///
+  /// In en, this message translates to:
+  /// **'Already in review'**
+  String get wordLookupAlreadyInReview;
+
+  /// Button to clear the word text field, shown next to Clear drawing
+  ///
+  /// In en, this message translates to:
+  /// **'Clear word'**
+  String get wordLookupClearWord;
 
   /// AppBar title for kanji browser
   ///
@@ -958,10 +1054,10 @@ abstract class AppLocalizations {
   /// **'Draw in sentence (composita/sentence)'**
   String get statisticsDrawInSentence;
 
-  /// Legend label for learnt cards (2+ consecutive correct)
+  /// Legend label for cards passed (2+ consecutive correct)
   ///
   /// In en, this message translates to:
-  /// **'Learnt'**
+  /// **'Passed'**
   String get statisticsKnown;
 
   /// Legend label for cards still being learned
@@ -1006,6 +1102,12 @@ abstract class AppLocalizations {
   /// **'Inspect all kanji'**
   String get statisticsInspectAllKanji;
 
+  /// Count of fully learnt kanji (green/green)
+  ///
+  /// In en, this message translates to:
+  /// **'{count} / {total} learnt'**
+  String statisticsLearnt(int count, int total);
+
   /// Button to reset all stats
   ///
   /// In en, this message translates to:
@@ -1029,6 +1131,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset'**
   String get statisticsResetConfirm;
+
+  /// Tooltip/label for the undo last stroke button
+  ///
+  /// In en, this message translates to:
+  /// **'Undo stroke'**
+  String get undoStroke;
 
   /// Clear button on draw and pick widget
   ///
@@ -1381,7 +1489,7 @@ abstract class AppLocalizations {
   /// First-time dialog message for lookup screen
   ///
   /// In en, this message translates to:
-  /// **'Draw a kanji stroke by stroke on the canvas. The app recognizes it after each stroke and shows the best matches. Tap a result to see its full detail — readings, meaning, stroke order, and more.\n\nTry it now — minimize this card and draw something!'**
+  /// **'Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!'**
   String get ftdLookupMessage;
 
   /// First-time dialog title for word lookup screen
@@ -1393,7 +1501,7 @@ abstract class AppLocalizations {
   /// First-time dialog message for word lookup screen
   ///
   /// In en, this message translates to:
-  /// **'Build a word one character at a time by drawing each one, or type directly into the text field. The app looks up the word in the dictionary and shows its reading and meaning.\n\nMinimize this card to try it out!'**
+  /// **'Look up compound words in a 60,000+ entry dictionary (JMdict). Draw each character to build the word, or type directly.\n\nMinimize this card to try it out!'**
   String get ftdWordLookupMessage;
 
   /// First-time dialog title for learning screen
@@ -1405,7 +1513,7 @@ abstract class AppLocalizations {
   /// First-time dialog message for learning screen
   ///
   /// In en, this message translates to:
-  /// **'Add kanji to your learning pool from JLPT levels, RTK order, or by drawing. Review uses spaced repetition to test reading and writing. You can also take quick quizzes and track your progress with statistics.'**
+  /// **'You decide what to study. Add kanji by JLPT level or hand-pick individual characters. Spaced repetition tests you four ways — including drawing from memory, which builds the active recall that passive apps can\'t match.\n\nTrack your progress with detailed statistics.'**
   String get ftdLearningMessage;
 
   /// First-time dialog title for kanji browser screen
@@ -1417,7 +1525,7 @@ abstract class AppLocalizations {
   /// First-time dialog message for kanji browser screen
   ///
   /// In en, this message translates to:
-  /// **'Browse all Jōyō kanji in a searchable table. Search by reading (hiragana or katakana), meaning (English), stroke count, or the character itself. Colored dots show your review progress — green for known, orange for missed.'**
+  /// **'Browse all Jōyō kanji in a searchable table. Filter by reading, meaning, or stroke count. Tap any kanji to see its detail — and choose which compound words (composita) you want in your reviews.\n\nColored dots show your review progress at a glance.'**
   String get ftdBrowserMessage;
 
   /// First-time dialog title for review session screen
@@ -1429,7 +1537,7 @@ abstract class AppLocalizations {
   /// First-time dialog message for review session screen
   ///
   /// In en, this message translates to:
-  /// **'Four card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nGrade yourself with Again (missed) or Good (recalled).'**
+  /// **'Four card types test different aspects of recall:\n• Draw from meaning — see the keyword, write the kanji from memory\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a compound word in a real sentence\n• Draw in sentence — write a kanji in context\n\nDrawing from memory is harder than multiple choice — that\'s the point. Grade yourself with Again (missed) or Good (recalled).'**
   String get ftdReviewSessionMessage;
 
   /// Dismiss button for first-time dialogs
@@ -1459,7 +1567,7 @@ abstract class AppLocalizations {
   /// Subtitle on welcome screen
   ///
   /// In en, this message translates to:
-  /// **'Recognize, read, and write Japanese kanji'**
+  /// **'A kanji learning tool for serious learners'**
   String get welcomeSubtitle;
 
   /// Button to start guided tour
@@ -1501,13 +1609,13 @@ abstract class AppLocalizations {
   /// Brief feature summary on the welcome screen
   ///
   /// In en, this message translates to:
-  /// **'Draw any kanji to recognize and look it up instantly. Study over 60,000 vocabulary words with real example sentences using spaced repetition. Browse all Jōyō kanji — completely offline.'**
+  /// **'Draw kanji from memory to build real recall — not just recognition. You choose what to study: pick your kanji, your compound words, your pace. Offline, no account, no tracking.'**
   String get welcomeFeatureList;
 
   /// Help text for review start screen
   ///
   /// In en, this message translates to:
-  /// **'Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew kanji are introduced in RTK order (building on shared radicals). You can set how many new kanji per day.\n\nIf you skip 2+ days and have a backlog of due cards, new kanji are paused until you catch up. Use \"Learn more\" inside a session to override this.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji\'s shape, meaning, and components.'**
+  /// **'Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew cards per day and max reviews per day are set on the learning hub. Reviews always take priority; new cards fill whatever daily budget remains. Use \"Learn more\" inside a session to add extra cards beyond the daily limit.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji\'s shape, meaning, and components.'**
   String get helpReviewStart;
 
   /// Help text for JLPT edit screen
@@ -1537,7 +1645,7 @@ abstract class AppLocalizations {
   /// Help text for learning screen
   ///
   /// In en, this message translates to:
-  /// **'This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven\'t reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.'**
+  /// **'This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nAdd/Remove: Add kanji by JLPT level, RTK order, or drawing. Manage your learning pool, composita settings, and individual kanji.\n\nStatistics: View your progress per card type, composita coverage, and a kanji grid with color-coded dots.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven\'t reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.'**
   String get helpLearning;
 
   /// Button label for buy me a coffee link
@@ -1569,6 +1677,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kanjitomo bug report'**
   String get helpBugEmailSubject;
+
+  /// Label for privacy policy link on help screen
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get helpPrivacyPolicy;
 
   /// Section title for the unified learning pool
   ///
@@ -1623,6 +1737,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add / Remove (detailed)'**
   String get learningDetailedAdd;
+
+  /// Tab label for the browse-all-kanji tab
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get addRemoveBrowseTab;
+
+  /// Brief instruction text for the browse tab
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to add a kanji to your learning pool. Kanji already in your pool show a checkmark.'**
+  String get addRemoveBrowseHelp;
 
   /// AppBar title for add/remove screen
   ///
@@ -1743,6 +1869,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last modified'**
   String get addRemovePoolSortModified;
+
+  /// Sort pool by mastery level (best learned last)
+  ///
+  /// In en, this message translates to:
+  /// **'Mastery'**
+  String get addRemovePoolSortMastery;
 
   /// Section title for the pool list with count
   ///
@@ -1918,36 +2050,6 @@ abstract class AppLocalizations {
   /// **'Composita'**
   String get progressDetailComposita;
 
-  /// Button to add a user sentence for a composita word
-  ///
-  /// In en, this message translates to:
-  /// **'Add sentence'**
-  String get addSentenceButton;
-
-  /// Hint text for sentence input field
-  ///
-  /// In en, this message translates to:
-  /// **'Type a Japanese sentence containing {word}'**
-  String addSentenceHint(String word);
-
-  /// Hint text for translation input field
-  ///
-  /// In en, this message translates to:
-  /// **'Translation (optional)'**
-  String get addSentenceTranslationHint;
-
-  /// Validation error when sentence doesn't contain the word
-  ///
-  /// In en, this message translates to:
-  /// **'Sentence must contain {word}'**
-  String addSentenceValidation(String word);
-
-  /// Source label for user-added sentences
-  ///
-  /// In en, this message translates to:
-  /// **'User'**
-  String get userSentenceSource;
-
   /// Label for theme picker in settings
   ///
   /// In en, this message translates to:
@@ -1983,6 +2085,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Amber'**
   String get themeAmber;
+
+  /// Label for brightness mode picker in settings
+  ///
+  /// In en, this message translates to:
+  /// **'Brightness'**
+  String get settingsBrightness;
+
+  /// Brightness mode that follows system setting
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get themeAuto;
+
+  /// Force light mode
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// Force dark mode
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// Label for recognition model picker in settings
+  ///
+  /// In en, this message translates to:
+  /// **'Recognition model'**
+  String get settingsRecognitionModel;
+
+  /// Label for standard recognition model
+  ///
+  /// In en, this message translates to:
+  /// **'Standard (~3,000 kanji)'**
+  String get modelStandard;
+
+  /// Label for extended recognition model
+  ///
+  /// In en, this message translates to:
+  /// **'Extended (~6,500 kanji)'**
+  String get modelExtended;
+
+  /// Snackbar shown while model is being loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Switching model...'**
+  String get modelSwitching;
+
+  /// Snackbar after model switch completes
+  ///
+  /// In en, this message translates to:
+  /// **'Recognition model switched'**
+  String get modelSwitched;
+
+  /// Snackbar when model switch fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to switch model: {error}'**
+  String modelSwitchFailed(String error);
 }
 
 class _AppLocalizationsDelegate

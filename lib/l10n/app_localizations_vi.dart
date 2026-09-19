@@ -13,43 +13,43 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String failedToLoadAppData(String error) {
-    return 'Failed to load app data: $error';
+    return 'Không thể tải dữ liệu ứng dụng: $error';
   }
 
   @override
   String get lookupTitle => '漢字友';
 
   @override
-  String get lookupWords => 'Words';
+  String get lookupWords => 'Từ vựng';
 
   @override
-  String get lookupLearn => 'Learn';
+  String get lookupLearn => 'Học';
 
   @override
-  String get lookupBrowse => 'Browse';
+  String get lookupBrowse => 'Duyệt';
 
   @override
-  String get lookupHelp => 'Help';
+  String get lookupHelp => 'Trợ giúp';
 
   @override
   String get lookupHeading => 'Kanji';
 
   @override
-  String get lookupClearDrawing => 'Clear drawing';
+  String get lookupClearDrawing => 'Xóa nét vẽ';
 
   @override
-  String get lookupRecognizing => 'Recognizing...';
+  String get lookupRecognizing => 'Đang nhận dạng...';
 
   @override
-  String get lookupLoadingModel => 'Loading model...';
+  String get lookupLoadingModel => 'Đang tải mô hình...';
 
   @override
   String lookupModelFailed(String error) {
-    return 'Model failed to load: $error';
+    return 'Không thể tải mô hình: $error';
   }
 
   @override
-  String get lookupBestMatch => 'Best match:';
+  String get lookupBestMatch => 'Kết quả tốt nhất:';
 
   @override
   String lookupTopN(int count) {
@@ -57,148 +57,197 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get lookupInCustomReview => 'In custom review';
+  String get lookupInCustomReview => 'Đã có trong ôn tập tùy chỉnh';
 
   @override
-  String get lookupAddToCustomReview => 'Add to custom review';
+  String get lookupAddToCustomReview => 'Thêm vào ôn tập tùy chỉnh';
 
   @override
-  String get wordLookupTitle => 'Word lookup';
+  String get wordLookupTitle => 'Tra từ';
 
   @override
   String get wordLookupDrawInstruction =>
-      'Draw a kanji or kana character to add it to the word:';
+      'Vẽ một ký tự kanji hoặc kana để thêm vào từ:';
 
   @override
-  String get wordLookupWordLabel => 'Word';
+  String get wordLookupWordLabel => 'Từ';
 
   @override
-  String get wordLookupClear => 'Clear';
+  String get wordLookupClear => 'Xóa';
 
   @override
-  String get wordLookupNoEntry => 'No JMdict entry for this exact word.';
+  String get wordLookupNoEntry =>
+      'Không tìm thấy mục nào trong JMdict cho từ này.';
 
   @override
   String wordLookupCopied(String word) {
-    return 'Copied \"$word\" to clipboard';
+    return 'Đã sao chép \"$word\" vào bộ nhớ tạm';
   }
 
   @override
-  String get copyToClipboard => 'Copy to clipboard';
+  String get copyToClipboard => 'Sao chép vào bộ nhớ tạm';
 
   @override
-  String get learningTitle => 'Learning';
+  String get learningTitle => 'Học tập';
 
   @override
-  String get learningJlpt => 'JLPT mode';
+  String get learningJlpt => 'Chế độ JLPT';
 
   @override
-  String get learningCustom => 'Custom mode';
+  String get learningCustom => 'Chế độ tùy chỉnh';
 
   @override
-  String get learningReview => 'Review';
+  String get learningReview => 'Ôn tập';
 
   @override
-  String get learningSelect => 'Select';
+  String get learningSelect => 'Chọn';
 
   @override
-  String get learningSettings => 'Settings';
+  String get learningSettings => 'Cài đặt';
 
   @override
-  String get learningStatistics => 'Statistics';
+  String get learningStatistics => 'Thống kê';
 
   @override
-  String get helpTitle => 'Help & About';
+  String get helpTitle => 'Trợ giúp & Giới thiệu';
 
   @override
-  String get helpIntro =>
-      'Kanjitomo helps you learn to read and write Japanese kanji.\n\nReadings shown in [square brackets] are rare — they appear in only one or two words. Focus on the unbracketed readings first.';
+  String get helpTagline => 'Công cụ học kanji cho người học nghiêm túc';
+
+  @override
+  String get helpFeaturesSection => 'Tính năng';
+
+  @override
+  String get helpFeatureRecognitionTitle => 'Nhận dạng chữ viết tay';
+
+  @override
+  String get helpFeatureRecognitionDesc =>
+      'Vẽ bất kỳ kanji nào để nhận dạng ngay lập tức ngoại tuyến — mạng nơ-ron, hơn 6.500 ký tự.';
+
+  @override
+  String get helpFeatureSrsTitle => 'Lặp lại ngắt quãng (SRS)';
+
+  @override
+  String get helpFeatureSrsDesc =>
+      'Vẽ kanji từ trí nhớ, không chỉ nhận dạng. Bốn loại thẻ xây dựng khả năng nhớ lại thực sự qua việc viết chủ động.';
+
+  @override
+  String get helpFeatureCompositaTitle => 'Composita & Câu ví dụ';
+
+  @override
+  String get helpFeatureCompositaDesc =>
+      'Bạn chọn từ ghép nào để học. Học kanji trong ngữ cảnh với hơn 6.000 câu ví dụ.';
+
+  @override
+  String get helpFeatureStrokeOrderTitle => 'Thứ tự nét';
+
+  @override
+  String get helpFeatureStrokeOrderDesc =>
+      'Sơ đồ hoạt hình từng nét với khung tập viết cho mỗi kanji.';
+
+  @override
+  String get helpFeatureDictionaryTitle => 'Từ điển';
+
+  @override
+  String get helpFeatureDictionaryDesc =>
+      'Hơn 60.000 từ từ JMdict. Vẽ để tra kanji đơn lẻ hoặc ghép từ theo từng ký tự.';
+
+  @override
+  String get helpFeatureStoriesTitle => 'Từ khóa & Câu chuyện';
+
+  @override
+  String get helpFeatureStoriesDesc =>
+      'Thêm phương pháp ghi nhớ và từ khóa riêng cho mỗi kanji để nhớ lâu hơn.';
+
+  @override
+  String get helpSettingsSection => 'Cài đặt';
 
   @override
   String get helpAcknowledgement =>
-      'Kanjitomo would not be possible without these wonderful open-source projects and data sets:';
+      'Kanjitomo sẽ không thể ra đời nếu thiếu các dự án mã nguồn mở và bộ dữ liệu tuyệt vời sau:';
 
   @override
-  String get helpOpenSourceLicenses => 'All licenses';
+  String get helpOpenSourceLicenses => 'Tất cả giấy phép';
 
   @override
-  String get jlptEditTitle => 'Edit JLPT scope';
+  String get jlptEditTitle => 'Chỉnh sửa phạm vi JLPT';
 
   @override
-  String get jlptEditLevels => 'JLPT level(s)';
+  String get jlptEditLevels => 'Cấp độ JLPT';
 
   @override
   String jlptEditKanjiInScope(int count) {
-    return '$count kanji in scope';
+    return '$count kanji trong phạm vi';
   }
 
   @override
-  String get jlptEditCompositaCeiling => 'Composita/sentence ceiling';
+  String get jlptEditCompositaCeiling => 'Giới hạn composita/câu';
 
   @override
   String get jlptEditCompositaCeilingDescription =>
-      'The hardest level a composita word is allowed to be, independent of the kanji level(s) selected above. Leave off to skip composita/sentence testing entirely for this scope.';
+      'Cấp độ khó nhất mà một từ composita được phép có, độc lập với các cấp kanji đã chọn ở trên. Tắt để bỏ qua hoàn toàn phần kiểm tra composita/câu cho phạm vi này.';
 
   @override
-  String get jlptEditCeilingOff => 'Off';
+  String get jlptEditCeilingOff => 'Tắt';
 
   @override
-  String get customEditTitle => 'Edit custom set';
+  String get customEditTitle => 'Chỉnh sửa bộ tùy chỉnh';
 
   @override
-  String get customEditClear => 'Clear';
+  String get customEditClear => 'Xóa';
 
   @override
-  String get customEditDrawInstruction => 'Draw a kanji to add it to your set:';
+  String get customEditDrawInstruction =>
+      'Vẽ một kanji để thêm vào bộ của bạn:';
 
   @override
-  String get customEditSetEmpty => 'Your custom set is empty.';
+  String get customEditSetEmpty => 'Bộ tùy chỉnh của bạn đang trống.';
 
   @override
   String get customEditSetInstruction =>
-      'Your custom set (tap to edit, hold to remove):';
+      'Bộ tùy chỉnh của bạn (chạm để sửa, giữ để xóa):';
 
   @override
   String customEditIsKana(String char) {
-    return '$char is kana, not a kanji';
+    return '$char là kana, không phải kanji';
   }
 
   @override
   String customEditAlreadyInSet(String char) {
-    return '$char is already in your set';
+    return '$char đã có trong bộ của bạn';
   }
 
   @override
   String customEditAdded(String char) {
-    return 'Added $char to your set';
+    return 'Đã thêm $char vào bộ của bạn';
   }
 
   @override
   String customEditRemoveDialogTitle(String char) {
-    return 'Remove $char?';
+    return 'Xóa $char?';
   }
 
   @override
   String customEditRemoveDialogContent(String char) {
-    return 'Remove $char from your custom set?';
+    return 'Xóa $char khỏi bộ tùy chỉnh của bạn?';
   }
 
   @override
-  String get dialogRemove => 'Remove';
+  String get dialogRemove => 'Xóa';
 
   @override
-  String get customEditClearDialogTitle => 'Clear custom set?';
+  String get customEditClearDialogTitle => 'Xóa bộ tùy chỉnh?';
 
   @override
   String customEditClearDialogContent(int count) {
-    return 'This removes all $count kanji from your custom set. This cannot be undone.';
+    return 'Thao tác này sẽ xóa tất cả $count kanji khỏi bộ tùy chỉnh. Không thể hoàn tác.';
   }
 
   @override
-  String get dialogCancel => 'Cancel';
+  String get dialogCancel => 'Hủy';
 
   @override
-  String get dialogClear => 'Clear';
+  String get dialogClear => 'Xóa';
 
   @override
   String compositaPickerTitle(String character) {
@@ -207,88 +256,93 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get compositaPickerDescription =>
-      'Only words checked here are used for composita/sentence testing — unlike JLPT mode, custom mode has no level ceiling, so nothing is tested until you pick words below.';
+      'Chỉ những từ được chọn ở đây mới được dùng cho kiểm tra composita/câu — khác với chế độ JLPT, chế độ tùy chỉnh không có giới hạn cấp, nên không có gì được kiểm tra cho đến khi bạn chọn từ bên dưới.';
 
   @override
-  String get compositaPickerEmpty => 'No composita found for this kanji.';
+  String get compositaPickerEmpty => 'Không tìm thấy composita cho kanji này.';
 
   @override
-  String get customEditAddByKanji => 'Add kanji';
+  String get customEditAddByKanji => 'Thêm kanji';
 
   @override
-  String get customEditAddByWord => 'Add composita';
+  String get customEditAddByWord => 'Thêm composita';
 
   @override
-  String get compositaPickerSearchHint => 'Search JMdict for a word...';
+  String get compositaPickerSearchHint => 'Tìm kiếm từ trong JMdict...';
 
   @override
-  String get compositaPickerDrawButton => 'Additional composita';
+  String get compositaPickerDrawButton => 'Composita bổ sung';
 
   @override
   String compositaPickerDrawTitle(String char) {
-    return 'Draw composita for $char';
+    return 'Vẽ composita cho $char';
   }
 
   @override
-  String get compositaPickerAdd => 'Add';
+  String get compositaPickerAdd => 'Thêm';
 
   @override
   String compositaPickerAdded(String word) {
-    return 'Added $word';
+    return 'Đã thêm $word';
   }
 
   @override
-  String get compositaPickerNoResults => 'No matching word found.';
+  String get compositaPickerNoResults => 'Không tìm thấy từ phù hợp.';
 
   @override
   String compositaPickerWordNotForChar(String char) {
-    return 'This word doesn\'t contain $char';
+    return 'Từ này không chứa $char';
   }
 
   @override
-  String get wordLookupAddToReview => 'Add to review';
+  String get wordLookupAddToReview => 'Thêm vào ôn tập';
 
   @override
   String wordLookupAddedToReview(String word) {
-    return 'Added $word for review';
+    return 'Đã thêm $word để ôn tập';
   }
 
   @override
   String wordLookupPickKanjiTitle(String word) {
-    return 'Add $word for which kanji?';
+    return 'Thêm $word cho kanji nào?';
   }
 
   @override
-  String get wordLookupPickKanjiConfirm => 'Add';
+  String get wordLookupPickKanjiConfirm => 'Thêm';
 
   @override
-  String get kanjiBrowserTitle => 'Kanji browser';
+  String get wordLookupAlreadyInReview => 'Đã có trong ôn tập';
 
   @override
-  String get kanjiBrowserSearchLabel =>
-      'Search by reading, meaning, or stroke count';
+  String get wordLookupClearWord => 'Xóa từ';
 
   @override
-  String get kanjiBrowserNoMatch => 'No matching kanji.';
+  String get kanjiBrowserTitle => 'Duyệt kanji';
+
+  @override
+  String get kanjiBrowserSearchLabel => 'Tìm theo cách đọc, nghĩa, hoặc số nét';
+
+  @override
+  String get kanjiBrowserNoMatch => 'Không tìm thấy kanji phù hợp.';
 
   @override
   String get kanjiBrowserColumnKanji => 'Kanji';
 
   @override
-  String get kanjiBrowserColumnMeaning => 'Meaning';
+  String get kanjiBrowserColumnMeaning => 'Nghĩa';
 
   @override
-  String get kanjiBrowserColumnKeyword => 'Keyword';
+  String get kanjiBrowserColumnKeyword => 'Từ khóa';
 
   @override
-  String get kanjiBrowserColumnReadings => 'Readings';
+  String get kanjiBrowserColumnReadings => 'Cách đọc';
 
   @override
-  String get kanjiBrowserColumnStrokes => 'Strokes';
+  String get kanjiBrowserColumnStrokes => 'Nét';
 
   @override
   String get kanjiDetailNoDictionaryEntry =>
-      'No dictionary entry (kana aren\'t covered by the kanji dictionary this app bundles).';
+      'Không có mục từ điển (kana không có trong từ điển kanji đi kèm ứng dụng này).';
 
   @override
   String get kanjiDetailOnyomi => 'On\'yomi';
@@ -297,86 +351,86 @@ class AppLocalizationsVi extends AppLocalizations {
   String get kanjiDetailKunyomi => 'Kun\'yomi';
 
   @override
-  String get kanjiDetailMeaning => 'Meaning';
+  String get kanjiDetailMeaning => 'Nghĩa';
 
   @override
-  String get kanjiDetailStrokeOrder => 'Stroke order';
+  String get kanjiDetailStrokeOrder => 'Thứ tự nét';
 
   @override
-  String get kanjiDetailKeyword => 'Keyword';
+  String get kanjiDetailKeyword => 'Từ khóa';
 
   @override
   String get kanjiDetailKeywordHint =>
-      'A short recall cue (shown before you draw)...';
+      'Gợi ý ngắn để nhớ lại (hiển thị trước khi bạn vẽ)...';
 
   @override
-  String get kanjiDetailStory => 'Story';
+  String get kanjiDetailStory => 'Câu chuyện';
 
   @override
   String get kanjiDetailStoryHint =>
-      'Write your own mnemonic or story for this kanji...';
+      'Viết câu chuyện ghi nhớ riêng của bạn cho kanji này...';
 
   @override
   String get kanjiDetailComposita => 'Composita';
 
   @override
-  String get kanjiDetailExampleSentences => 'Example sentences';
+  String get kanjiDetailExampleSentences => 'Câu ví dụ';
 
   @override
   String kanjiDetailCopied(String character) {
-    return 'Copied \"$character\" to clipboard';
+    return 'Đã sao chép \"$character\" vào bộ nhớ tạm';
   }
 
   @override
-  String get reviewTitle => 'Review';
+  String get reviewTitle => 'Ôn tập';
 
   @override
   String reviewHeader(int done, int total) {
-    return 'Review — $done/$total';
+    return 'Ôn tập — $done/$total';
   }
 
   @override
   String reviewHeaderNew(int done, int total) {
-    return 'Review — $done/$total — New';
+    return 'Ôn tập — $done/$total — Mới';
   }
 
   @override
-  String get reviewNoCardsDue => 'No cards due right now.';
+  String get reviewNoCardsDue => 'Không có thẻ nào cần ôn lúc này.';
 
   @override
   String reviewLearnMore(int count) {
-    return 'Learn $count more';
+    return 'Học thêm $count';
   }
 
   @override
   String reviewMoreAvailable(int count) {
-    return '$count more available';
+    return 'Còn $count chờ học';
   }
 
   @override
-  String get reviewLearnMoreButton => 'Learn more';
+  String get reviewLearnMoreButton => 'Học thêm';
 
   @override
-  String get reviewReturnButton => 'Return';
+  String get reviewReturnButton => 'Quay lại';
 
   @override
-  String get reviewCorrect => 'Correct!';
+  String get reviewCorrect => 'Chính xác!';
 
   @override
   String reviewAnswer(String character) {
-    return 'Answer: $character';
+    return 'Đáp án: $character';
   }
 
   @override
   String reviewYouPicked(String character) {
-    return 'You picked: $character';
+    return 'Bạn chọn: $character';
   }
 
   @override
-  String get reviewContinue => 'Continue';
+  String get reviewContinue => 'Tiếp tục';
 
   @override
-  String get reviewShowDetails => 'Show details';
+  String get reviewShowDetails => 'Xem chi tiết';
 
   @override
   String reviewOnyomi(String readings) {
@@ -390,190 +444,196 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String reviewMeaning(String meanings) {
-    return 'Meaning: $meanings';
+    return 'Nghĩa: $meanings';
   }
 
   @override
   String reviewKeyword(String keyword) {
-    return 'Keyword: $keyword';
+    return 'Từ khóa: $keyword';
   }
 
   @override
-  String get reviewDrawFromMeaningPrompt => 'Draw this kanji from memory:';
+  String get reviewDrawFromMeaningPrompt => 'Vẽ kanji này từ trí nhớ:';
 
   @override
-  String get reviewDontKnow => 'Don\'t know';
+  String get reviewDontKnow => 'Không biết';
 
   @override
   String get reviewKanjiRecognitionPrompt =>
-      'What is the reading and meaning of this kanji?';
+      'Cách đọc và nghĩa của kanji này là gì?';
 
   @override
-  String get reviewReveal => 'Reveal';
+  String get reviewReveal => 'Hiện đáp án';
 
   @override
-  String get reviewAgain => 'Again';
+  String get reviewAgain => 'Lại';
 
   @override
-  String get reviewGood => 'Good';
+  String get reviewGood => 'Tốt';
 
   @override
-  String get reviewShowTranslation => 'Show translation';
+  String get reviewShowTranslation => 'Hiện bản dịch';
 
   @override
-  String get reviewHideTranslation => 'Hide translation';
+  String get reviewHideTranslation => 'Ẩn bản dịch';
 
   @override
-  String get reviewReadingClozePrompt =>
-      'What is the reading of the highlighted word?';
+  String get reviewReadingClozePrompt => 'Cách đọc của từ được tô sáng là gì?';
 
   @override
   String reviewSlideshowTitle(int current, int total) {
-    return 'New kanji ($current/$total)';
+    return 'Kanji mới ($current/$total)';
   }
 
   @override
-  String get reviewSlideshowStartReview => 'Start review';
+  String get reviewSlideshowStartReview => 'Bắt đầu ôn tập';
 
   @override
-  String get reviewSlideshowNext => 'Next';
+  String get reviewSlideshowNext => 'Tiếp';
 
   @override
-  String get reviewStartTitle => 'Review';
+  String get reviewStartTitle => 'Ôn tập';
 
   @override
-  String get reviewStartCurrentSelection => 'Current selection';
+  String get reviewStartCurrentSelection => 'Lựa chọn hiện tại';
 
   @override
   String reviewStartKanjiInScope(int count) {
-    return '$count kanji in scope';
+    return '$count kanji trong phạm vi';
   }
 
   @override
-  String get reviewStartCountingDue => 'Counting due cards…';
+  String get reviewStartCountingDue => 'Đang đếm thẻ cần ôn…';
 
   @override
   String reviewStartDueNow(int count) {
-    return '$count facts due now';
+    return '$count thẻ cần ôn ngay';
   }
 
   @override
   String reviewStartSeen(int seen, int unseen) {
-    return '$seen seen, $unseen new';
+    return '$seen đã học, $unseen mới';
   }
 
   @override
-  String get reviewStartCustomSetEmpty => 'Custom set (empty)';
+  String get reviewStartCustomSetEmpty => 'Bộ tùy chỉnh (trống)';
 
   @override
-  String get reviewStartCustomSet => 'Custom set';
+  String get reviewStartCustomSet => 'Bộ tùy chỉnh';
 
   @override
   String reviewStartRtk(int index) {
-    return 'RTK up to $index';
+    return 'RTK đến $index';
   }
 
   @override
-  String get reviewStartNothingSelected => 'Nothing selected';
+  String get reviewStartNothingSelected => 'Chưa chọn gì';
 
   @override
-  String get reviewStartNewKanjiPerDay => 'New kanji per day:';
+  String get reviewStartNewKanjiPerDay => 'Kanji mới mỗi ngày:';
 
   @override
-  String get reviewStartButton => 'Review';
+  String get reviewStartButton => 'Ôn tập';
 
   @override
   String reviewStartPoolHeading(int count) {
-    return 'Learning pool ($count)';
+    return 'Danh sách học ($count)';
   }
 
   @override
-  String get reviewContinueButton => 'Continue Review';
+  String get reviewContinueButton => 'Tiếp tục ôn tập';
 
   @override
   String reviewStartLearnNew(int count) {
-    return 'Learn $count new kanji';
+    return 'Học $count kanji mới';
   }
 
   @override
-  String get reviewLeaveDialogTitle => 'Leave review?';
+  String get reviewLeaveDialogTitle => 'Rời khỏi ôn tập?';
 
   @override
   String get reviewLeaveDialogContent =>
-      'Your daily review is not complete yet. Leave anyway?';
+      'Bạn chưa hoàn thành ôn tập hôm nay. Vẫn rời đi?';
 
   @override
-  String get reviewLeaveConfirm => 'Leave';
+  String get reviewLeaveConfirm => 'Rời đi';
 
   @override
-  String get statisticsTitle => 'Statistics';
+  String get statisticsTitle => 'Thống kê';
 
   @override
-  String get statisticsKanjiRecognition => 'Kanji recognition';
+  String get statisticsKanjiRecognition => 'Nhận dạng kanji';
 
   @override
-  String get statisticsDrawFromMeaning => 'Draw from meaning';
+  String get statisticsDrawFromMeaning => 'Vẽ từ nghĩa';
 
   @override
-  String get statisticsReadingCloze => 'Reading (composita/sentence)';
+  String get statisticsReadingCloze => 'Đọc (composita/câu)';
 
   @override
-  String get statisticsDrawInSentence =>
-      'Draw in sentence (composita/sentence)';
+  String get statisticsDrawInSentence => 'Vẽ trong câu (composita/câu)';
 
   @override
-  String get statisticsKnown => 'Learnt';
+  String get statisticsKnown => 'Đạt';
 
   @override
-  String get statisticsMissed => 'Learning';
+  String get statisticsMissed => 'Đang học';
 
   @override
-  String get statisticsNotStarted => 'Not started';
+  String get statisticsNotStarted => 'Chưa bắt đầu';
 
   @override
-  String get statisticsCompositaTitle => 'Composita/sentence testing';
+  String get statisticsCompositaTitle => 'Kiểm tra composita/câu';
 
   @override
   String statisticsTestableWords(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'words',
-      one: 'word',
+      other: 'từ',
+      one: 'từ',
     );
-    return '$count testable $_temp0 in this scope — never gates green, tracked separately.';
+    return '$count $_temp0 có thể kiểm tra trong phạm vi này — không ảnh hưởng đến thanh xanh, được theo dõi riêng.';
   }
 
   @override
-  String get statisticsReadingTested => 'Reading tested';
+  String get statisticsReadingTested => 'Đã kiểm tra đọc';
 
   @override
-  String get statisticsWritingTested => 'Writing tested';
+  String get statisticsWritingTested => 'Đã kiểm tra viết';
 
   @override
-  String get statisticsInspectAllKanji => 'Inspect all kanji';
+  String get statisticsInspectAllKanji => 'Xem tất cả kanji';
 
   @override
-  String get statisticsResetButton => 'Reset statistics';
+  String statisticsLearnt(int count, int total) {
+    return '$count / $total đã thuộc';
+  }
 
   @override
-  String get statisticsResetDialogTitle => 'Reset statistics?';
+  String get statisticsResetButton => 'Đặt lại thống kê';
+
+  @override
+  String get statisticsResetDialogTitle => 'Đặt lại thống kê?';
 
   @override
   String get statisticsResetDialogContent =>
-      'This clears all review progress (due dates, known/unknown status, and new-card introductions) for every kanji. You will start from scratch. This cannot be undone.';
+      'Thao tác này sẽ xóa toàn bộ tiến trình ôn tập (ngày đến hạn, trạng thái biết/chưa biết, và lần giới thiệu thẻ mới) cho mọi kanji. Bạn sẽ bắt đầu lại từ đầu. Không thể hoàn tác.';
 
   @override
-  String get statisticsResetConfirm => 'Reset';
+  String get statisticsResetConfirm => 'Đặt lại';
 
   @override
-  String get drawAndPickClearDrawing => 'Clear drawing';
+  String get undoStroke => 'Hoàn tác nét';
 
   @override
-  String get drawAndPickRecognizing => 'Recognizing...';
+  String get drawAndPickClearDrawing => 'Xóa nét vẽ';
 
   @override
-  String get drawAndPickWhichOne => 'Which one did you draw?';
+  String get drawAndPickRecognizing => 'Đang nhận dạng...';
+
+  @override
+  String get drawAndPickWhichOne => 'Bạn đã vẽ chữ nào?';
 
   @override
   String legendValuePercent(String label, int value, int percent) {
@@ -586,49 +646,49 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get proPaywallTitle => 'Unlock Pro';
+  String get proPaywallTitle => 'Mở khóa Pro';
 
   @override
   String get proPaywallDescription =>
-      'Get access to all JLPT levels, custom study sets, composita testing, and statistics.';
+      'Truy cập tất cả cấp độ JLPT, bộ học tùy chỉnh, kiểm tra composita và thống kê.';
 
   @override
-  String get proPaywallFeatureJlpt => 'All JLPT levels (N1–N3)';
+  String get proPaywallFeatureJlpt => 'Tất cả cấp độ JLPT (N1–N3)';
 
   @override
-  String get proPaywallFeatureCustom => 'Unlimited custom kanji sets';
+  String get proPaywallFeatureCustom => 'Bộ kanji tùy chỉnh không giới hạn';
 
   @override
-  String get proPaywallFeatureComposita => 'Composita & sentence testing';
+  String get proPaywallFeatureComposita => 'Kiểm tra composita & câu';
 
   @override
-  String get proPaywallFeatureStats => 'Detailed statistics';
+  String get proPaywallFeatureStats => 'Thống kê chi tiết';
 
   @override
   String proPaywallBuyButton(String price) {
-    return 'Unlock Pro — $price';
+    return 'Mở khóa Pro — $price';
   }
 
   @override
-  String get proPaywallRestore => 'Restore Purchases';
+  String get proPaywallRestore => 'Khôi phục giao dịch';
 
   @override
-  String get proPaywallRestoring => 'Restoring...';
+  String get proPaywallRestoring => 'Đang khôi phục...';
 
   @override
-  String get proPaywallError => 'Purchase failed. Please try again.';
+  String get proPaywallError => 'Giao dịch thất bại. Vui lòng thử lại.';
 
   @override
-  String get proPaywallRestoreSuccess => 'Purchases restored!';
+  String get proPaywallRestoreSuccess => 'Đã khôi phục giao dịch!';
 
   @override
-  String get proPaywallRestoreNothing => 'No previous purchase found.';
+  String get proPaywallRestoreNothing => 'Không tìm thấy giao dịch trước đó.';
 
   @override
-  String get proLevelLocked => 'Pro required for N1–N3';
+  String get proLevelLocked => 'Cần Pro cho N1–N3';
 
   @override
-  String get helpRestorePurchases => 'Restore Purchases';
+  String get helpRestorePurchases => 'Khôi phục giao dịch';
 
   @override
   String customEditKanjiCount(int count, int limit) {
@@ -642,262 +702,265 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String customEditLimitReached(int limit) {
-    return 'Free tier limited to $limit kanji';
+    return 'Bản miễn phí giới hạn $limit kanji';
   }
 
   @override
-  String get customEditAddElements => 'Add elements';
+  String get customEditAddElements => 'Thêm thành phần';
 
   @override
-  String get dueOverviewTitle => 'Upcoming reviews';
+  String get dueOverviewTitle => 'Lịch ôn tập sắp tới';
 
   @override
-  String get dueOverviewOverdue => 'Overdue';
+  String get dueOverviewOverdue => 'Quá hạn';
 
   @override
-  String get dueOverviewToday => 'Today';
+  String get dueOverviewToday => 'Hôm nay';
 
   @override
-  String get dueOverviewTomorrow => 'Tomorrow';
+  String get dueOverviewTomorrow => 'Ngày mai';
 
   @override
-  String get dueOverviewThisWeek => 'This week';
+  String get dueOverviewThisWeek => 'Tuần này';
 
   @override
-  String get dueOverviewLater => 'Later';
+  String get dueOverviewLater => 'Sau này';
 
   @override
-  String get dueOverviewNotStarted => 'Not started';
+  String get dueOverviewNotStarted => 'Chưa bắt đầu';
 
   @override
   String dueOverviewCompact(int tomorrow, int week, int later) {
-    return 'Tomorrow: $tomorrow · This week: $week · Later: $later';
+    return 'Ngày mai: $tomorrow · Tuần này: $week · Sau này: $later';
   }
 
   @override
-  String get learningQuiz => 'Quiz';
+  String get learningQuiz => 'Câu đố kiểu JLPT';
 
   @override
-  String get quizStartTitle => 'Quiz';
+  String get quizStartTitle => 'Câu đố';
 
   @override
-  String get quizStartQuestionCount => 'Number of questions:';
+  String get quizStartQuestionCount => 'Số câu hỏi:';
 
   @override
-  String get quizStartButton => 'Start Quiz';
+  String get quizStartButton => 'Bắt đầu';
 
   @override
   String quizProgress(int current, int total) {
-    return 'Question $current/$total';
+    return 'Câu $current/$total';
   }
 
   @override
-  String get quizPickReading => 'What is the reading of the highlighted word?';
+  String get quizPickReading => 'Cách đọc của từ được tô sáng là gì?';
 
   @override
-  String get quizPickKanji => 'Which word fits in the sentence?';
+  String get quizPickKanji => 'Từ nào phù hợp với câu?';
 
   @override
-  String get quizCorrect => 'Correct!';
+  String get quizCorrect => 'Chính xác!';
 
   @override
-  String get quizWrong => 'Wrong — the answer is:';
+  String get quizWrong => 'Sai — đáp án là:';
 
   @override
-  String get quizNext => 'Next';
+  String get quizNext => 'Tiếp';
 
   @override
-  String get quizResultTitle => 'Quiz Results';
+  String get quizResultTitle => 'Kết quả';
 
   @override
   String quizResultScore(int correct, int total) {
-    return '$correct/$total correct';
+    return '$correct/$total đúng';
   }
 
   @override
-  String get quizDone => 'Done';
+  String get quizDone => 'Xong';
 
   @override
-  String get quizNotEnoughWords => 'Not enough words in scope for a quiz.';
+  String get quizNotEnoughWords => 'Không đủ từ trong phạm vi để làm câu đố.';
 
   @override
   String reviewStartBacklogInfo(int count) {
-    return 'You have $count cards to review from previous days.';
+    return 'Bạn có $count thẻ cần ôn từ những ngày trước.';
   }
 
   @override
-  String get reviewStartReviewBacklog => 'Review backlog first';
+  String get reviewStartReviewBacklog => 'Ôn phần tồn đọng trước';
 
   @override
   String reviewStartBacklogAndNew(int count) {
-    return 'Also learn $count new kanji';
+    return 'Đồng thời học thêm $count kanji mới';
   }
 
   @override
   String reviewStartNewKanjiDialog(int dueCount, int newCount, int totalCount) {
-    return 'You have $dueCount cards due for review. Want to add $newCount new kanji? That results in $totalCount facts to review.';
+    return 'Bạn có $dueCount thẻ cần ôn. Bạn muốn thêm $newCount kanji mới không? Tổng cộng sẽ có $totalCount thẻ cần ôn.';
   }
 
   @override
-  String get reviewStartDialogYes => 'Yes';
+  String get reviewStartDialogYes => 'Có';
 
   @override
-  String get reviewStartDialogNo => 'No';
+  String get reviewStartDialogNo => 'Không';
 
   @override
   String reviewLearnMoreEstimate(int factCount) {
-    return 'That adds $factCount new facts';
+    return 'Sẽ thêm $factCount thẻ mới';
   }
 
   @override
-  String get reviewUndoTooltip => 'Redo previous card';
+  String get reviewUndoTooltip => 'Làm lại thẻ trước';
 
   @override
-  String get jlptEditCompositaPerKanji => 'Composita words per kanji';
+  String get jlptEditCompositaPerKanji => 'Số từ composita mỗi kanji';
 
   @override
-  String get quizOnlySeenKanji => 'Only quiz seen kanji';
+  String get quizOnlySeenKanji => 'Chỉ hỏi kanji đã học';
 
   @override
-  String get reviewMaxBacklog => 'Maximum backlog:';
+  String get reviewMaxBacklog => 'Tồn đọng tối đa:';
 
   @override
-  String get reviewMaxBacklogHint => '0 = no limit';
+  String get reviewMaxBacklogHint => '0 = không giới hạn';
 
   @override
-  String get ftdLookupTitle => 'Draw to recognize';
+  String get ftdLookupTitle => 'Vẽ để nhận dạng';
 
   @override
   String get ftdLookupMessage =>
-      'Draw a kanji stroke by stroke on the canvas. The app recognizes it after each stroke and shows the best matches. Tap a result to see its full detail — readings, meaning, stroke order, and more.\n\nTry it now — minimize this card and draw something!';
+      'Vẽ bất kỳ kanji nào trên khung vẽ — mạng nơ-ron nhận dạng ngay lập tức, ngay cả với chữ viết tay lộn xộn. Hỗ trợ hơn 6.500 ký tự, hoàn toàn ngoại tuyến.\n\nChạm vào kết quả để xem cách đọc, nghĩa, thứ tự nét, câu ví dụ và từ ghép.\n\nThử ngay bây giờ — thu nhỏ thẻ này và vẽ thử!';
 
   @override
-  String get ftdWordLookupTitle => 'Word lookup';
+  String get ftdWordLookupTitle => 'Tra từ';
 
   @override
   String get ftdWordLookupMessage =>
-      'Build a word one character at a time by drawing each one, or type directly into the text field. The app looks up the word in the dictionary and shows its reading and meaning.\n\nMinimize this card to try it out!';
+      'Tra từ ghép trong từ điển hơn 60.000 từ (JMdict). Vẽ từng ký tự để ghép từ, hoặc gõ trực tiếp.\n\nThu nhỏ thẻ này để thử!';
 
   @override
-  String get ftdLearningTitle => 'Learning';
+  String get ftdLearningTitle => 'Học tập';
 
   @override
   String get ftdLearningMessage =>
-      'Add kanji to your learning pool from JLPT levels, RTK order, or by drawing. Review uses spaced repetition to test reading and writing. You can also take quick quizzes and track your progress with statistics.';
+      'Bạn quyết định học gì. Thêm kanji theo cấp JLPT hoặc chọn từng ký tự riêng lẻ. Lặp lại ngắt quãng kiểm tra bạn bốn cách — bao gồm vẽ từ trí nhớ, xây dựng khả năng nhớ lại chủ động mà các ứng dụng thụ động không thể có.\n\nTheo dõi tiến trình với thống kê chi tiết.';
 
   @override
-  String get ftdBrowserTitle => 'Kanji browser';
+  String get ftdBrowserTitle => 'Duyệt kanji';
 
   @override
   String get ftdBrowserMessage =>
-      'Browse all Jōyō kanji in a searchable table. Search by reading (hiragana or katakana), meaning (English), stroke count, or the character itself. Colored dots show your review progress — green for known, orange for missed.';
+      'Duyệt tất cả kanji Jōyō trong bảng có thể tìm kiếm. Lọc theo cách đọc, nghĩa, hoặc số nét. Chạm vào bất kỳ kanji nào để xem chi tiết — và chọn từ ghép (composita) nào bạn muốn trong ôn tập.\n\nCác chấm màu thể hiện tiến trình ôn tập của bạn một cách nhanh chóng.';
 
   @override
-  String get ftdReviewSessionTitle => 'Review session';
+  String get ftdReviewSessionTitle => 'Phiên ôn tập';
 
   @override
   String get ftdReviewSessionMessage =>
-      'Four card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nGrade yourself with Again (missed) or Good (recalled).';
+      'Bốn loại thẻ kiểm tra các khía cạnh nhớ lại khác nhau:\n• Vẽ từ nghĩa — xem từ khóa, viết kanji từ trí nhớ\n• Nhận dạng kanji — xem kanji, nhớ lại cách đọc và nghĩa\n• Điền khuyết cách đọc — đọc từ ghép trong câu thực tế\n• Vẽ trong câu — viết kanji trong ngữ cảnh\n\nVẽ từ trí nhớ khó hơn chọn đáp án — đó chính là mục đích. Tự chấm điểm với Lại (nhầm) hoặc Tốt (nhớ được).';
 
   @override
-  String get ftdGotIt => 'Got it';
+  String get ftdGotIt => 'Đã hiểu';
 
   @override
-  String get helpResetTips => 'Reset help';
+  String get helpResetTips => 'Đặt lại trợ giúp';
 
   @override
   String get helpResetTipsDone =>
-      'Help reset — the welcome tour will appear again next time.';
+      'Đã đặt lại trợ giúp — hướng dẫn chào mừng sẽ xuất hiện lại lần tới.';
 
   @override
-  String get welcomeTitle => 'Welcome to Kanjitomo';
+  String get welcomeTitle => 'Chào mừng đến Kanjitomo';
 
   @override
-  String get welcomeSubtitle => 'Learn to read and write Japanese kanji';
+  String get welcomeSubtitle => 'Công cụ học kanji cho người học nghiêm túc';
 
   @override
-  String get welcomeTakeTour => 'Take a tour';
+  String get welcomeTakeTour => 'Xem hướng dẫn';
 
   @override
-  String get welcomeSkip => 'Skip';
+  String get welcomeSkip => 'Bỏ qua';
 
   @override
-  String get welcomeDone => 'Start learning!';
+  String get welcomeDone => 'Bắt đầu học!';
 
   @override
-  String get tourNext => 'Next';
+  String get tourNext => 'Tiếp';
 
   @override
-  String get tourBack => 'Back';
+  String get tourBack => 'Quay lại';
 
   @override
-  String get welcomeDontShowAgain => 'Don\'t show again';
+  String get welcomeDontShowAgain => 'Không hiển thị lại';
 
   @override
   String get welcomeFeatureList =>
-      'Draw kanji to look them up, build words character by character, study with spaced repetition, and browse all Jōyō kanji.';
+      'Vẽ kanji từ trí nhớ để xây dựng khả năng nhớ lại thực sự — không chỉ nhận dạng. Bạn chọn những gì cần học: chọn kanji, chọn từ ghép, chọn tốc độ. Ngoại tuyến, không cần tài khoản, không theo dõi.';
 
   @override
   String get helpReviewStart =>
-      'Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew kanji are introduced in RTK order (building on shared radicals). You can set how many new kanji per day.\n\nIf you skip 2+ days and have a backlog of due cards, new kanji are paused until you catch up. Use \"Learn more\" inside a session to override this.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.';
+      'Ôn tập sử dụng lặp lại ngắt quãng (SM-2) để lên lịch thẻ với khoảng cách tăng dần.\n\nBốn loại thẻ kiểm tra bạn:\n• Vẽ từ nghĩa — xem nghĩa, vẽ kanji\n• Nhận dạng kanji — xem kanji, nhớ lại cách đọc\n• Điền khuyết cách đọc — đọc một từ trong câu\n• Vẽ trong câu — vẽ kanji trong ngữ cảnh\n\nSố thẻ mới mỗi ngày và số lượt ôn tối đa mỗi ngày được cài đặt ở trung tâm học tập. Ôn tập luôn được ưu tiên; thẻ mới sẽ lấp đầy ngân sách còn lại. Sử dụng \"Học thêm\" trong phiên để thêm thẻ vượt giới hạn hàng ngày.\n\nTự chấm điểm: Lại (quên) hoặc Tốt (nhớ được). Thẻ sẽ xuất hiện lại sau ít nhất 1 ngày, với khoảng cách tăng dần khi bạn trả lời đúng.\n\nBạn có thể thêm từ khóa và câu chuyện (mẹo ghi nhớ) riêng cho mỗi kanji. Chạm vào bất kỳ kanji nào trong trình duyệt hoặc khi ôn tập để chỉnh sửa. Từ khóa hiển thị trong thẻ vẽ từ nghĩa; câu chuyện xuất hiện khi bạn hiện đáp án. Chúng giúp bạn tạo liên kết dễ nhớ giữa hình dạng, nghĩa và các thành phần của kanji.';
 
   @override
   String get helpJlptEdit =>
-      'Select one or more JLPT levels. All kanji from the selected levels are combined into your study scope.\n\nComposita ceiling controls which vocabulary words are tested:\n• Off — no word/sentence testing, only bare kanji\n• N5–N1 — only test words at or easier than this level\nThe ceiling is independent of kanji levels (e.g. study N3 kanji with N5 words only).\n\nNew kanji/day: how many new characters to introduce each day (default 10).\n\nMax backlog: optional limit on how many due cards can pile up before new kanji stop being introduced.\n\nComposita/kanji: how many words per character are tested (2–5, default 4).\n\nChanging levels takes effect immediately. Your review progress for each kanji is preserved even if you remove a level and add it back later.';
+      'Chọn một hoặc nhiều cấp độ JLPT. Tất cả kanji từ các cấp đã chọn được kết hợp thành phạm vi học.\n\nGiới hạn composita kiểm soát từ vựng nào được kiểm tra:\n• Tắt — không kiểm tra từ/câu, chỉ kanji đơn\n• N5–N1 — chỉ kiểm tra từ ở cấp đó hoặc dễ hơn\nGiới hạn này độc lập với cấp kanji (ví dụ: học kanji N3 với chỉ từ N5).\n\nKanji mới/ngày: số ký tự mới được giới thiệu mỗi ngày (mặc định 10).\n\nTồn đọng tối đa: giới hạn tùy chọn về số thẻ đến hạn có thể tích lũy trước khi ngừng giới thiệu kanji mới. Đặt 0 để tắt giới hạn.\n\nComposita/kanji: số từ được kiểm tra cho mỗi ký tự (2–5, mặc định 4).\n\nThay đổi cấp độ có hiệu lực ngay lập tức. Tiến trình ôn tập được chia sẻ giữa chế độ JLPT và Tùy chỉnh — kanji đã ôn ở chế độ này cũng được tính ở chế độ kia.';
 
   @override
   String get helpCustomEdit =>
-      'Build your own study list by drawing kanji one at a time.\n\nTap a kanji to choose which vocabulary words (composita) to test for it. Unlike JLPT mode, nothing is auto-included — you explicitly pick each word.\n\nLong-press a kanji to remove it from your list.\n\nYour review progress is preserved even if you remove and re-add a kanji.';
+      'Tạo danh sách học riêng bằng cách vẽ từng kanji một.\n\nChạm vào kanji để chọn từ vựng (composita) nào sẽ được kiểm tra. Khác với chế độ JLPT, không có gì được tự động thêm — bạn tự chọn từng từ.\n\nGiữ lâu vào kanji để xóa khỏi danh sách.\n\nTiến trình ôn tập được chia sẻ giữa chế độ JLPT và Tùy chỉnh — kanji đã ôn ở chế độ này cũng được tính ở chế độ kia.';
 
   @override
   String get helpQuiz =>
-      'The quiz is a quick multiple-choice self-test. It has no effect on your spaced-repetition progress.\n\nTwo question types are randomly mixed:\n• Kanji → Reading: a sentence with a kanji highlighted; pick its reading\n• Reading → Kanji: a sentence with readings shown; pick which kanji word fits\n\nOnly kanji you have already reviewed at least once are included.';
+      'Câu đố là bài tự kiểm tra nhanh dạng trắc nghiệm. Không ảnh hưởng đến tiến trình lặp lại ngắt quãng.\n\nHai loại câu hỏi được trộn ngẫu nhiên:\n• Kanji → Cách đọc: một câu có kanji được tô sáng; chọn cách đọc đúng\n• Cách đọc → Kanji: một câu hiển thị cách đọc; chọn từ kanji phù hợp\n\nChỉ bao gồm kanji bạn đã ôn ít nhất một lần.';
 
   @override
   String get helpStatistics =>
-      'Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 2 times in a row\n• Learning (orange): reviewed but not yet at 2 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 2 consecutive correct answers again.\n\nKanji grid: each kanji shows colored dots.\n• First dot — core progress: green (both reading and writing learnt), orange (at least one direction started), gray (not yet reviewed)\n• Second dot — composita progress (only shown when the character has testable composita words): green (all words tested in both directions), orange (at least one tested), gray (none tested)\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.';
+      'Thống kê hiển thị tiến trình cho phạm vi học hiện tại.\n\nTổng quan đến hạn: số thẻ quá hạn, đến hạn hôm nay, ngày mai, tuần này, hoặc sau này.\n\nTheo loại thẻ (vẽ, nhận dạng, điền khuyết cách đọc, vẽ trong câu):\n• Đã thuộc (xanh): trả lời đúng 2 lần liên tiếp\n• Đang học (cam): đã ôn nhưng chưa đạt 2 lần đúng liên tiếp\n• Chưa bắt đầu (xám): chưa từng ôn\n\nTrả lời sai sẽ đặt lại về 0 — bạn cần 2 lần đúng liên tiếp lại.\n\nLưới kanji: mỗi kanji hiển thị các chấm màu.\n• Chấm thứ nhất — tiến trình chính: xanh (cả đọc và viết đã thuộc), cam (ít nhất một hướng đã bắt đầu), xám (chưa ôn)\n• Chấm thứ hai — tiến trình composita (chỉ hiển thị khi ký tự có từ composita có thể kiểm tra): xanh (tất cả từ đã kiểm tra cả hai hướng), cam (ít nhất một từ đã kiểm tra), xám (chưa kiểm tra)\n\nĐộ phủ composita cho thấy bao nhiêu từ đủ điều kiện đã được kiểm tra ít nhất một lần cho đọc và viết.\n\nSử dụng nút đặt lại ở cuối để xóa toàn bộ tiến trình ôn tập và bắt đầu lại.';
 
   @override
   String get helpLearning =>
-      'This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven\'t reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.';
+      'Đây là trung tâm học tập để quản lý việc học kanji.\n\nÔn tập: Bắt đầu phiên lặp lại ngắt quãng với các thẻ đến hạn.\n\nCâu đố: Bài tự kiểm tra trắc nghiệm (không ảnh hưởng tiến trình ôn tập).\n\nThêm/Xóa: Thêm kanji theo cấp JLPT, thứ tự RTK, hoặc bằng cách vẽ. Quản lý danh sách học, cài đặt composita và từng kanji riêng lẻ.\n\nThống kê: Xem tiến trình theo loại thẻ, độ phủ composita và lưới kanji với chấm màu.\n\n── Cài đặt ──\n\nThẻ mới/ngày: Số thẻ chưa từng ôn được giới thiệu mỗi ngày. Đây là kanji bạn đã thêm nhưng chưa ôn.\n\nÔn tối đa/ngày: Ngân sách hàng ngày cho tất cả thẻ — cả ôn lại thẻ đã học và thẻ mới. Ôn tập luôn được ưu tiên; thẻ mới lấp đầy phần còn lại.\n\nVí dụ: Với Mới=30 và Tối đa=200, nếu bạn có 120 thẻ cần ôn và đã làm 50 hôm nay:\n• Ngân sách còn lại: 200 − 50 = 150\n• Thẻ cần ôn: 120 (nằm trong 150)\n• Còn lại cho thẻ mới: 150 − 120 = 30\n• Tổng phiên: 150 thẻ\n\nNếu thẻ cần ôn vượt quá tối đa (ví dụ: 250 cần ôn, tối đa 200), chỉ 200 thẻ ôn được hiển thị và không có thẻ mới — ưu tiên ôn bù trước.\n\nĐặt giá trị nào bằng 0 để không giới hạn.';
 
   @override
-  String get helpSupportDevelopment => 'Support development';
+  String get helpSupportDevelopment => 'Ủng hộ phát triển';
 
   @override
   String get helpSupportDescription =>
-      'Kanjitomo is free and always will be. If you find it useful, consider buying me a coffee!';
+      'Kanjitomo miễn phí và sẽ luôn miễn phí. Nếu bạn thấy hữu ích, hãy mời tôi một ly cà phê!';
 
   @override
-  String get helpReportBug => 'Report a bug';
+  String get helpReportBug => 'Báo lỗi';
 
   @override
   String get helpReportBugDescription =>
-      'Found a problem? Send us an email and we\'ll look into it.';
+      'Phát hiện vấn đề? Gửi email cho chúng tôi và chúng tôi sẽ xem xét.';
 
   @override
-  String get helpBugEmailSubject => 'Kanjitomo bug report';
+  String get helpBugEmailSubject => 'Báo lỗi Kanjitomo';
 
   @override
-  String get learningPoolStats => 'Your learning pool';
+  String get helpPrivacyPolicy => 'Chính sách bảo mật';
+
+  @override
+  String get learningPoolStats => 'Danh sách học của bạn';
 
   @override
   String learningKanjiCount(int count) {
-    return '$count kanji in pool';
+    return '$count kanji trong danh sách';
   }
 
   @override
   String learningSeen(int seen) {
-    return '$seen seen';
+    return '$seen đã học';
   }
 
   @override
   String learningDue(int due) {
-    return '$due cards due';
+    return '$due thẻ đến hạn';
   }
 
   @override
-  String get learningAddRemove => 'Add/Remove';
+  String get learningAddRemove => 'Thêm/Xóa';
 
   @override
   String learningQuickAddJlpt(int count, int level) {
@@ -910,169 +973,179 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get learningQuickAddHint => 'Shortcut — adds kanji in RTK order.';
+  String get learningQuickAddHint => 'Phím tắt — thêm kanji theo thứ tự RTK.';
 
   @override
-  String get learningDetailedAdd => 'Add / Remove (detailed)';
+  String get learningDetailedAdd => 'Thêm / Xóa (chi tiết)';
 
   @override
-  String get addRemoveTitle => 'Add / Remove kanji';
+  String get addRemoveBrowseTab => 'Duyệt';
 
   @override
-  String get addRemoveAddByJlpt => 'Add by JLPT level';
+  String get addRemoveBrowseHelp =>
+      'Chạm + để thêm kanji vào danh sách học. Kanji đã có trong danh sách hiển thị dấu tích.';
+
+  @override
+  String get addRemoveTitle => 'Thêm / Xóa kanji';
+
+  @override
+  String get addRemoveAddByJlpt => 'Thêm theo cấp JLPT';
 
   @override
   String get addRemoveJlptHelp =>
-      'Add kanji grouped by JLPT level (N5 = easiest, N1 = hardest). Pick a level and how many to add — they\'ll be added in Heisig (RTK) order for efficient memorization. Compound words are auto-selected based on your settings below.';
+      'Thêm kanji theo nhóm cấp JLPT (N5 = dễ nhất, N1 = khó nhất). Chọn cấp và số lượng cần thêm — chúng sẽ được thêm theo thứ tự Heisig (RTK) để ghi nhớ hiệu quả. Từ ghép được tự động chọn dựa trên cài đặt bên dưới.';
 
   @override
-  String get addRemoveKanjiCount => 'Number of kanji';
+  String get addRemoveKanjiCount => 'Số lượng kanji';
 
   @override
   String get addRemoveAddTip =>
-      'Tip: Add just a few new kanji each day for the best retention.';
+      'Mẹo: Chỉ thêm vài kanji mới mỗi ngày để nhớ tốt nhất.';
 
   @override
-  String get addRemoveAddJlptButton => 'Add JLPT kanji';
+  String get addRemoveAddJlptButton => 'Thêm kanji JLPT';
 
   @override
-  String get addRemoveAddByRtk => 'Add by RTK order';
+  String get addRemoveAddByRtk => 'Thêm theo thứ tự RTK';
 
   @override
   String get addRemoveRtkHelp =>
-      'Add kanji in Heisig\'s Remembering the Kanji (RTK) order, regardless of JLPT level. Good if you\'re following the RTK book or want to learn kanji by building on shared components.';
+      'Thêm kanji theo thứ tự Remembering the Kanji (RTK) của Heisig, không phụ thuộc cấp JLPT. Phù hợp nếu bạn đang theo sách RTK hoặc muốn học kanji dựa trên các thành phần chung.';
 
   @override
-  String get addRemoveAddRtkButton => 'Add RTK kanji';
+  String get addRemoveAddRtkButton => 'Thêm kanji RTK';
 
   @override
-  String get addRemoveDrawToAdd => 'Add by drawing';
+  String get addRemoveDrawToAdd => 'Thêm bằng cách vẽ';
 
   @override
   String get addRemoveDrawHelp =>
-      'Draw any kanji to add it to your learning pool. Useful for adding a specific character you encountered. Compound words are auto-selected based on your settings below.';
+      'Vẽ bất kỳ kanji nào để thêm vào danh sách học. Hữu ích khi muốn thêm một ký tự cụ thể bạn gặp. Từ ghép được tự động chọn dựa trên cài đặt bên dưới.';
 
   @override
-  String get addRemoveCompositaSettings => 'Composita settings';
+  String get addRemoveCompositaSettings => 'Cài đặt composita';
 
   @override
-  String get addRemoveCompositaCeiling => 'Vocabulary level limit';
+  String get addRemoveCompositaCeiling => 'Giới hạn cấp từ vựng';
 
   @override
   String get addRemoveCompositaCeilingHelp =>
-      'Limits which compound words are auto-selected when adding kanji. A word\'s level is determined by its hardest kanji (e.g. 胃腸 is N1 because 腸 is N1, even though 胃 is N3). Set to N2 and 胃腸 won\'t be auto-selected, but 胃袋 (N2) will. You can always manually add any word via the composita picker. \"Off\" allows all levels.';
+      'Giới hạn từ ghép nào được tự động chọn khi thêm kanji. Cấp của một từ được xác định bởi kanji khó nhất (ví dụ: 胃腸 là N1 vì 腸 là N1, dù 胃 là N3). Đặt N2 thì 胃腸 sẽ không được tự động chọn, nhưng 胃袋 (N2) sẽ được chọn. Bạn luôn có thể thêm bất kỳ từ nào qua bộ chọn composita. \"Tắt\" cho phép tất cả cấp.';
 
   @override
-  String get addRemoveCeilingOff => 'Off';
+  String get addRemoveCeilingOff => 'Tắt';
 
   @override
-  String get addRemoveMaxComposita => 'Words per kanji';
+  String get addRemoveMaxComposita => 'Số từ mỗi kanji';
 
   @override
   String get addRemoveMaxCompositaHelp =>
-      'How many compound words to auto-select per kanji for review. More words means more variety but also more cards to review.';
+      'Số từ ghép được tự động chọn cho mỗi kanji để ôn tập. Nhiều từ hơn nghĩa là đa dạng hơn nhưng cũng nhiều thẻ cần ôn hơn.';
 
   @override
-  String get addRemovePoolSortRtk => 'RTK order';
+  String get addRemovePoolSortRtk => 'Thứ tự RTK';
 
   @override
-  String get addRemovePoolSortAdded => 'Date added';
+  String get addRemovePoolSortAdded => 'Ngày thêm';
 
   @override
-  String get addRemovePoolSortModified => 'Last modified';
+  String get addRemovePoolSortModified => 'Sửa gần nhất';
+
+  @override
+  String get addRemovePoolSortMastery => 'Mức thành thạo';
 
   @override
   String addRemovePoolTitle(int count) {
-    return 'Learning pool ($count)';
+    return 'Danh sách học ($count)';
   }
 
   @override
-  String get addRemovePoolEmpty => 'No kanji in your learning pool yet.';
+  String get addRemovePoolEmpty => 'Chưa có kanji nào trong danh sách học.';
 
   @override
   String get addRemovePoolTip =>
-      'Tap a kanji to edit its composita, story, or keyword. Long-press to remove.';
+      'Chạm vào kanji để chỉnh sửa composita, câu chuyện hoặc từ khóa. Giữ lâu để xóa.';
 
   @override
-  String get addRemovePoolSearch => 'Search pool';
+  String get addRemovePoolSearch => 'Tìm trong danh sách';
 
   @override
-  String get addRemoveClearAll => 'Clear all';
+  String get addRemoveClearAll => 'Xóa tất cả';
 
   @override
-  String get addRemoveConfirmClearTitle => 'Clear learning pool?';
+  String get addRemoveConfirmClearTitle => 'Xóa danh sách học?';
 
   @override
   String addRemoveConfirmClearContent(int count) {
-    return 'Remove all $count kanji and delete all review progress? This cannot be undone.';
+    return 'Xóa tất cả $count kanji và xóa toàn bộ tiến trình ôn tập? Không thể hoàn tác.';
   }
 
   @override
   String get addRemoveClearSecondConfirm =>
-      'All review progress will be permanently lost. Your keywords and stories are kept.';
+      'Toàn bộ tiến trình ôn tập sẽ bị mất vĩnh viễn. Từ khóa và câu chuyện của bạn được giữ lại.';
 
   @override
-  String get addRemoveConfirmRemoveTitle => 'Remove kanji?';
+  String get addRemoveConfirmRemoveTitle => 'Xóa kanji?';
 
   @override
   String addRemoveConfirmRemoveContent(String char) {
-    return 'Remove $char and delete all review progress for it? This cannot be undone.';
+    return 'Xóa $char và xóa toàn bộ tiến trình ôn tập cho nó? Không thể hoàn tác.';
   }
 
   @override
-  String get addRemoveRemoveButton => 'Remove';
+  String get addRemoveRemoveButton => 'Xóa';
 
   @override
   String addRemoveAlreadyInPool(String char) {
-    return '$char is already in your learning pool.';
+    return '$char đã có trong danh sách học.';
   }
 
   @override
   String addRemoveSlideshowTitle(int current, int total) {
-    return 'New kanji ($current/$total)';
+    return 'Kanji mới ($current/$total)';
   }
 
   @override
-  String get addRemoveSlideshowComposita => 'Selected composita:';
+  String get addRemoveSlideshowComposita => 'Composita đã chọn:';
 
   @override
-  String get addRemoveSlideshowNext => 'Next';
+  String get addRemoveSlideshowNext => 'Tiếp';
 
   @override
-  String get addRemoveSlideshowDone => 'Done';
+  String get addRemoveSlideshowDone => 'Xong';
 
   @override
-  String get kanjiDetailEditComposita => 'Edit composita';
+  String get kanjiDetailEditComposita => 'Chỉnh sửa composita';
 
   @override
-  String get kanjiDetailAddToLearning => 'Add to learning';
+  String get kanjiDetailAddToLearning => 'Thêm vào học';
 
   @override
-  String get learningNewCardsPerDay => 'New cards/day:';
+  String get learningNewCardsPerDay => 'Thẻ mới/ngày:';
 
   @override
-  String get learningMaxReviewsPerDay => 'Max reviews/day:';
+  String get learningMaxReviewsPerDay => 'Ôn tối đa/ngày:';
 
   @override
   String learningWaitingCards(int count) {
-    return '$count waiting';
+    return '$count đang chờ';
   }
 
   @override
   String reviewDailyLimitReached(int count) {
-    return 'Daily limit reached. $count more cards available.';
+    return 'Đã đạt giới hạn hàng ngày. Còn $count thẻ nữa.';
   }
 
   @override
   String reviewContinueCards(int count) {
-    return 'Continue with $count more';
+    return 'Tiếp tục với $count thẻ nữa';
   }
 
   @override
-  String get progressDetailRecognition => 'Recognition';
+  String get progressDetailRecognition => 'Nhận dạng';
 
   @override
-  String get progressDetailDrawing => 'Drawing';
+  String get progressDetailDrawing => 'Viết';
 
   @override
   String progressDetailStatus(int reps, int threshold) {
@@ -1080,48 +1153,61 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get progressDetailNotStarted => 'Not started';
+  String get progressDetailNotStarted => 'Chưa bắt đầu';
 
   @override
-  String get progressDetailViewFull => 'View detail';
+  String get progressDetailViewFull => 'Xem chi tiết';
 
   @override
   String get progressDetailComposita => 'Composita';
 
   @override
-  String get addSentenceButton => 'Add sentence';
+  String get settingsTheme => 'Giao diện';
 
   @override
-  String addSentenceHint(String word) {
-    return 'Type a Japanese sentence containing $word';
-  }
+  String get themeIndigo => 'Chàm';
 
   @override
-  String get addSentenceTranslationHint => 'Translation (optional)';
-
-  @override
-  String addSentenceValidation(String word) {
-    return 'Sentence must contain $word';
-  }
-
-  @override
-  String get userSentenceSource => 'User';
-
-  @override
-  String get settingsTheme => 'Theme';
-
-  @override
-  String get themeIndigo => 'Indigo';
-
-  @override
-  String get themeTeal => 'Teal';
+  String get themeTeal => 'Ngọc lam';
 
   @override
   String get themeSakura => 'Sakura';
 
   @override
-  String get themeForest => 'Forest';
+  String get themeForest => 'Rừng';
 
   @override
-  String get themeAmber => 'Amber';
+  String get themeAmber => 'Hổ phách';
+
+  @override
+  String get settingsBrightness => 'Độ sáng';
+
+  @override
+  String get themeAuto => 'Tự động';
+
+  @override
+  String get themeLight => 'Sáng';
+
+  @override
+  String get themeDark => 'Tối';
+
+  @override
+  String get settingsRecognitionModel => 'Mô hình nhận dạng';
+
+  @override
+  String get modelStandard => 'Tiêu chuẩn (~3.000 kanji)';
+
+  @override
+  String get modelExtended => 'Mở rộng (~6.500 kanji)';
+
+  @override
+  String get modelSwitching => 'Đang chuyển mô hình...';
+
+  @override
+  String get modelSwitched => 'Đã chuyển mô hình nhận dạng';
+
+  @override
+  String modelSwitchFailed(String error) {
+    return 'Không thể chuyển mô hình: $error';
+  }
 }

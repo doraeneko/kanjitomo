@@ -13,192 +13,240 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String failedToLoadAppData(String error) {
-    return 'Failed to load app data: $error';
+    return 'Gagal memuat data aplikasi: $error';
   }
 
   @override
   String get lookupTitle => '漢字友';
 
   @override
-  String get lookupWords => 'Words';
+  String get lookupWords => 'Kata';
 
   @override
-  String get lookupLearn => 'Learn';
+  String get lookupLearn => 'Belajar';
 
   @override
-  String get lookupBrowse => 'Browse';
+  String get lookupBrowse => 'Jelajah';
 
   @override
-  String get lookupHelp => 'Help';
+  String get lookupHelp => 'Bantuan';
 
   @override
   String get lookupHeading => 'Kanji';
 
   @override
-  String get lookupClearDrawing => 'Clear drawing';
+  String get lookupClearDrawing => 'Hapus gambar';
 
   @override
-  String get lookupRecognizing => 'Recognizing...';
+  String get lookupRecognizing => 'Mengenali...';
 
   @override
-  String get lookupLoadingModel => 'Loading model...';
+  String get lookupLoadingModel => 'Memuat model...';
 
   @override
   String lookupModelFailed(String error) {
-    return 'Model failed to load: $error';
+    return 'Model gagal dimuat: $error';
   }
 
   @override
-  String get lookupBestMatch => 'Best match:';
+  String get lookupBestMatch => 'Kecocokan terbaik:';
 
   @override
   String lookupTopN(int count) {
-    return 'Top $count:';
+    return '$count teratas:';
   }
 
   @override
-  String get lookupInCustomReview => 'In custom review';
+  String get lookupInCustomReview => 'Dalam ulasan khusus';
 
   @override
-  String get lookupAddToCustomReview => 'Add to custom review';
+  String get lookupAddToCustomReview => 'Tambah ke ulasan khusus';
 
   @override
-  String get wordLookupTitle => 'Word lookup';
+  String get wordLookupTitle => 'Cari kata';
 
   @override
   String get wordLookupDrawInstruction =>
-      'Draw a kanji or kana character to add it to the word:';
+      'Gambar kanji atau kana untuk menambahkannya ke kata:';
 
   @override
-  String get wordLookupWordLabel => 'Word';
+  String get wordLookupWordLabel => 'Kata';
 
   @override
-  String get wordLookupClear => 'Clear';
+  String get wordLookupClear => 'Hapus';
 
   @override
-  String get wordLookupNoEntry => 'No JMdict entry for this exact word.';
+  String get wordLookupNoEntry => 'Tidak ada entri JMdict untuk kata ini.';
 
   @override
   String wordLookupCopied(String word) {
-    return 'Copied \"$word\" to clipboard';
+    return 'Menyalin \"$word\" ke papan klip';
   }
 
   @override
-  String get copyToClipboard => 'Copy to clipboard';
+  String get copyToClipboard => 'Salin ke papan klip';
 
   @override
-  String get learningTitle => 'Learning';
+  String get learningTitle => 'Pembelajaran';
 
   @override
-  String get learningJlpt => 'JLPT mode';
+  String get learningJlpt => 'Mode JLPT';
 
   @override
-  String get learningCustom => 'Custom mode';
+  String get learningCustom => 'Mode khusus';
 
   @override
-  String get learningReview => 'Review';
+  String get learningReview => 'Ulasan';
 
   @override
-  String get learningSelect => 'Select';
+  String get learningSelect => 'Pilih';
 
   @override
-  String get learningSettings => 'Settings';
+  String get learningSettings => 'Pengaturan';
 
   @override
-  String get learningStatistics => 'Statistics';
+  String get learningStatistics => 'Statistik';
 
   @override
-  String get helpTitle => 'Help & About';
+  String get helpTitle => 'Bantuan & Tentang';
 
   @override
-  String get helpIntro =>
-      'Kanjitomo helps you learn to read and write Japanese kanji.\n\nReadings shown in [square brackets] are rare — they appear in only one or two words. Focus on the unbracketed readings first.';
+  String get helpTagline => 'Alat belajar kanji untuk pembelajar serius';
+
+  @override
+  String get helpFeaturesSection => 'Fitur unggulan';
+
+  @override
+  String get helpFeatureRecognitionTitle => 'Pengenalan Tulisan Tangan';
+
+  @override
+  String get helpFeatureRecognitionDesc =>
+      'Gambar kanji apa pun untuk pengenalan offline instan — jaringan saraf, 6.500+ karakter.';
+
+  @override
+  String get helpFeatureSrsTitle => 'Pengulangan Berjarak (SRS)';
+
+  @override
+  String get helpFeatureSrsDesc =>
+      'Gambar kanji dari ingatan, tidak hanya mengenalinya. Empat jenis kartu membangun kemampuan mengingat nyata melalui menulis aktif.';
+
+  @override
+  String get helpFeatureCompositaTitle => 'Composita & Kalimat';
+
+  @override
+  String get helpFeatureCompositaDesc =>
+      'Anda memilih kata majemuk mana yang akan dipelajari. Pelajari kanji dalam konteks dengan 6.000+ kalimat contoh.';
+
+  @override
+  String get helpFeatureStrokeOrderTitle => 'Urutan Goresan';
+
+  @override
+  String get helpFeatureStrokeOrderDesc =>
+      'Diagram goresan animasi langkah demi langkah dengan kanvas latihan untuk setiap kanji.';
+
+  @override
+  String get helpFeatureDictionaryTitle => 'Kamus';
+
+  @override
+  String get helpFeatureDictionaryDesc =>
+      '60.000+ kata dari JMdict. Gambar untuk mencari kanji tunggal atau susun kata karakter demi karakter.';
+
+  @override
+  String get helpFeatureStoriesTitle => 'Kata Kunci & Cerita';
+
+  @override
+  String get helpFeatureStoriesDesc =>
+      'Tambahkan mnemonik dan kata kunci Anda sendiri ke setiap kanji agar lebih mudah diingat.';
+
+  @override
+  String get helpSettingsSection => 'Pengaturan';
 
   @override
   String get helpAcknowledgement =>
-      'Kanjitomo would not be possible without these wonderful open-source projects and data sets:';
+      'Kanjitomo tidak akan mungkin ada tanpa proyek sumber terbuka dan kumpulan data luar biasa ini:';
 
   @override
-  String get helpOpenSourceLicenses => 'All licenses';
+  String get helpOpenSourceLicenses => 'Semua lisensi';
 
   @override
-  String get jlptEditTitle => 'Edit JLPT scope';
+  String get jlptEditTitle => 'Edit cakupan JLPT';
 
   @override
-  String get jlptEditLevels => 'JLPT level(s)';
+  String get jlptEditLevels => 'Level JLPT';
 
   @override
   String jlptEditKanjiInScope(int count) {
-    return '$count kanji in scope';
+    return '$count kanji dalam cakupan';
   }
 
   @override
-  String get jlptEditCompositaCeiling => 'Composita/sentence ceiling';
+  String get jlptEditCompositaCeiling => 'Batas composita/kalimat';
 
   @override
   String get jlptEditCompositaCeilingDescription =>
-      'The hardest level a composita word is allowed to be, independent of the kanji level(s) selected above. Leave off to skip composita/sentence testing entirely for this scope.';
+      'Level tersulit yang diperbolehkan untuk kata composita, terlepas dari level kanji yang dipilih di atas. Matikan untuk melewati pengujian composita/kalimat sepenuhnya untuk cakupan ini.';
 
   @override
-  String get jlptEditCeilingOff => 'Off';
+  String get jlptEditCeilingOff => 'Mati';
 
   @override
-  String get customEditTitle => 'Edit custom set';
+  String get customEditTitle => 'Edit set khusus';
 
   @override
-  String get customEditClear => 'Clear';
+  String get customEditClear => 'Hapus';
 
   @override
-  String get customEditDrawInstruction => 'Draw a kanji to add it to your set:';
+  String get customEditDrawInstruction =>
+      'Gambar kanji untuk menambahkannya ke set Anda:';
 
   @override
-  String get customEditSetEmpty => 'Your custom set is empty.';
+  String get customEditSetEmpty => 'Set khusus Anda kosong.';
 
   @override
   String get customEditSetInstruction =>
-      'Your custom set (tap to edit, hold to remove):';
+      'Set khusus Anda (ketuk untuk edit, tahan untuk hapus):';
 
   @override
   String customEditIsKana(String char) {
-    return '$char is kana, not a kanji';
+    return '$char adalah kana, bukan kanji';
   }
 
   @override
   String customEditAlreadyInSet(String char) {
-    return '$char is already in your set';
+    return '$char sudah ada di set Anda';
   }
 
   @override
   String customEditAdded(String char) {
-    return 'Added $char to your set';
+    return '$char ditambahkan ke set Anda';
   }
 
   @override
   String customEditRemoveDialogTitle(String char) {
-    return 'Remove $char?';
+    return 'Hapus $char?';
   }
 
   @override
   String customEditRemoveDialogContent(String char) {
-    return 'Remove $char from your custom set?';
+    return 'Hapus $char dari set khusus Anda?';
   }
 
   @override
-  String get dialogRemove => 'Remove';
+  String get dialogRemove => 'Hapus';
 
   @override
-  String get customEditClearDialogTitle => 'Clear custom set?';
+  String get customEditClearDialogTitle => 'Kosongkan set khusus?';
 
   @override
   String customEditClearDialogContent(int count) {
-    return 'This removes all $count kanji from your custom set. This cannot be undone.';
+    return 'Ini menghapus semua $count kanji dari set khusus Anda. Tindakan ini tidak dapat dibatalkan.';
   }
 
   @override
-  String get dialogCancel => 'Cancel';
+  String get dialogCancel => 'Batal';
 
   @override
-  String get dialogClear => 'Clear';
+  String get dialogClear => 'Kosongkan';
 
   @override
   String compositaPickerTitle(String character) {
@@ -207,88 +255,95 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get compositaPickerDescription =>
-      'Only words checked here are used for composita/sentence testing — unlike JLPT mode, custom mode has no level ceiling, so nothing is tested until you pick words below.';
+      'Hanya kata yang dicentang di sini yang digunakan untuk pengujian composita/kalimat — berbeda dengan mode JLPT, mode khusus tidak memiliki batas level, jadi tidak ada yang diuji sampai Anda memilih kata di bawah.';
 
   @override
-  String get compositaPickerEmpty => 'No composita found for this kanji.';
+  String get compositaPickerEmpty =>
+      'Tidak ada composita ditemukan untuk kanji ini.';
 
   @override
-  String get customEditAddByKanji => 'Add kanji';
+  String get customEditAddByKanji => 'Tambah kanji';
 
   @override
-  String get customEditAddByWord => 'Add composita';
+  String get customEditAddByWord => 'Tambah composita';
 
   @override
-  String get compositaPickerSearchHint => 'Search JMdict for a word...';
+  String get compositaPickerSearchHint => 'Cari kata di JMdict...';
 
   @override
-  String get compositaPickerDrawButton => 'Additional composita';
+  String get compositaPickerDrawButton => 'Composita tambahan';
 
   @override
   String compositaPickerDrawTitle(String char) {
-    return 'Draw composita for $char';
+    return 'Gambar composita untuk $char';
   }
 
   @override
-  String get compositaPickerAdd => 'Add';
+  String get compositaPickerAdd => 'Tambah';
 
   @override
   String compositaPickerAdded(String word) {
-    return 'Added $word';
+    return '$word ditambahkan';
   }
 
   @override
-  String get compositaPickerNoResults => 'No matching word found.';
+  String get compositaPickerNoResults => 'Tidak ada kata yang cocok.';
 
   @override
   String compositaPickerWordNotForChar(String char) {
-    return 'This word doesn\'t contain $char';
+    return 'Kata ini tidak mengandung $char';
   }
 
   @override
-  String get wordLookupAddToReview => 'Add to review';
+  String get wordLookupAddToReview => 'Tambah ke ulasan';
 
   @override
   String wordLookupAddedToReview(String word) {
-    return 'Added $word for review';
+    return '$word ditambahkan untuk ulasan';
   }
 
   @override
   String wordLookupPickKanjiTitle(String word) {
-    return 'Add $word for which kanji?';
+    return 'Tambahkan $word untuk kanji yang mana?';
   }
 
   @override
-  String get wordLookupPickKanjiConfirm => 'Add';
+  String get wordLookupPickKanjiConfirm => 'Tambah';
 
   @override
-  String get kanjiBrowserTitle => 'Kanji browser';
+  String get wordLookupAlreadyInReview => 'Sudah dalam ulasan';
+
+  @override
+  String get wordLookupClearWord => 'Hapus kata';
+
+  @override
+  String get kanjiBrowserTitle => 'Penjelajah kanji';
 
   @override
   String get kanjiBrowserSearchLabel =>
-      'Search by reading, meaning, or stroke count';
+      'Cari berdasarkan bacaan, arti, atau jumlah goresan';
 
   @override
-  String get kanjiBrowserNoMatch => 'No matching kanji.';
+  String get kanjiBrowserNoMatch => 'Tidak ada kanji yang cocok.';
 
   @override
   String get kanjiBrowserColumnKanji => 'Kanji';
 
   @override
-  String get kanjiBrowserColumnMeaning => 'Meaning';
+  String get kanjiBrowserColumnMeaning => 'Arti';
 
   @override
-  String get kanjiBrowserColumnKeyword => 'Keyword';
+  String get kanjiBrowserColumnKeyword => 'Kata kunci';
 
   @override
-  String get kanjiBrowserColumnReadings => 'Readings';
+  String get kanjiBrowserColumnReadings => 'Bacaan';
 
   @override
-  String get kanjiBrowserColumnStrokes => 'Strokes';
+  String get kanjiBrowserColumnStrokes => 'Goresan';
 
   @override
   String get kanjiDetailNoDictionaryEntry =>
-      'No dictionary entry (kana aren\'t covered by the kanji dictionary this app bundles).';
+      'Tidak ada entri kamus (kana tidak tercakup dalam kamus kanji yang dibundel aplikasi ini).';
 
   @override
   String get kanjiDetailOnyomi => 'On\'yomi';
@@ -297,86 +352,86 @@ class AppLocalizationsId extends AppLocalizations {
   String get kanjiDetailKunyomi => 'Kun\'yomi';
 
   @override
-  String get kanjiDetailMeaning => 'Meaning';
+  String get kanjiDetailMeaning => 'Arti';
 
   @override
-  String get kanjiDetailStrokeOrder => 'Stroke order';
+  String get kanjiDetailStrokeOrder => 'Urutan goresan';
 
   @override
-  String get kanjiDetailKeyword => 'Keyword';
+  String get kanjiDetailKeyword => 'Kata kunci';
 
   @override
   String get kanjiDetailKeywordHint =>
-      'A short recall cue (shown before you draw)...';
+      'Petunjuk singkat untuk mengingat (ditampilkan sebelum Anda menggambar)...';
 
   @override
-  String get kanjiDetailStory => 'Story';
+  String get kanjiDetailStory => 'Cerita';
 
   @override
   String get kanjiDetailStoryHint =>
-      'Write your own mnemonic or story for this kanji...';
+      'Tulis mnemonik atau cerita Anda sendiri untuk kanji ini...';
 
   @override
   String get kanjiDetailComposita => 'Composita';
 
   @override
-  String get kanjiDetailExampleSentences => 'Example sentences';
+  String get kanjiDetailExampleSentences => 'Kalimat contoh';
 
   @override
   String kanjiDetailCopied(String character) {
-    return 'Copied \"$character\" to clipboard';
+    return 'Menyalin \"$character\" ke papan klip';
   }
 
   @override
-  String get reviewTitle => 'Review';
+  String get reviewTitle => 'Ulasan';
 
   @override
   String reviewHeader(int done, int total) {
-    return 'Review — $done/$total';
+    return 'Ulasan — $done/$total';
   }
 
   @override
   String reviewHeaderNew(int done, int total) {
-    return 'Review — $done/$total — New';
+    return 'Ulasan — $done/$total — Baru';
   }
 
   @override
-  String get reviewNoCardsDue => 'No cards due right now.';
+  String get reviewNoCardsDue => 'Tidak ada kartu yang jatuh tempo saat ini.';
 
   @override
   String reviewLearnMore(int count) {
-    return 'Learn $count more';
+    return 'Pelajari $count lagi';
   }
 
   @override
   String reviewMoreAvailable(int count) {
-    return '$count more available';
+    return '$count lagi tersedia';
   }
 
   @override
-  String get reviewLearnMoreButton => 'Learn more';
+  String get reviewLearnMoreButton => 'Pelajari lagi';
 
   @override
-  String get reviewReturnButton => 'Return';
+  String get reviewReturnButton => 'Kembali';
 
   @override
-  String get reviewCorrect => 'Correct!';
+  String get reviewCorrect => 'Benar!';
 
   @override
   String reviewAnswer(String character) {
-    return 'Answer: $character';
+    return 'Jawaban: $character';
   }
 
   @override
   String reviewYouPicked(String character) {
-    return 'You picked: $character';
+    return 'Anda memilih: $character';
   }
 
   @override
-  String get reviewContinue => 'Continue';
+  String get reviewContinue => 'Lanjut';
 
   @override
-  String get reviewShowDetails => 'Show details';
+  String get reviewShowDetails => 'Tampilkan detail';
 
   @override
   String reviewOnyomi(String readings) {
@@ -390,190 +445,196 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String reviewMeaning(String meanings) {
-    return 'Meaning: $meanings';
+    return 'Arti: $meanings';
   }
 
   @override
   String reviewKeyword(String keyword) {
-    return 'Keyword: $keyword';
+    return 'Kata kunci: $keyword';
   }
 
   @override
-  String get reviewDrawFromMeaningPrompt => 'Draw this kanji from memory:';
+  String get reviewDrawFromMeaningPrompt => 'Gambar kanji ini dari ingatan:';
 
   @override
-  String get reviewDontKnow => 'Don\'t know';
+  String get reviewDontKnow => 'Tidak tahu';
 
   @override
-  String get reviewKanjiRecognitionPrompt =>
-      'What is the reading and meaning of this kanji?';
+  String get reviewKanjiRecognitionPrompt => 'Apa bacaan dan arti kanji ini?';
 
   @override
-  String get reviewReveal => 'Reveal';
+  String get reviewReveal => 'Tampilkan';
 
   @override
-  String get reviewAgain => 'Again';
+  String get reviewAgain => 'Lagi';
 
   @override
-  String get reviewGood => 'Good';
+  String get reviewGood => 'Bagus';
 
   @override
-  String get reviewShowTranslation => 'Show translation';
+  String get reviewShowTranslation => 'Tampilkan terjemahan';
 
   @override
-  String get reviewHideTranslation => 'Hide translation';
+  String get reviewHideTranslation => 'Sembunyikan terjemahan';
 
   @override
-  String get reviewReadingClozePrompt =>
-      'What is the reading of the highlighted word?';
+  String get reviewReadingClozePrompt => 'Apa bacaan kata yang disorot?';
 
   @override
   String reviewSlideshowTitle(int current, int total) {
-    return 'New kanji ($current/$total)';
+    return 'Kanji baru ($current/$total)';
   }
 
   @override
-  String get reviewSlideshowStartReview => 'Start review';
+  String get reviewSlideshowStartReview => 'Mulai ulasan';
 
   @override
-  String get reviewSlideshowNext => 'Next';
+  String get reviewSlideshowNext => 'Berikutnya';
 
   @override
-  String get reviewStartTitle => 'Review';
+  String get reviewStartTitle => 'Ulasan';
 
   @override
-  String get reviewStartCurrentSelection => 'Current selection';
+  String get reviewStartCurrentSelection => 'Pilihan saat ini';
 
   @override
   String reviewStartKanjiInScope(int count) {
-    return '$count kanji in scope';
+    return '$count kanji dalam cakupan';
   }
 
   @override
-  String get reviewStartCountingDue => 'Counting due cards…';
+  String get reviewStartCountingDue => 'Menghitung kartu jatuh tempo…';
 
   @override
   String reviewStartDueNow(int count) {
-    return '$count facts due now';
+    return '$count fakta jatuh tempo sekarang';
   }
 
   @override
   String reviewStartSeen(int seen, int unseen) {
-    return '$seen seen, $unseen new';
+    return '$seen sudah dipelajari, $unseen baru';
   }
 
   @override
-  String get reviewStartCustomSetEmpty => 'Custom set (empty)';
+  String get reviewStartCustomSetEmpty => 'Set khusus (kosong)';
 
   @override
-  String get reviewStartCustomSet => 'Custom set';
+  String get reviewStartCustomSet => 'Set khusus';
 
   @override
   String reviewStartRtk(int index) {
-    return 'RTK up to $index';
+    return 'RTK sampai $index';
   }
 
   @override
-  String get reviewStartNothingSelected => 'Nothing selected';
+  String get reviewStartNothingSelected => 'Tidak ada yang dipilih';
 
   @override
-  String get reviewStartNewKanjiPerDay => 'New kanji per day:';
+  String get reviewStartNewKanjiPerDay => 'Kanji baru per hari:';
 
   @override
-  String get reviewStartButton => 'Review';
+  String get reviewStartButton => 'Ulasan';
 
   @override
   String reviewStartPoolHeading(int count) {
-    return 'Learning pool ($count)';
+    return 'Kumpulan belajar ($count)';
   }
 
   @override
-  String get reviewContinueButton => 'Continue Review';
+  String get reviewContinueButton => 'Lanjutkan Ulasan';
 
   @override
   String reviewStartLearnNew(int count) {
-    return 'Learn $count new kanji';
+    return 'Pelajari $count kanji baru';
   }
 
   @override
-  String get reviewLeaveDialogTitle => 'Leave review?';
+  String get reviewLeaveDialogTitle => 'Tinggalkan ulasan?';
 
   @override
   String get reviewLeaveDialogContent =>
-      'Your daily review is not complete yet. Leave anyway?';
+      'Ulasan harian Anda belum selesai. Tetap tinggalkan?';
 
   @override
-  String get reviewLeaveConfirm => 'Leave';
+  String get reviewLeaveConfirm => 'Tinggalkan';
 
   @override
-  String get statisticsTitle => 'Statistics';
+  String get statisticsTitle => 'Statistik';
 
   @override
-  String get statisticsKanjiRecognition => 'Kanji recognition';
+  String get statisticsKanjiRecognition => 'Pengenalan kanji';
 
   @override
-  String get statisticsDrawFromMeaning => 'Draw from meaning';
+  String get statisticsDrawFromMeaning => 'Gambar dari arti';
 
   @override
-  String get statisticsReadingCloze => 'Reading (composita/sentence)';
+  String get statisticsReadingCloze => 'Bacaan (composita/kalimat)';
 
   @override
   String get statisticsDrawInSentence =>
-      'Draw in sentence (composita/sentence)';
+      'Gambar dalam kalimat (composita/kalimat)';
 
   @override
-  String get statisticsKnown => 'Learnt';
+  String get statisticsKnown => 'Lulus';
 
   @override
-  String get statisticsMissed => 'Learning';
+  String get statisticsMissed => 'Sedang dipelajari';
 
   @override
-  String get statisticsNotStarted => 'Not started';
+  String get statisticsNotStarted => 'Belum dimulai';
 
   @override
-  String get statisticsCompositaTitle => 'Composita/sentence testing';
+  String get statisticsCompositaTitle => 'Pengujian composita/kalimat';
 
   @override
   String statisticsTestableWords(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'words',
-      one: 'word',
+      other: 'kata',
+      one: 'kata',
     );
-    return '$count testable $_temp0 in this scope — never gates green, tracked separately.';
+    return '$count $_temp0 yang dapat diuji dalam cakupan ini — tidak pernah menghalangi hijau, dilacak secara terpisah.';
   }
 
   @override
-  String get statisticsReadingTested => 'Reading tested';
+  String get statisticsReadingTested => 'Bacaan diuji';
 
   @override
-  String get statisticsWritingTested => 'Writing tested';
+  String get statisticsWritingTested => 'Tulisan diuji';
 
   @override
-  String get statisticsInspectAllKanji => 'Inspect all kanji';
+  String get statisticsInspectAllKanji => 'Periksa semua kanji';
 
   @override
-  String get statisticsResetButton => 'Reset statistics';
+  String statisticsLearnt(int count, int total) {
+    return '$count / $total dipelajari';
+  }
 
   @override
-  String get statisticsResetDialogTitle => 'Reset statistics?';
+  String get statisticsResetButton => 'Reset statistik';
+
+  @override
+  String get statisticsResetDialogTitle => 'Reset statistik?';
 
   @override
   String get statisticsResetDialogContent =>
-      'This clears all review progress (due dates, known/unknown status, and new-card introductions) for every kanji. You will start from scratch. This cannot be undone.';
+      'Ini menghapus semua progres ulasan (tanggal jatuh tempo, status diketahui/tidak diketahui, dan pengenalan kartu baru) untuk semua kanji. Anda akan memulai dari awal. Tindakan ini tidak dapat dibatalkan.';
 
   @override
   String get statisticsResetConfirm => 'Reset';
 
   @override
-  String get drawAndPickClearDrawing => 'Clear drawing';
+  String get undoStroke => 'Batalkan goresan';
 
   @override
-  String get drawAndPickRecognizing => 'Recognizing...';
+  String get drawAndPickClearDrawing => 'Hapus gambar';
 
   @override
-  String get drawAndPickWhichOne => 'Which one did you draw?';
+  String get drawAndPickRecognizing => 'Mengenali...';
+
+  @override
+  String get drawAndPickWhichOne => 'Yang mana yang Anda gambar?';
 
   @override
   String legendValuePercent(String label, int value, int percent) {
@@ -586,49 +647,50 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get proPaywallTitle => 'Unlock Pro';
+  String get proPaywallTitle => 'Buka Pro';
 
   @override
   String get proPaywallDescription =>
-      'Get access to all JLPT levels, custom study sets, composita testing, and statistics.';
+      'Dapatkan akses ke semua level JLPT, set belajar khusus, pengujian composita, dan statistik.';
 
   @override
-  String get proPaywallFeatureJlpt => 'All JLPT levels (N1–N3)';
+  String get proPaywallFeatureJlpt => 'Semua level JLPT (N1–N3)';
 
   @override
-  String get proPaywallFeatureCustom => 'Unlimited custom kanji sets';
+  String get proPaywallFeatureCustom => 'Set kanji khusus tanpa batas';
 
   @override
-  String get proPaywallFeatureComposita => 'Composita & sentence testing';
+  String get proPaywallFeatureComposita => 'Pengujian composita & kalimat';
 
   @override
-  String get proPaywallFeatureStats => 'Detailed statistics';
+  String get proPaywallFeatureStats => 'Statistik terperinci';
 
   @override
   String proPaywallBuyButton(String price) {
-    return 'Unlock Pro — $price';
+    return 'Buka Pro — $price';
   }
 
   @override
-  String get proPaywallRestore => 'Restore Purchases';
+  String get proPaywallRestore => 'Pulihkan Pembelian';
 
   @override
-  String get proPaywallRestoring => 'Restoring...';
+  String get proPaywallRestoring => 'Memulihkan...';
 
   @override
-  String get proPaywallError => 'Purchase failed. Please try again.';
+  String get proPaywallError => 'Pembelian gagal. Silakan coba lagi.';
 
   @override
-  String get proPaywallRestoreSuccess => 'Purchases restored!';
+  String get proPaywallRestoreSuccess => 'Pembelian dipulihkan!';
 
   @override
-  String get proPaywallRestoreNothing => 'No previous purchase found.';
+  String get proPaywallRestoreNothing =>
+      'Tidak ada pembelian sebelumnya ditemukan.';
 
   @override
-  String get proLevelLocked => 'Pro required for N1–N3';
+  String get proLevelLocked => 'Pro diperlukan untuk N1–N3';
 
   @override
-  String get helpRestorePurchases => 'Restore Purchases';
+  String get helpRestorePurchases => 'Pulihkan Pembelian';
 
   @override
   String customEditKanjiCount(int count, int limit) {
@@ -642,262 +704,265 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String customEditLimitReached(int limit) {
-    return 'Free tier limited to $limit kanji';
+    return 'Versi gratis dibatasi $limit kanji';
   }
 
   @override
-  String get customEditAddElements => 'Add elements';
+  String get customEditAddElements => 'Tambah elemen';
 
   @override
-  String get dueOverviewTitle => 'Upcoming reviews';
+  String get dueOverviewTitle => 'Ulasan mendatang';
 
   @override
-  String get dueOverviewOverdue => 'Overdue';
+  String get dueOverviewOverdue => 'Terlambat';
 
   @override
-  String get dueOverviewToday => 'Today';
+  String get dueOverviewToday => 'Hari ini';
 
   @override
-  String get dueOverviewTomorrow => 'Tomorrow';
+  String get dueOverviewTomorrow => 'Besok';
 
   @override
-  String get dueOverviewThisWeek => 'This week';
+  String get dueOverviewThisWeek => 'Minggu ini';
 
   @override
-  String get dueOverviewLater => 'Later';
+  String get dueOverviewLater => 'Nanti';
 
   @override
-  String get dueOverviewNotStarted => 'Not started';
+  String get dueOverviewNotStarted => 'Belum dimulai';
 
   @override
   String dueOverviewCompact(int tomorrow, int week, int later) {
-    return 'Tomorrow: $tomorrow · This week: $week · Later: $later';
+    return 'Besok: $tomorrow · Minggu ini: $week · Nanti: $later';
   }
 
   @override
-  String get learningQuiz => 'Quiz';
+  String get learningQuiz => 'Kuis Gaya JLPT';
 
   @override
-  String get quizStartTitle => 'Quiz';
+  String get quizStartTitle => 'Kuis';
 
   @override
-  String get quizStartQuestionCount => 'Number of questions:';
+  String get quizStartQuestionCount => 'Jumlah pertanyaan:';
 
   @override
-  String get quizStartButton => 'Start Quiz';
+  String get quizStartButton => 'Mulai Kuis';
 
   @override
   String quizProgress(int current, int total) {
-    return 'Question $current/$total';
+    return 'Pertanyaan $current/$total';
   }
 
   @override
-  String get quizPickReading => 'What is the reading of the highlighted word?';
+  String get quizPickReading => 'Apa bacaan kata yang disorot?';
 
   @override
-  String get quizPickKanji => 'Which word fits in the sentence?';
+  String get quizPickKanji => 'Kata mana yang cocok dalam kalimat?';
 
   @override
-  String get quizCorrect => 'Correct!';
+  String get quizCorrect => 'Benar!';
 
   @override
-  String get quizWrong => 'Wrong — the answer is:';
+  String get quizWrong => 'Salah — jawabannya adalah:';
 
   @override
-  String get quizNext => 'Next';
+  String get quizNext => 'Berikutnya';
 
   @override
-  String get quizResultTitle => 'Quiz Results';
+  String get quizResultTitle => 'Hasil Kuis';
 
   @override
   String quizResultScore(int correct, int total) {
-    return '$correct/$total correct';
+    return '$correct/$total benar';
   }
 
   @override
-  String get quizDone => 'Done';
+  String get quizDone => 'Selesai';
 
   @override
-  String get quizNotEnoughWords => 'Not enough words in scope for a quiz.';
+  String get quizNotEnoughWords => 'Tidak cukup kata dalam cakupan untuk kuis.';
 
   @override
   String reviewStartBacklogInfo(int count) {
-    return 'You have $count cards to review from previous days.';
+    return 'Anda memiliki $count kartu untuk diulas dari hari-hari sebelumnya.';
   }
 
   @override
-  String get reviewStartReviewBacklog => 'Review backlog first';
+  String get reviewStartReviewBacklog => 'Ulas tumpukan dulu';
 
   @override
   String reviewStartBacklogAndNew(int count) {
-    return 'Also learn $count new kanji';
+    return 'Juga pelajari $count kanji baru';
   }
 
   @override
   String reviewStartNewKanjiDialog(int dueCount, int newCount, int totalCount) {
-    return 'You have $dueCount cards due for review. Want to add $newCount new kanji? That results in $totalCount facts to review.';
+    return 'Anda memiliki $dueCount kartu jatuh tempo untuk diulas. Ingin menambahkan $newCount kanji baru? Itu menghasilkan $totalCount fakta untuk diulas.';
   }
 
   @override
-  String get reviewStartDialogYes => 'Yes';
+  String get reviewStartDialogYes => 'Ya';
 
   @override
-  String get reviewStartDialogNo => 'No';
+  String get reviewStartDialogNo => 'Tidak';
 
   @override
   String reviewLearnMoreEstimate(int factCount) {
-    return 'That adds $factCount new facts';
+    return 'Itu menambahkan $factCount fakta baru';
   }
 
   @override
-  String get reviewUndoTooltip => 'Redo previous card';
+  String get reviewUndoTooltip => 'Ulangi kartu sebelumnya';
 
   @override
-  String get jlptEditCompositaPerKanji => 'Composita words per kanji';
+  String get jlptEditCompositaPerKanji => 'Kata composita per kanji';
 
   @override
-  String get quizOnlySeenKanji => 'Only quiz seen kanji';
+  String get quizOnlySeenKanji => 'Hanya kuis kanji yang sudah dipelajari';
 
   @override
-  String get reviewMaxBacklog => 'Maximum backlog:';
+  String get reviewMaxBacklog => 'Tumpukan maksimum:';
 
   @override
-  String get reviewMaxBacklogHint => '0 = no limit';
+  String get reviewMaxBacklogHint => '0 = tanpa batas';
 
   @override
-  String get ftdLookupTitle => 'Draw to recognize';
+  String get ftdLookupTitle => 'Gambar untuk mengenali';
 
   @override
   String get ftdLookupMessage =>
-      'Draw a kanji stroke by stroke on the canvas. The app recognizes it after each stroke and shows the best matches. Tap a result to see its full detail — readings, meaning, stroke order, and more.\n\nTry it now — minimize this card and draw something!';
+      'Gambar kanji apa pun di kanvas — jaringan saraf mengenalinya secara instan, bahkan dengan tulisan tangan yang berantakan. Mendukung 6.500+ karakter, sepenuhnya offline.\n\nKetuk hasil untuk melihat bacaan, arti, urutan goresan, kalimat contoh, dan kata majemuk.\n\nCoba sekarang — perkecil kartu ini dan gambar sesuatu!';
 
   @override
-  String get ftdWordLookupTitle => 'Word lookup';
+  String get ftdWordLookupTitle => 'Pencarian kata';
 
   @override
   String get ftdWordLookupMessage =>
-      'Build a word one character at a time by drawing each one, or type directly into the text field. The app looks up the word in the dictionary and shows its reading and meaning.\n\nMinimize this card to try it out!';
+      'Cari kata majemuk di kamus 60.000+ entri (JMdict). Gambar setiap karakter untuk menyusun kata, atau ketik langsung.\n\nPerkecil kartu ini untuk mencobanya!';
 
   @override
-  String get ftdLearningTitle => 'Learning';
+  String get ftdLearningTitle => 'Pembelajaran';
 
   @override
   String get ftdLearningMessage =>
-      'Add kanji to your learning pool from JLPT levels, RTK order, or by drawing. Review uses spaced repetition to test reading and writing. You can also take quick quizzes and track your progress with statistics.';
+      'Anda yang memutuskan apa yang dipelajari. Tambahkan kanji berdasarkan level JLPT atau pilih karakter individual secara manual. Pengulangan berjarak menguji Anda empat cara — termasuk menggambar dari ingatan, yang membangun kemampuan mengingat aktif yang tidak bisa ditandingi aplikasi pasif.\n\nLacak kemajuan Anda dengan statistik terperinci.';
 
   @override
-  String get ftdBrowserTitle => 'Kanji browser';
+  String get ftdBrowserTitle => 'Penjelajah kanji';
 
   @override
   String get ftdBrowserMessage =>
-      'Browse all Jōyō kanji in a searchable table. Search by reading (hiragana or katakana), meaning (English), stroke count, or the character itself. Colored dots show your review progress — green for known, orange for missed.';
+      'Jelajahi semua kanji Jōyō dalam tabel yang dapat dicari. Filter berdasarkan bacaan, arti, atau jumlah goresan. Ketuk kanji mana pun untuk melihat detailnya — dan pilih kata majemuk (composita) mana yang Anda inginkan dalam ulasan.\n\nTitik berwarna menunjukkan kemajuan ulasan Anda sekilas.';
 
   @override
-  String get ftdReviewSessionTitle => 'Review session';
+  String get ftdReviewSessionTitle => 'Sesi ulasan';
 
   @override
   String get ftdReviewSessionMessage =>
-      'Four card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nGrade yourself with Again (missed) or Good (recalled).';
+      'Empat jenis kartu menguji aspek mengingat yang berbeda:\n• Gambar dari arti — lihat kata kunci, tulis kanji dari ingatan\n• Pengenalan kanji — lihat kanji, ingat bacaan dan artinya\n• Isian bacaan — baca kata majemuk dalam kalimat nyata\n• Gambar dalam kalimat — tulis kanji dalam konteks\n\nMenggambar dari ingatan lebih sulit daripada pilihan ganda — itulah intinya. Nilai diri Anda dengan Lagi (salah) atau Bagus (berhasil mengingat).';
 
   @override
-  String get ftdGotIt => 'Got it';
+  String get ftdGotIt => 'Mengerti';
 
   @override
-  String get helpResetTips => 'Reset help';
+  String get helpResetTips => 'Reset bantuan';
 
   @override
   String get helpResetTipsDone =>
-      'Help reset — the welcome tour will appear again next time.';
+      'Bantuan direset — tur selamat datang akan muncul lagi di lain waktu.';
 
   @override
-  String get welcomeTitle => 'Welcome to Kanjitomo';
+  String get welcomeTitle => 'Selamat Datang di Kanjitomo';
 
   @override
-  String get welcomeSubtitle => 'Learn to read and write Japanese kanji';
+  String get welcomeSubtitle => 'Alat belajar kanji untuk pembelajar serius';
 
   @override
-  String get welcomeTakeTour => 'Take a tour';
+  String get welcomeTakeTour => 'Ikuti tur';
 
   @override
-  String get welcomeSkip => 'Skip';
+  String get welcomeSkip => 'Lewati';
 
   @override
-  String get welcomeDone => 'Start learning!';
+  String get welcomeDone => 'Mulai belajar!';
 
   @override
-  String get tourNext => 'Next';
+  String get tourNext => 'Berikutnya';
 
   @override
-  String get tourBack => 'Back';
+  String get tourBack => 'Kembali';
 
   @override
-  String get welcomeDontShowAgain => 'Don\'t show again';
+  String get welcomeDontShowAgain => 'Jangan tampilkan lagi';
 
   @override
   String get welcomeFeatureList =>
-      'Draw kanji to look them up, build words character by character, study with spaced repetition, and browse all Jōyō kanji.';
+      'Gambar kanji dari ingatan untuk membangun kemampuan mengingat nyata — bukan sekadar pengenalan. Anda memilih apa yang dipelajari: pilih kanji, pilih kata majemuk, pilih tempo Anda. Offline, tanpa akun, tanpa pelacakan.';
 
   @override
   String get helpReviewStart =>
-      'Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew kanji are introduced in RTK order (building on shared radicals). You can set how many new kanji per day.\n\nIf you skip 2+ days and have a backlog of due cards, new kanji are paused until you catch up. Use \"Learn more\" inside a session to override this.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.';
+      'Ulasan menggunakan pengulangan berjarak (SM-2) untuk menjadwalkan kartu dengan interval yang meningkat.\n\nEmpat jenis kartu menguji Anda:\n• Gambar dari arti — lihat artinya, gambar kanji-nya\n• Pengenalan kanji — lihat kanji-nya, ingat bacaannya\n• Isian bacaan — baca kata dalam kalimat\n• Gambar dalam kalimat — gambar kanji dalam konteks\n\nKartu baru per hari dan ulasan maksimum per hari diatur di pusat pembelajaran. Ulasan selalu diprioritaskan; kartu baru mengisi sisa anggaran harian. Gunakan \"Pelajari lagi\" dalam sesi untuk menambah kartu ekstra melampaui batas harian.\n\nNilai diri Anda: Lagi (lupa) atau Bagus (berhasil mengingat). Kartu muncul kembali setelah minimal 1 hari, dengan interval yang bertambah seiring keberhasilan Anda.\n\nAnda dapat menambahkan kata kunci dan cerita (mnemonik) pribadi untuk setiap kanji. Ketuk kanji mana pun di penjelajah atau selama ulasan untuk mengeditnya. Kata kunci Anda ditampilkan saat kartu gambar-dari-arti; cerita Anda muncul saat Anda menampilkan jawaban. Ini membantu Anda membangun asosiasi yang mudah diingat antara bentuk, arti, dan komponen kanji.';
 
   @override
   String get helpJlptEdit =>
-      'Select one or more JLPT levels. All kanji from the selected levels are combined into your study scope.\n\nComposita ceiling controls which vocabulary words are tested:\n• Off — no word/sentence testing, only bare kanji\n• N5–N1 — only test words at or easier than this level\nThe ceiling is independent of kanji levels (e.g. study N3 kanji with N5 words only).\n\nNew kanji/day: how many new characters to introduce each day (default 10).\n\nMax backlog: optional limit on how many due cards can pile up before new kanji stop being introduced.\n\nComposita/kanji: how many words per character are tested (2–5, default 4).\n\nChanging levels takes effect immediately. Your review progress for each kanji is preserved even if you remove a level and add it back later.';
+      'Pilih satu atau lebih level JLPT. Semua kanji dari level yang dipilih digabungkan ke dalam cakupan belajar Anda.\n\nBatas composita mengontrol kata kosakata mana yang diuji:\n• Mati — tidak ada pengujian kata/kalimat, hanya kanji saja\n• N5–N1 — hanya menguji kata pada atau lebih mudah dari level ini\nBatas ini tidak tergantung pada level kanji (mis. pelajari kanji N3 dengan kata N5 saja).\n\nKanji baru/hari: berapa karakter baru yang diperkenalkan setiap hari (default 10).\n\nTumpukan maksimum: batas opsional berapa kartu jatuh tempo yang bisa menumpuk sebelum kanji baru berhenti diperkenalkan. Atur ke 0 untuk menonaktifkan batas.\n\nComposita/kanji: berapa kata per karakter yang diuji (2–5, default 4).\n\nPerubahan level langsung berlaku. Progres ulasan dibagi antara mode JLPT dan mode Khusus — kanji yang diulas di satu mode dihitung sebagai sudah diulas di mode lainnya.';
 
   @override
   String get helpCustomEdit =>
-      'Build your own study list by drawing kanji one at a time.\n\nTap a kanji to choose which vocabulary words (composita) to test for it. Unlike JLPT mode, nothing is auto-included — you explicitly pick each word.\n\nLong-press a kanji to remove it from your list.\n\nYour review progress is preserved even if you remove and re-add a kanji.';
+      'Buat daftar belajar Anda sendiri dengan menggambar kanji satu per satu.\n\nKetuk kanji untuk memilih kata kosakata (composita) mana yang akan diuji. Berbeda dengan mode JLPT, tidak ada yang otomatis dimasukkan — Anda secara eksplisit memilih setiap kata.\n\nTahan lama kanji untuk menghapusnya dari daftar Anda.\n\nProgres ulasan dibagi antara mode JLPT dan mode Khusus — kanji yang diulas di satu mode dihitung sebagai sudah diulas di mode lainnya.';
 
   @override
   String get helpQuiz =>
-      'The quiz is a quick multiple-choice self-test. It has no effect on your spaced-repetition progress.\n\nTwo question types are randomly mixed:\n• Kanji → Reading: a sentence with a kanji highlighted; pick its reading\n• Reading → Kanji: a sentence with readings shown; pick which kanji word fits\n\nOnly kanji you have already reviewed at least once are included.';
+      'Kuis adalah tes mandiri pilihan ganda yang cepat. Tidak berpengaruh pada progres pengulangan berjarak Anda.\n\nDua jenis pertanyaan dicampur secara acak:\n• Kanji → Bacaan: kalimat dengan kanji yang disorot; pilih bacaannya\n• Bacaan → Kanji: kalimat dengan bacaan yang ditampilkan; pilih kata kanji yang sesuai\n\nHanya kanji yang sudah pernah Anda ulas yang diikutsertakan.';
 
   @override
   String get helpStatistics =>
-      'Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 2 times in a row\n• Learning (orange): reviewed but not yet at 2 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 2 consecutive correct answers again.\n\nKanji grid: each kanji shows colored dots.\n• First dot — core progress: green (both reading and writing learnt), orange (at least one direction started), gray (not yet reviewed)\n• Second dot — composita progress (only shown when the character has testable composita words): green (all words tested in both directions), orange (at least one tested), gray (none tested)\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.';
+      'Statistik menunjukkan kemajuan Anda untuk cakupan belajar saat ini.\n\nRingkasan jatuh tempo: berapa kartu yang terlambat, jatuh tempo hari ini, besok, minggu ini, atau nanti.\n\nPer jenis kartu (gambar, pengenalan, isian bacaan, gambar dalam kalimat):\n• Lulus (hijau): dijawab dengan benar 2 kali berturut-turut\n• Sedang dipelajari (oranye): sudah diulas tapi belum mencapai 2 jawaban benar berturut-turut\n• Belum dimulai (abu-abu): belum pernah diulas\n\nJawaban salah mengatur ulang hitungan ke nol — Anda perlu 2 jawaban benar berturut-turut lagi.\n\nGrid kanji: setiap kanji menampilkan titik berwarna.\n• Titik pertama — progres inti: hijau (bacaan dan tulisan keduanya lulus), oranye (setidaknya satu arah dimulai), abu-abu (belum diulas)\n• Titik kedua — progres composita (hanya ditampilkan jika karakter memiliki kata composita yang bisa diuji): hijau (semua kata diuji di kedua arah), oranye (setidaknya satu diuji), abu-abu (tidak ada yang diuji)\n\nCakupan composita menunjukkan berapa kata yang memenuhi syarat telah diuji setidaknya sekali untuk bacaan dan tulisan.\n\nGunakan tombol reset di bagian bawah untuk menghapus semua progres ulasan dan memulai dari awal.';
 
   @override
   String get helpLearning =>
-      'This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven\'t reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.';
+      'Ini adalah pusat pembelajaran Anda untuk mengelola belajar kanji.\n\nUlasan: Mulai sesi pengulangan berjarak dengan kartu jatuh tempo Anda.\n\nKuis: Tes mandiri pilihan ganda (tidak berpengaruh pada progres ulasan).\n\nTambah/Hapus: Tambahkan kanji berdasarkan level JLPT, urutan RTK, atau menggambar. Kelola kumpulan belajar, pengaturan composita, dan kanji individual.\n\nStatistik: Lihat kemajuan Anda per jenis kartu, cakupan composita, dan grid kanji dengan titik berwarna.\n\n── Pengaturan ──\n\nKartu baru/hari: Berapa kartu yang belum pernah dilihat yang diperkenalkan per hari. Ini adalah kanji yang Anda tambahkan tapi belum diulas.\n\nUlasan maks/hari: Anggaran harian total untuk semua kartu — baik ulasan kartu yang sudah pernah dilihat maupun kartu baru digabungkan. Ulasan selalu diprioritaskan; kartu baru mengisi kapasitas yang tersisa.\n\nContoh: Dengan Baru=30 dan Maks=200, jika Anda memiliki 120 ulasan jatuh tempo dan sudah menyelesaikan 50 hari ini:\n• Sisa anggaran harian: 200 − 50 = 150\n• Ulasan jatuh tempo: 120 (semua muat dalam 150)\n• Sisa untuk kartu baru: 150 − 120 = 30\n• Total sesi: 150 kartu\n\nJika ulasan jatuh tempo saja melebihi batas maks (mis. 250 jatuh tempo, maks 200), hanya 200 ulasan yang ditampilkan dan tidak ada kartu baru — mengejar ulasan lebih diutamakan.\n\nAtur salah satu nilai ke 0 untuk tanpa batas.';
 
   @override
-  String get helpSupportDevelopment => 'Support development';
+  String get helpSupportDevelopment => 'Dukung pengembangan';
 
   @override
   String get helpSupportDescription =>
-      'Kanjitomo is free and always will be. If you find it useful, consider buying me a coffee!';
+      'Kanjitomo gratis dan akan selalu gratis. Jika Anda merasa berguna, pertimbangkan untuk mentraktir kami kopi!';
 
   @override
-  String get helpReportBug => 'Report a bug';
+  String get helpReportBug => 'Laporkan bug';
 
   @override
   String get helpReportBugDescription =>
-      'Found a problem? Send us an email and we\'ll look into it.';
+      'Menemukan masalah? Kirim email kepada kami dan kami akan memeriksanya.';
 
   @override
-  String get helpBugEmailSubject => 'Kanjitomo bug report';
+  String get helpBugEmailSubject => 'Laporan bug Kanjitomo';
 
   @override
-  String get learningPoolStats => 'Your learning pool';
+  String get helpPrivacyPolicy => 'Kebijakan privasi';
+
+  @override
+  String get learningPoolStats => 'Kumpulan belajar Anda';
 
   @override
   String learningKanjiCount(int count) {
-    return '$count kanji in pool';
+    return '$count kanji dalam kumpulan';
   }
 
   @override
   String learningSeen(int seen) {
-    return '$seen seen';
+    return '$seen sudah dipelajari';
   }
 
   @override
   String learningDue(int due) {
-    return '$due cards due';
+    return '$due kartu jatuh tempo';
   }
 
   @override
-  String get learningAddRemove => 'Add/Remove';
+  String get learningAddRemove => 'Tambah/Hapus';
 
   @override
   String learningQuickAddJlpt(int count, int level) {
@@ -910,169 +975,180 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get learningQuickAddHint => 'Shortcut — adds kanji in RTK order.';
+  String get learningQuickAddHint =>
+      'Pintasan — menambahkan kanji dalam urutan RTK.';
 
   @override
-  String get learningDetailedAdd => 'Add / Remove (detailed)';
+  String get learningDetailedAdd => 'Tambah / Hapus (terperinci)';
 
   @override
-  String get addRemoveTitle => 'Add / Remove kanji';
+  String get addRemoveBrowseTab => 'Jelajah';
 
   @override
-  String get addRemoveAddByJlpt => 'Add by JLPT level';
+  String get addRemoveBrowseHelp =>
+      'Ketuk + untuk menambahkan kanji ke kumpulan belajar Anda. Kanji yang sudah ada di kumpulan Anda menampilkan tanda centang.';
+
+  @override
+  String get addRemoveTitle => 'Tambah / Hapus kanji';
+
+  @override
+  String get addRemoveAddByJlpt => 'Tambah berdasarkan level JLPT';
 
   @override
   String get addRemoveJlptHelp =>
-      'Add kanji grouped by JLPT level (N5 = easiest, N1 = hardest). Pick a level and how many to add — they\'ll be added in Heisig (RTK) order for efficient memorization. Compound words are auto-selected based on your settings below.';
+      'Tambahkan kanji yang dikelompokkan berdasarkan level JLPT (N5 = termudah, N1 = tersulit). Pilih level dan berapa banyak yang akan ditambahkan — mereka akan ditambahkan dalam urutan Heisig (RTK) untuk menghafal yang efisien. Kata majemuk dipilih otomatis berdasarkan pengaturan Anda di bawah.';
 
   @override
-  String get addRemoveKanjiCount => 'Number of kanji';
+  String get addRemoveKanjiCount => 'Jumlah kanji';
 
   @override
   String get addRemoveAddTip =>
-      'Tip: Add just a few new kanji each day for the best retention.';
+      'Tip: Tambahkan hanya beberapa kanji baru setiap hari untuk retensi terbaik.';
 
   @override
-  String get addRemoveAddJlptButton => 'Add JLPT kanji';
+  String get addRemoveAddJlptButton => 'Tambah kanji JLPT';
 
   @override
-  String get addRemoveAddByRtk => 'Add by RTK order';
+  String get addRemoveAddByRtk => 'Tambah berdasarkan urutan RTK';
 
   @override
   String get addRemoveRtkHelp =>
-      'Add kanji in Heisig\'s Remembering the Kanji (RTK) order, regardless of JLPT level. Good if you\'re following the RTK book or want to learn kanji by building on shared components.';
+      'Tambahkan kanji dalam urutan Remembering the Kanji (RTK) Heisig, terlepas dari level JLPT. Baik jika Anda mengikuti buku RTK atau ingin mempelajari kanji berdasarkan komponen yang sama.';
 
   @override
-  String get addRemoveAddRtkButton => 'Add RTK kanji';
+  String get addRemoveAddRtkButton => 'Tambah kanji RTK';
 
   @override
-  String get addRemoveDrawToAdd => 'Add by drawing';
+  String get addRemoveDrawToAdd => 'Tambah dengan menggambar';
 
   @override
   String get addRemoveDrawHelp =>
-      'Draw any kanji to add it to your learning pool. Useful for adding a specific character you encountered. Compound words are auto-selected based on your settings below.';
+      'Gambar kanji apa pun untuk menambahkannya ke kumpulan belajar Anda. Berguna untuk menambahkan karakter tertentu yang Anda temui. Kata majemuk dipilih otomatis berdasarkan pengaturan Anda di bawah.';
 
   @override
-  String get addRemoveCompositaSettings => 'Composita settings';
+  String get addRemoveCompositaSettings => 'Pengaturan composita';
 
   @override
-  String get addRemoveCompositaCeiling => 'Vocabulary level limit';
+  String get addRemoveCompositaCeiling => 'Batas level kosakata';
 
   @override
   String get addRemoveCompositaCeilingHelp =>
-      'Limits which compound words are auto-selected when adding kanji. A word\'s level is determined by its hardest kanji (e.g. 胃腸 is N1 because 腸 is N1, even though 胃 is N3). Set to N2 and 胃腸 won\'t be auto-selected, but 胃袋 (N2) will. You can always manually add any word via the composita picker. \"Off\" allows all levels.';
+      'Membatasi kata majemuk mana yang dipilih otomatis saat menambahkan kanji. Level sebuah kata ditentukan oleh kanji tersulit-nya (mis. 胃腸 adalah N1 karena 腸 adalah N1, meskipun 胃 adalah N3). Atur ke N2 dan 胃腸 tidak akan dipilih otomatis, tetapi 胃袋 (N2) akan dipilih. Anda selalu bisa menambahkan kata apa pun secara manual melalui pemilih composita. \"Mati\" mengizinkan semua level.';
 
   @override
-  String get addRemoveCeilingOff => 'Off';
+  String get addRemoveCeilingOff => 'Mati';
 
   @override
-  String get addRemoveMaxComposita => 'Words per kanji';
+  String get addRemoveMaxComposita => 'Kata per kanji';
 
   @override
   String get addRemoveMaxCompositaHelp =>
-      'How many compound words to auto-select per kanji for review. More words means more variety but also more cards to review.';
+      'Berapa kata majemuk yang dipilih otomatis per kanji untuk ulasan. Lebih banyak kata berarti lebih banyak variasi tetapi juga lebih banyak kartu untuk diulas.';
 
   @override
-  String get addRemovePoolSortRtk => 'RTK order';
+  String get addRemovePoolSortRtk => 'Urutan RTK';
 
   @override
-  String get addRemovePoolSortAdded => 'Date added';
+  String get addRemovePoolSortAdded => 'Tanggal ditambahkan';
 
   @override
-  String get addRemovePoolSortModified => 'Last modified';
+  String get addRemovePoolSortModified => 'Terakhir diubah';
+
+  @override
+  String get addRemovePoolSortMastery => 'Penguasaan';
 
   @override
   String addRemovePoolTitle(int count) {
-    return 'Learning pool ($count)';
+    return 'Kumpulan belajar ($count)';
   }
 
   @override
-  String get addRemovePoolEmpty => 'No kanji in your learning pool yet.';
+  String get addRemovePoolEmpty => 'Belum ada kanji di kumpulan belajar Anda.';
 
   @override
   String get addRemovePoolTip =>
-      'Tap a kanji to edit its composita, story, or keyword. Long-press to remove.';
+      'Ketuk kanji untuk mengedit composita, cerita, atau kata kuncinya. Tahan lama untuk menghapus.';
 
   @override
-  String get addRemovePoolSearch => 'Search pool';
+  String get addRemovePoolSearch => 'Cari kumpulan';
 
   @override
-  String get addRemoveClearAll => 'Clear all';
+  String get addRemoveClearAll => 'Hapus semua';
 
   @override
-  String get addRemoveConfirmClearTitle => 'Clear learning pool?';
+  String get addRemoveConfirmClearTitle => 'Kosongkan kumpulan belajar?';
 
   @override
   String addRemoveConfirmClearContent(int count) {
-    return 'Remove all $count kanji and delete all review progress? This cannot be undone.';
+    return 'Hapus semua $count kanji dan hapus semua progres ulasan? Tindakan ini tidak dapat dibatalkan.';
   }
 
   @override
   String get addRemoveClearSecondConfirm =>
-      'All review progress will be permanently lost. Your keywords and stories are kept.';
+      'Semua progres ulasan akan hilang secara permanen. Kata kunci dan cerita Anda tetap disimpan.';
 
   @override
-  String get addRemoveConfirmRemoveTitle => 'Remove kanji?';
+  String get addRemoveConfirmRemoveTitle => 'Hapus kanji?';
 
   @override
   String addRemoveConfirmRemoveContent(String char) {
-    return 'Remove $char and delete all review progress for it? This cannot be undone.';
+    return 'Hapus $char dan hapus semua progres ulasan untuknya? Tindakan ini tidak dapat dibatalkan.';
   }
 
   @override
-  String get addRemoveRemoveButton => 'Remove';
+  String get addRemoveRemoveButton => 'Hapus';
 
   @override
   String addRemoveAlreadyInPool(String char) {
-    return '$char is already in your learning pool.';
+    return '$char sudah ada di kumpulan belajar Anda.';
   }
 
   @override
   String addRemoveSlideshowTitle(int current, int total) {
-    return 'New kanji ($current/$total)';
+    return 'Kanji baru ($current/$total)';
   }
 
   @override
-  String get addRemoveSlideshowComposita => 'Selected composita:';
+  String get addRemoveSlideshowComposita => 'Composita terpilih:';
 
   @override
-  String get addRemoveSlideshowNext => 'Next';
+  String get addRemoveSlideshowNext => 'Berikutnya';
 
   @override
-  String get addRemoveSlideshowDone => 'Done';
+  String get addRemoveSlideshowDone => 'Selesai';
 
   @override
   String get kanjiDetailEditComposita => 'Edit composita';
 
   @override
-  String get kanjiDetailAddToLearning => 'Add to learning';
+  String get kanjiDetailAddToLearning => 'Tambah ke pembelajaran';
 
   @override
-  String get learningNewCardsPerDay => 'New cards/day:';
+  String get learningNewCardsPerDay => 'Kartu baru/hari:';
 
   @override
-  String get learningMaxReviewsPerDay => 'Max reviews/day:';
+  String get learningMaxReviewsPerDay => 'Ulasan maks/hari:';
 
   @override
   String learningWaitingCards(int count) {
-    return '$count waiting';
+    return '$count menunggu';
   }
 
   @override
   String reviewDailyLimitReached(int count) {
-    return 'Daily limit reached. $count more cards available.';
+    return 'Batas harian tercapai. $count kartu lagi tersedia.';
   }
 
   @override
   String reviewContinueCards(int count) {
-    return 'Continue with $count more';
+    return 'Lanjutkan dengan $count lagi';
   }
 
   @override
-  String get progressDetailRecognition => 'Recognition';
+  String get progressDetailRecognition => 'Pengenalan';
 
   @override
-  String get progressDetailDrawing => 'Drawing';
+  String get progressDetailDrawing => 'Menggambar';
 
   @override
   String progressDetailStatus(int reps, int threshold) {
@@ -1080,35 +1156,16 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get progressDetailNotStarted => 'Not started';
+  String get progressDetailNotStarted => 'Belum dimulai';
 
   @override
-  String get progressDetailViewFull => 'View detail';
+  String get progressDetailViewFull => 'Lihat detail';
 
   @override
   String get progressDetailComposita => 'Composita';
 
   @override
-  String get addSentenceButton => 'Add sentence';
-
-  @override
-  String addSentenceHint(String word) {
-    return 'Type a Japanese sentence containing $word';
-  }
-
-  @override
-  String get addSentenceTranslationHint => 'Translation (optional)';
-
-  @override
-  String addSentenceValidation(String word) {
-    return 'Sentence must contain $word';
-  }
-
-  @override
-  String get userSentenceSource => 'User';
-
-  @override
-  String get settingsTheme => 'Theme';
+  String get settingsTheme => 'Tema';
 
   @override
   String get themeIndigo => 'Indigo';
@@ -1124,4 +1181,36 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get themeAmber => 'Amber';
+
+  @override
+  String get settingsBrightness => 'Kecerahan';
+
+  @override
+  String get themeAuto => 'Otomatis';
+
+  @override
+  String get themeLight => 'Terang';
+
+  @override
+  String get themeDark => 'Gelap';
+
+  @override
+  String get settingsRecognitionModel => 'Model pengenalan';
+
+  @override
+  String get modelStandard => 'Standar (~3.000 kanji)';
+
+  @override
+  String get modelExtended => 'Diperluas (~6.500 kanji)';
+
+  @override
+  String get modelSwitching => 'Mengganti model...';
+
+  @override
+  String get modelSwitched => 'Model pengenalan diganti';
+
+  @override
+  String modelSwitchFailed(String error) {
+    return 'Gagal mengganti model: $error';
+  }
 }

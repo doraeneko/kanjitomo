@@ -106,8 +106,50 @@
   "helpTitle": "Help & About",
   "@helpTitle": { "description": "AppBar title for help screen" },
 
-  "helpIntro": "Kanjitomo helps you recognize, read, and write Japanese kanji — all offline, no account required.\n\n• Lookup — Draw any kanji to instantly look it up, with readings, meanings, stroke order, and example words.\n• Word Lookup — Build words character-by-character and search the full JMdict dictionary.\n• Learning — Add kanji to your pool (by JLPT level, RTK order, or drawing) and study with spaced repetition across four card types: draw from meaning, recognize kanji, reading cloze, and draw in sentence.\n• JLPT-like Quiz — Test yourself with multiple-choice questions matching the JLPT format.\n• Browse — Search all 2,140 Jōyō kanji by reading, meaning, or stroke count, with progress tracking.\n\nThe app includes over 60,000 vocabulary words and 6,000+ example sentences, all organized by JLPT level. Add your own keywords and mnemonics to make each kanji stick.\n\nReadings shown in [square brackets] are rare — they appear in only one or two words. Focus on the unbracketed readings first.",
-  "@helpIntro": { "description": "Introduction paragraph on help screen" },
+  "helpTagline": "A kanji learning tool for serious learners",
+  "@helpTagline": { "description": "Short tagline shown below app name on help screen" },
+
+  "helpFeaturesSection": "What's inside",
+  "@helpFeaturesSection": { "description": "Section divider label for feature highlights" },
+
+  "helpFeatureRecognitionTitle": "Handwriting Recognition",
+  "@helpFeatureRecognitionTitle": { "description": "Feature card title" },
+
+  "helpFeatureRecognitionDesc": "Draw any kanji for instant offline recognition — neural network, 6,500+ characters.",
+  "@helpFeatureRecognitionDesc": { "description": "Feature card description" },
+
+  "helpFeatureSrsTitle": "Spaced Repetition (SRS)",
+  "@helpFeatureSrsTitle": { "description": "Feature card title" },
+
+  "helpFeatureSrsDesc": "Draw kanji from memory, not just recognize them. Four card types build real recall through active writing.",
+  "@helpFeatureSrsDesc": { "description": "Feature card description" },
+
+  "helpFeatureCompositaTitle": "Composita & Sentences",
+  "@helpFeatureCompositaTitle": { "description": "Feature card title" },
+
+  "helpFeatureCompositaDesc": "You choose which compound words to study. Learn kanji in context with 6,000+ example sentences.",
+  "@helpFeatureCompositaDesc": { "description": "Feature card description" },
+
+  "helpFeatureStrokeOrderTitle": "Stroke Order",
+  "@helpFeatureStrokeOrderTitle": { "description": "Feature card title" },
+
+  "helpFeatureStrokeOrderDesc": "Animated stroke-by-stroke diagrams with a practice canvas for every kanji.",
+  "@helpFeatureStrokeOrderDesc": { "description": "Feature card description" },
+
+  "helpFeatureDictionaryTitle": "Dictionary",
+  "@helpFeatureDictionaryTitle": { "description": "Feature card title" },
+
+  "helpFeatureDictionaryDesc": "60,000+ words from JMdict. Draw to look up single kanji or build words character by character.",
+  "@helpFeatureDictionaryDesc": { "description": "Feature card description" },
+
+  "helpFeatureStoriesTitle": "Keywords & Stories",
+  "@helpFeatureStoriesTitle": { "description": "Feature card title" },
+
+  "helpFeatureStoriesDesc": "Add your own mnemonics and keywords to each kanji to make them stick.",
+  "@helpFeatureStoriesDesc": { "description": "Feature card description" },
+
+  "helpSettingsSection": "Settings",
+  "@helpSettingsSection": { "description": "Section divider label for settings" },
 
   "helpAcknowledgement": "Kanjitomo would not be possible without these wonderful open-source projects and data sets:",
   "@helpAcknowledgement": { "description": "Acknowledgement text before the licenses button" },
@@ -264,6 +306,12 @@
 
   "wordLookupPickKanjiConfirm": "Add",
   "@wordLookupPickKanjiConfirm": { "description": "Confirm button in kanji picker dialog" },
+
+  "wordLookupAlreadyInReview": "Already in review",
+  "@wordLookupAlreadyInReview": { "description": "Label shown when a word is already added as composita for review" },
+
+  "wordLookupClearWord": "Clear word",
+  "@wordLookupClearWord": { "description": "Button to clear the word text field, shown next to Clear drawing" },
 
   "kanjiBrowserTitle": "Kanji browser",
   "@kanjiBrowserTitle": { "description": "AppBar title for kanji browser" },
@@ -549,8 +597,8 @@
   "statisticsDrawInSentence": "Draw in sentence (composita/sentence)",
   "@statisticsDrawInSentence": { "description": "Card type label" },
 
-  "statisticsKnown": "Learnt",
-  "@statisticsKnown": { "description": "Legend label for learnt cards (2+ consecutive correct)" },
+  "statisticsKnown": "Passed",
+  "@statisticsKnown": { "description": "Legend label for cards passed (2+ consecutive correct)" },
 
   "statisticsMissed": "Learning",
   "@statisticsMissed": { "description": "Legend label for cards still being learned" },
@@ -576,6 +624,12 @@
   "statisticsInspectAllKanji": "Inspect all kanji",
   "@statisticsInspectAllKanji": { "description": "Button to open kanji browser" },
 
+  "statisticsLearnt": "{count} / {total} learnt",
+  "@statisticsLearnt": {
+    "description": "Count of fully learnt kanji (green/green)",
+    "placeholders": { "count": { "type": "int" }, "total": { "type": "int" } }
+  },
+
   "statisticsResetButton": "Reset statistics",
   "@statisticsResetButton": { "description": "Button to reset all stats" },
 
@@ -587,6 +641,9 @@
 
   "statisticsResetConfirm": "Reset",
   "@statisticsResetConfirm": { "description": "Confirm button for reset dialog" },
+
+  "undoStroke": "Undo stroke",
+  "@undoStroke": { "description": "Tooltip/label for the undo last stroke button" },
 
   "drawAndPickClearDrawing": "Clear drawing",
   "@drawAndPickClearDrawing": { "description": "Clear button on draw and pick widget" },
@@ -826,31 +883,31 @@
   "ftdLookupTitle": "Draw to recognize",
   "@ftdLookupTitle": { "description": "First-time dialog title for lookup screen" },
 
-  "ftdLookupMessage": "Draw a kanji stroke by stroke on the canvas. The app recognizes it after each stroke and shows the best matches. Tap a result to see its full detail — readings, meaning, stroke order, and more.\n\nTry it now — minimize this card and draw something!",
+  "ftdLookupMessage": "Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!",
   "@ftdLookupMessage": { "description": "First-time dialog message for lookup screen" },
 
   "ftdWordLookupTitle": "Word lookup",
   "@ftdWordLookupTitle": { "description": "First-time dialog title for word lookup screen" },
 
-  "ftdWordLookupMessage": "Build a word one character at a time by drawing each one, or type directly into the text field. The app looks up the word in the dictionary and shows its reading and meaning.\n\nMinimize this card to try it out!",
+  "ftdWordLookupMessage": "Look up compound words in a 60,000+ entry dictionary (JMdict). Draw each character to build the word, or type directly.\n\nMinimize this card to try it out!",
   "@ftdWordLookupMessage": { "description": "First-time dialog message for word lookup screen" },
 
   "ftdLearningTitle": "Learning",
   "@ftdLearningTitle": { "description": "First-time dialog title for learning screen" },
 
-  "ftdLearningMessage": "Add kanji to your learning pool from JLPT levels, RTK order, or by drawing. Review uses spaced repetition to test reading and writing. You can also take quick quizzes and track your progress with statistics.",
+  "ftdLearningMessage": "You decide what to study. Add kanji by JLPT level or hand-pick individual characters. Spaced repetition tests you four ways — including drawing from memory, which builds the active recall that passive apps can't match.\n\nTrack your progress with detailed statistics.",
   "@ftdLearningMessage": { "description": "First-time dialog message for learning screen" },
 
   "ftdBrowserTitle": "Kanji browser",
   "@ftdBrowserTitle": { "description": "First-time dialog title for kanji browser screen" },
 
-  "ftdBrowserMessage": "Browse all Jōyō kanji in a searchable table. Search by reading (hiragana or katakana), meaning (English), stroke count, or the character itself. Colored dots show your review progress — green for known, orange for missed.",
+  "ftdBrowserMessage": "Browse all Jōyō kanji in a searchable table. Filter by reading, meaning, or stroke count. Tap any kanji to see its detail — and choose which compound words (composita) you want in your reviews.\n\nColored dots show your review progress at a glance.",
   "@ftdBrowserMessage": { "description": "First-time dialog message for kanji browser screen" },
 
   "ftdReviewSessionTitle": "Review session",
   "@ftdReviewSessionTitle": { "description": "First-time dialog title for review session screen" },
 
-  "ftdReviewSessionMessage": "Four card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nGrade yourself with Again (missed) or Good (recalled).",
+  "ftdReviewSessionMessage": "Four card types test different aspects of recall:\n• Draw from meaning — see the keyword, write the kanji from memory\n• Kanji recognition — see the kanji, recall its reading and meaning\n• Reading cloze — read a compound word in a real sentence\n• Draw in sentence — write a kanji in context\n\nDrawing from memory is harder than multiple choice — that's the point. Grade yourself with Again (missed) or Good (recalled).",
   "@ftdReviewSessionMessage": { "description": "First-time dialog message for review session screen" },
 
   "ftdGotIt": "Got it",
@@ -865,7 +922,7 @@
   "welcomeTitle": "Welcome to Kanjitomo",
   "@welcomeTitle": { "description": "Title on welcome screen" },
 
-  "welcomeSubtitle": "Recognize, read, and write Japanese kanji",
+  "welcomeSubtitle": "A kanji learning tool for serious learners",
   "@welcomeSubtitle": { "description": "Subtitle on welcome screen" },
 
   "welcomeTakeTour": "Take a tour",
@@ -886,10 +943,10 @@
   "welcomeDontShowAgain": "Don't show again",
   "@welcomeDontShowAgain": { "description": "Button to permanently dismiss welcome screen" },
 
-  "welcomeFeatureList": "Draw any kanji to recognize and look it up instantly. Study over 60,000 vocabulary words with real example sentences using spaced repetition. Browse all Jōyō kanji — completely offline.",
+  "welcomeFeatureList": "Draw kanji from memory to build real recall — not just recognition. You choose what to study: pick your kanji, your compound words, your pace. Offline, no account, no tracking.",
   "@welcomeFeatureList": { "description": "Brief feature summary on the welcome screen" },
 
-  "helpReviewStart": "Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew kanji are introduced in RTK order (building on shared radicals). You can set how many new kanji per day.\n\nIf you skip 2+ days and have a backlog of due cards, new kanji are paused until you catch up. Use \"Learn more\" inside a session to override this.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji's shape, meaning, and components.",
+  "helpReviewStart": "Review uses spaced repetition (SM-2) to schedule cards at increasing intervals.\n\nFour card types test you:\n• Draw from meaning — see the meaning, draw the kanji\n• Kanji recognition — see the kanji, recall its reading\n• Reading cloze — read a word in a sentence\n• Draw in sentence — draw a kanji in context\n\nNew cards per day and max reviews per day are set on the learning hub. Reviews always take priority; new cards fill whatever daily budget remains. Use \"Learn more\" inside a session to add extra cards beyond the daily limit.\n\nGrade yourself: Again (forgot) or Good (recalled). Cards reappear after at least 1 day, with intervals growing as you succeed.\n\nYou can add a personal keyword and story (mnemonic) for each kanji. Tap any kanji in the browser or during review to edit them. Your keyword is shown during draw-from-meaning cards; your story appears when you reveal the answer. These help you build memorable associations between a kanji's shape, meaning, and components.",
   "@helpReviewStart": { "description": "Help text for review start screen" },
 
   "helpJlptEdit": "Select one or more JLPT levels. All kanji from the selected levels are combined into your study scope.\n\nComposita ceiling controls which vocabulary words are tested:\n• Off — no word/sentence testing, only bare kanji\n• N5–N1 — only test words at or easier than this level\nThe ceiling is independent of kanji levels (e.g. study N3 kanji with N5 words only).\n\nNew kanji/day: how many new characters to introduce each day (default 10).\n\nMax backlog: optional limit on how many due cards can pile up before new kanji stop being introduced. Set to 0 to disable the limit.\n\nComposita/kanji: how many words per character are tested (2–5, default 4).\n\nChanging levels takes effect immediately. Review progress is shared between JLPT and Custom mode — a kanji reviewed in one mode counts as reviewed in the other.",
@@ -904,7 +961,7 @@
   "helpStatistics": "Statistics show your progress for the current study scope.\n\nDue overview: how many cards are overdue, due today, tomorrow, this week, or later.\n\nPer card type (draw, recognition, reading cloze, draw in sentence):\n• Learnt (green): answered correctly 2 times in a row\n• Learning (orange): reviewed but not yet at 2 consecutive correct answers\n• Not started (gray): never reviewed\n\nA wrong answer resets the count back to zero — you need 2 consecutive correct answers again.\n\nKanji grid: each kanji shows colored dots.\n• First dot — core progress: green (both reading and writing learnt), orange (at least one direction started), gray (not yet reviewed)\n• Second dot — composita progress (only shown when the character has testable composita words): green (all words tested in both directions), orange (at least one tested), gray (none tested)\n\nComposita coverage shows how many eligible words have been tested at least once for reading and writing.\n\nUse the reset button at the bottom to erase all review progress and start over.",
   "@helpStatistics": { "description": "Help text for statistics screen" },
 
-  "helpLearning": "This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nQuick-add buttons: Add kanji by JLPT level or RTK order.\n\nAdd/Remove (detailed): Manage your learning pool, composita settings, and individual kanji.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven't reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.",
+  "helpLearning": "This is your learning hub for managing kanji study.\n\nReview: Start a spaced-repetition session with your due cards.\n\nQuiz: A multiple-choice self-test (no effect on review progress).\n\nAdd/Remove: Add kanji by JLPT level, RTK order, or drawing. Manage your learning pool, composita settings, and individual kanji.\n\nStatistics: View your progress per card type, composita coverage, and a kanji grid with color-coded dots.\n\n── Settings ──\n\nNew cards/day: How many never-before-seen cards are introduced per day. These are kanji you added but haven't reviewed yet.\n\nMax reviews/day: The total daily budget for all cards — both reviews of previously seen cards and new cards combined. Reviews always take priority; new cards fill whatever capacity remains.\n\nExample: With New=30 and Max=200, if you have 120 due reviews and have already done 50 today:\n• Daily budget remaining: 200 − 50 = 150\n• Due reviews: 120 (all fit within 150)\n• Remaining for new cards: 150 − 120 = 30\n• Total session: 150 cards\n\nIf due reviews alone exceed the max (e.g. 250 due, max 200), only 200 reviews are shown and no new cards — catching up on reviews comes first.\n\nSet either value to 0 for unlimited.",
   "@helpLearning": { "description": "Help text for learning screen" },
 
   "helpSupportDevelopment": "Support development",
@@ -921,6 +978,9 @@
 
   "helpBugEmailSubject": "Kanjitomo bug report",
   "@helpBugEmailSubject": { "description": "Pre-filled email subject for bug reports" },
+
+  "helpPrivacyPolicy": "Privacy policy",
+  "@helpPrivacyPolicy": { "description": "Label for privacy policy link on help screen" },
 
   "learningPoolStats": "Your learning pool",
   "@learningPoolStats": { "description": "Section title for the unified learning pool" },
@@ -967,6 +1027,12 @@
   "@learningQuickAddHint": { "description": "Hint below quick-add buttons" },
   "learningDetailedAdd": "Add / Remove (detailed)",
   "@learningDetailedAdd": { "description": "Button to open detailed add/remove screen" },
+
+  "addRemoveBrowseTab": "Browse",
+  "@addRemoveBrowseTab": { "description": "Tab label for the browse-all-kanji tab" },
+
+  "addRemoveBrowseHelp": "Tap + to add a kanji to your learning pool. Kanji already in your pool show a checkmark.",
+  "@addRemoveBrowseHelp": { "description": "Brief instruction text for the browse tab" },
 
   "addRemoveTitle": "Add / Remove kanji",
   "@addRemoveTitle": { "description": "AppBar title for add/remove screen" },
@@ -1027,6 +1093,8 @@
 
   "addRemovePoolSortModified": "Last modified",
   "@addRemovePoolSortModified": { "description": "Sort pool by last modification date" },
+  "addRemovePoolSortMastery": "Mastery",
+  "@addRemovePoolSortMastery": { "description": "Sort pool by mastery level (best learned last)" },
 
   "addRemovePoolTitle": "Learning pool ({count})",
   "@addRemovePoolTitle": {
@@ -1148,27 +1216,6 @@
   "progressDetailComposita": "Composita",
   "@progressDetailComposita": { "description": "Label for composita progress in the tap-to-inspect dialog" },
 
-  "addSentenceButton": "Add sentence",
-  "@addSentenceButton": { "description": "Button to add a user sentence for a composita word" },
-
-  "addSentenceHint": "Type a Japanese sentence containing {word}",
-  "@addSentenceHint": {
-    "description": "Hint text for sentence input field",
-    "placeholders": { "word": { "type": "String" } }
-  },
-
-  "addSentenceTranslationHint": "Translation (optional)",
-  "@addSentenceTranslationHint": { "description": "Hint text for translation input field" },
-
-  "addSentenceValidation": "Sentence must contain {word}",
-  "@addSentenceValidation": {
-    "description": "Validation error when sentence doesn't contain the word",
-    "placeholders": { "word": { "type": "String" } }
-  },
-
-  "userSentenceSource": "User",
-  "@userSentenceSource": { "description": "Source label for user-added sentences" },
-
   "settingsTheme": "Theme",
   "@settingsTheme": { "description": "Label for theme picker in settings" },
 
@@ -1185,5 +1232,38 @@
   "@themeForest": { "description": "Name of the Forest (green) color theme" },
 
   "themeAmber": "Amber",
-  "@themeAmber": { "description": "Name of the Amber (gold) color theme" }
+  "@themeAmber": { "description": "Name of the Amber (gold) color theme" },
+
+  "settingsBrightness": "Brightness",
+  "@settingsBrightness": { "description": "Label for brightness mode picker in settings" },
+
+  "themeAuto": "Auto",
+  "@themeAuto": { "description": "Brightness mode that follows system setting" },
+
+  "themeLight": "Light",
+  "@themeLight": { "description": "Force light mode" },
+
+  "themeDark": "Dark",
+  "@themeDark": { "description": "Force dark mode" },
+
+  "settingsRecognitionModel": "Recognition model",
+  "@settingsRecognitionModel": { "description": "Label for recognition model picker in settings" },
+
+  "modelStandard": "Standard (~3,000 kanji)",
+  "@modelStandard": { "description": "Label for standard recognition model" },
+
+  "modelExtended": "Extended (~6,500 kanji)",
+  "@modelExtended": { "description": "Label for extended recognition model" },
+
+  "modelSwitching": "Switching model...",
+  "@modelSwitching": { "description": "Snackbar shown while model is being loaded" },
+
+  "modelSwitched": "Recognition model switched",
+  "@modelSwitched": { "description": "Snackbar after model switch completes" },
+
+  "modelSwitchFailed": "Failed to switch model: {error}",
+  "@modelSwitchFailed": {
+    "description": "Snackbar when model switch fails",
+    "placeholders": { "error": { "type": "String" } }
+  }
 }
