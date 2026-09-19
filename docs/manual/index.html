@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kanjitomo – User Manual</title>
+  <style>
+    :root {
+      --bg: #faf8f5;
+      --text: #2c2c2c;
+      --accent: #4a5899;
+      --card-bg: #ffffff;
+      --border: #e0ddd8;
+      --muted: #6b6b6b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    header {
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+    header p {
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    section {
+      margin-bottom: 3rem;
+    }
+    section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--accent);
+    }
+    section p, section li {
+      margin-bottom: 0.6rem;
+    }
+    ul {
+      padding-left: 1.4rem;
+    }
+    .screenshot-row {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+      margin: 1.5rem 0;
+    }
+    .screenshot-row.reverse {
+      flex-direction: row-reverse;
+    }
+    .screenshot-row img {
+      width: 260px;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      flex-shrink: 0;
+    }
+    .screenshot-row .desc {
+      flex: 1;
+      padding-top: 0.5rem;
+    }
+    .screenshot-row .desc h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.4rem;
+    }
+    .screenshot-row .desc p {
+      color: var(--muted);
+    }
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    footer a { color: var(--accent); }
+    @media (max-width: 640px) {
+      .screenshot-row, .screenshot-row.reverse {
+        flex-direction: column;
+        align-items: center;
+      }
+      .screenshot-row img {
+        width: 80%;
+        max-width: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>kanjitomo</h1>
+  <p>Learn to recognize, read, and write Japanese kanji</p>
+</header>
+
+<main>
+
+  <section>
+    <h2>Getting Started</h2>
+    <p>kanjitomo is an offline kanji learning app with handwriting recognition, spaced repetition, and over 6,000 example sentences. Everything runs on your device — no internet connection needed.</p>
+    <p>The app has five tabs at the bottom of the screen: <strong>Kanji</strong>, <strong>Words</strong>, <strong>Learn</strong>, <strong>Browse</strong>, and <strong>Help</strong>.</p>
+  </section>
+
+  <section>
+    <h2>Kanji Lookup</h2>
+    <div class="screenshot-row">
+      <img src="01_lookup.png" alt="Kanji lookup screen with drawing canvas">
+      <div class="desc">
+        <h3>Draw to look up</h3>
+        <p>The Kanji tab is the main screen. Draw any kanji on the canvas and the neural network will recognize it instantly — even with messy handwriting. It supports over 6,500 characters.</p>
+        <p>Tap a recognition result to see full details: meanings, readings, stroke order, example sentences, and compound words.</p>
+      </div>
+    </div>
+    <div class="screenshot-row reverse">
+      <img src="02_recognition.png" alt="Recognition result showing 八 at 97.4%">
+      <div class="desc">
+        <h3>Instant recognition</h3>
+        <p>After drawing, the best matches appear below the canvas with confidence scores. The recognition engine runs entirely offline using a neural network trained on thousands of handwriting samples.</p>
+        <p>Use <em>Undo stroke</em> to correct mistakes or <em>Clear drawing</em> to start over.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Word Lookup</h2>
+    <div class="screenshot-row">
+      <img src="03_words.png" alt="Word lookup screen">
+      <div class="desc">
+        <h3>Build words character by character</h3>
+        <p>The Words tab lets you look up compound words from a dictionary of over 60,000 entries (JMdict). Draw a kanji or kana character to add it to the word field, then search.</p>
+        <p>This is useful when you encounter an unfamiliar word and want to find its reading and meaning.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Learning Hub</h2>
+    <div class="screenshot-row reverse">
+      <img src="04_learn.png" alt="Learning screen with Review, Quiz, and Add/Remove buttons">
+      <div class="desc">
+        <h3>Spaced repetition & quizzes</h3>
+        <p>The Learn tab is your study command center. From here you can:</p>
+        <ul>
+          <li><strong>Review</strong> — Start an SRS session with four card types: draw the kanji, recognize it, fill in a reading cloze, or draw it within a sentence.</li>
+          <li><strong>JLPT-like Quiz</strong> — Test yourself with multiple-choice questions similar to the Japanese Language Proficiency Test.</li>
+          <li><strong>Add/Remove</strong> — Choose which kanji to study by JLPT level or pick individual characters.</li>
+        </ul>
+        <p>The card below shows your pool size, due cards, and daily limits. Tap <em>Statistics</em> to see your progress over time.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Kanji Browser</h2>
+    <div class="screenshot-row">
+      <img src="05_browse.png" alt="Kanji browser showing a list of kanji with meanings, keywords, and readings">
+      <div class="desc">
+        <h3>Browse all kanji</h3>
+        <p>The Browse tab lists all kanji sorted by stroke count. Each row shows the character, its English meaning, your personal keyword, readings (on'yomi and kun'yomi), and stroke count.</p>
+        <p>Use the search bar to filter by reading, meaning, or stroke count. Tap any row to open the kanji detail sheet with stroke order animation, example sentences, compound words, and your personal notes.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Help &amp; Settings</h2>
+    <div class="screenshot-row reverse">
+      <img src="06_help.png" alt="Help screen showing app mascot, feature list, and settings">
+      <div class="desc">
+        <h3>Settings and feature overview</h3>
+        <p>The Help tab shows an overview of all features and lets you configure the app:</p>
+        <ul>
+          <li><strong>Take a tour</strong> — A guided walkthrough of the app's main features.</li>
+          <li><strong>Theme &amp; brightness</strong> — Choose a color theme and toggle dark mode.</li>
+          <li><strong>Recognition model</strong> — Switch between the standard and extended recognition model.</li>
+        </ul>
+        <p>Scroll down to find links for support, bug reporting, the privacy policy, and open-source acknowledgements.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tips</h2>
+    <ul>
+      <li>Everything works offline — no internet connection is required for recognition, reviews, or browsing.</li>
+      <li>Add your own keywords and mnemonics to any kanji to help them stick.</li>
+      <li>Start with JLPT N5 kanji and work your way up as you become more comfortable.</li>
+      <li>Review daily — even a few minutes of spaced repetition makes a big difference over time.</li>
+      <li>Use the stroke order view to practice writing kanji with correct form.</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  <p>kanjitomo &middot; <a href="../privacy_policy.html">Privacy Policy</a> &middot; <a href="https://buymeacoffee.com/dorayaki">Support Development</a></p>
+</footer>
+
+</body>
+</html>
