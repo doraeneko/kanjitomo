@@ -61,26 +61,30 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       stats[cardType] = await _reviewRepo.statsFor(cardType, characters);
     }
 
-    // Same "not opted in yet" gate as the review session (see
-    // sentence_selection.dart's compositaEnabled) -- JLPT mode with no
-    // compositaCeiling chosen has nothing testable, not "everything".
+    // Words the review session will test for each character. A custom
+    // selection (auto-picked on add, manual picks, Anki import) always
+    // counts -- the session tests it regardless of the composita ceiling,
+    // and a null ceiling ("Off") means "no limit" there, not "disabled".
+    // Without a custom selection, fall back to ceiling filtering only when
+    // a ceiling is set; with no ceiling that fallback would be every
+    // bundled word, none of which the session actually tests.
     final wordsByCharacter = <String, Set<String>>{};
-    if (compositaEnabled(scope)) {
-      final customComposita = await _reviewRepo.customCompositaForCharacters(characters);
-      final userComposita = await _reviewRepo.allUserCompositaByChar();
-      for (final char in characters) {
-        final bundled = widget.deps.composita.lookup(char);
-        final userAdded = userComposita[char];
-        final merged = _mergeComposita(bundled, userAdded);
-        final eligible = eligibleComposita(
-          merged,
-          scope,
-          customComposita[char] ?? const {},
-          charJlptLevel: widget.deps.jlptLevels.levelOf(char),
-        );
-        if (eligible.isNotEmpty) {
-          wordsByCharacter[char] = eligible.map((c) => c.word).toSet();
-        }
+    final customComposita =
+        await _reviewRepo.customCompositaForCharacters(characters);
+    final userComposita = await _reviewRepo.allUserCompositaByChar();
+    for (final char in characters) {
+      final custom = customComposita[char] ?? const <String>{};
+      if (custom.isEmpty && !compositaEnabled(scope)) continue;
+      final bundled = widget.deps.composita.lookup(char);
+      final merged = _mergeComposita(bundled, userComposita[char]);
+      final eligible = eligibleComposita(
+        merged,
+        scope,
+        custom,
+        charJlptLevel: widget.deps.jlptLevels.levelOf(char),
+      );
+      if (eligible.isNotEmpty) {
+        wordsByCharacter[char] = eligible.map((c) => c.word).toSet();
       }
     }
     final compositaCoverage = await _reviewRepo.compositaProgressFor(
@@ -128,12 +132,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       final level = jlptRepo.levelOf(char) ?? 0;
       final ls = jlptStats[level]!;
       final dot = _mainDot(progress[char]);
-      // null = no testable composita → treat as done.
+      // "Learnt" = the kanji itself (A+B known); "complete" additionally
+      // needs every testable composita covered. null = no testable
+      // composita → nothing left to complete.
       final cDot = compositaDots[char];
-      final isLearnt = dot == 2 && (cDot == null || cDot == 2);
+      final isLearnt = dot == 2;
       final isLearning = !isLearnt && (dot >= 1 || (cDot != null && cDot >= 1));
       if (isLearnt) {
         ls.learnt++;
+        if (cDot == null || cDot == 2) ls.complete++;
       } else if (isLearning) {
         ls.learning++;
       } else {
@@ -271,16 +278,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return 0;
   }
 
+  /// The kanji itself is learnt: recognition and drawing (A+B) both known.
+  bool _isKanjiLearnt(String c) => _mainDot(_progress?[c]) == 2;
+
+  /// Learnt and every testable composita covered in both directions
+  /// (characters without testable composita count as complete).
+  bool _isComplete(String c) =>
+      _isKanjiLearnt(c) &&
+      (!_compositaDotScore.containsKey(c) || _compositaDotScore[c] == 2);
+
   Widget _buildSummaryPie(AppLocalizations l, AppColors colors) {
     final scope = widget.deps.studyScope.scope.value;
     final chars = _scopeCharacters(scope);
-    final learnt = chars.where((c) =>
-      _mainDot(_progress?[c]) == 2 &&
-      (!_compositaDotScore.containsKey(c) || _compositaDotScore[c] == 2),
-    ).length;
-    final kanjiOnly = chars.where((c) =>
-      _mainDot(_progress?[c]) == 2,
-    ).length;
+    final learnt = chars.where(_isKanjiLearnt).length;
+    final complete = chars.where(_isComplete).length;
     final remaining = chars.length - learnt;
 
     return Padding(
@@ -289,8 +300,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _PieChart(
-            values: [learnt.toDouble(), remaining.toDouble()],
-            colors: [colors.statusGreen, colors.statusGreyLight],
+            values: [
+              complete.toDouble(),
+              (learnt - complete).toDouble(),
+              remaining.toDouble(),
+            ],
+            colors: [
+              colors.statusGreen,
+              colors.statusGreen.withValues(alpha: 0.4),
+              colors.statusGreyLight,
+            ],
             size: 100,
           ),
           const SizedBox(width: 20),
@@ -301,14 +320,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 l.statisticsLearnt(learnt, chars.length),
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-              if (kanjiOnly > learnt)
-                Text(
-                  l.statisticsLearntKanjiOnly(kanjiOnly, chars.length),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: colors.textTertiary,
-                  ),
+              Text(
+                l.statisticsComplete(complete, chars.length),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colors.textTertiary,
                 ),
+              ),
             ],
           ),
         ],
@@ -336,6 +354,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               3: FlexColumnWidth(),
               4: FlexColumnWidth(),
               5: FlexColumnWidth(),
+              6: FlexColumnWidth(),
             },
             children: [
               TableRow(
@@ -346,6 +365,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   _headerCell(l.statisticsJlptNew, colors),
                   _headerCell(l.statisticsJlptLearning, colors),
                   _headerCell(l.statisticsJlptLearnt, colors),
+                  _headerCell(l.statisticsJlptComplete, colors),
                 ],
               ),
               for (final s in stats)
@@ -366,6 +386,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                     _dataCell(s.newCount, colors.statusGreyLight),
                     _dataCell(s.learning, colors.statusOrange),
                     _dataCell(s.learnt, colors.statusGreen),
+                    _dataCell(s.complete, colors.statusGreen),
                   ],
                 ),
             ],
@@ -585,10 +606,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       return sa.compareTo(sb);
     });
 
-    final learntCount = chars.where((c) =>
-      _mainDot(_progress?[c]) == 2 &&
-      (!_compositaDotScore.containsKey(c) || _compositaDotScore[c] == 2),
-    ).length;
+    final learntCount = chars.where(_isKanjiLearnt).length;
+    final completeCount = chars.where(_isComplete).length;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
@@ -600,7 +619,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           Text(
-            l.statisticsLearnt(learntCount, chars.length),
+            '${l.statisticsLearnt(learntCount, chars.length)} · '
+            '${l.statisticsComplete(completeCount, chars.length)}',
             style: TextStyle(color: colors.textTertiary, fontSize: 13),
           ),
           const SizedBox(height: 8),
@@ -912,7 +932,8 @@ class _JlptLevelStats {
   int notSelected = 0;
   int newCount = 0; // selected but not started
   int learning = 0;
-  int learnt = 0;
+  int learnt = 0; // kanji itself learnt (A+B), composita aside
+  int complete = 0; // learnt and all testable composita covered (⊆ learnt)
 
   _JlptLevelStats({required this.level});
 

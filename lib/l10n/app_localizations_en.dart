@@ -622,16 +622,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsJlptLearnt => 'Learnt';
 
   @override
+  String get statisticsJlptComplete => 'Complete';
+
+  @override
   String get statisticsInspectAllKanji => 'Inspect all kanji';
 
   @override
   String statisticsLearnt(int count, int total) {
-    return '$count / $total learnt';
+    return '$count / $total kanji learnt';
   }
 
   @override
-  String statisticsLearntKanjiOnly(int count, int total) {
-    return '$count / $total without composita';
+  String statisticsComplete(int count, int total) {
+    return '$count / $total complete with composita';
   }
 
   @override
@@ -792,6 +795,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String reviewTypeDue(int count) {
     return '$count due';
   }
+
+  @override
+  String get reviewNewCardOrder => 'New cards';
+
+  @override
+  String get reviewNewCardOrderRtk => 'RTK order';
+
+  @override
+  String get reviewNewCardOrderRandom => 'Random';
 
   @override
   String get reviewTypesStart => 'Start';

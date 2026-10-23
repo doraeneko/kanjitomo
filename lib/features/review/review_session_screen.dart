@@ -77,10 +77,14 @@ class ReviewSessionScreen extends StatefulWidget {
   final AppDependencies deps;
   final Set<CardType>? cardTypes;
 
+  /// Which new kanji are introduced first (see [orderNewCards]).
+  final NewCardOrder newCardOrder;
+
   const ReviewSessionScreen({
     super.key,
     required this.deps,
     this.cardTypes,
+    this.newCardOrder = NewCardOrder.rtk,
   });
 
   @override
@@ -116,6 +120,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   Set<String> _seenCharacters = {};
   _GradeSnapshot? _lastGradeSnapshot;
   int _remainingBeyondCap = 0;
+  bool _countingRemaining = false;
   Timer? _dueRefreshTimer;
 
   @override
@@ -215,13 +220,10 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     // Filter out composita cards whose word is not in custom_composita.
     // Cards can linger in review_cards if they were created before the
     // user changed their composita selection.
-    bool isSelectedComposita(ReviewCard c) {
-      if (c.compositaWord.isEmpty) return true; // A/B cards, always keep
-      final selected = _customComposita[c.character];
-      return selected != null && selected.contains(c.compositaWord);
-    }
+    final isSelectedComposita = _isSelectedComposita;
     final reviews = allReviews.where(isSelectedComposita).toList();
-    final neverReviewed = allNeverReviewed.where(isSelectedComposita).toList();
+    final selectedNeverReviewed =
+        allNeverReviewed.where(isSelectedComposita).toList();
     final orphaned = [
       ...allReviews.where((c) => !isSelectedComposita(c)),
       ...allNeverReviewed.where((c) => !isSelectedComposita(c)),
@@ -245,24 +247,13 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
         }
       }();
     }
-    // Sort never-reviewed cards so basic kanji cards (draw from meaning,
-    // recognition) come before composita cards (reading cloze, draw in
-    // sentence). This way you learn the kanji before being tested on its
-    // compound words.
-    const _cardTypeOrder = {
-      CardType.drawFromMeaning: 0,
-      CardType.kanjiRecognition: 1,
-      CardType.readingCloze: 2, // C and D share the same priority —
-      CardType.drawInSentence: 2, // both are composita cards, interleaved.
-    };
-    final rtkRepo = widget.deps.rtkIndex;
-    neverReviewed.sort((a, b) {
-      final ai = rtkRepo.indexOf(a.character) ?? 99999;
-      final bi = rtkRepo.indexOf(b.character) ?? 99999;
-      if (ai != bi) return ai.compareTo(bi);
-      return (_cardTypeOrder[a.cardType] ?? 9)
-          .compareTo(_cardTypeOrder[b.cardType] ?? 9);
-    });
+    // RTK or random order by kanji; within a kanji, its A/B cards come
+    // before its composita cards (see orderNewCards).
+    final neverReviewed = orderNewCards(
+      selectedNeverReviewed,
+      widget.newCardOrder,
+      rtkIndex: widget.deps.rtkIndex.indexOf,
+    );
     // Apply max reviews/day cap across sessions: subtract cards already
     // reviewed today so restarting a session doesn't reset the limit.
     final prefs = await SharedPreferences.getInstance();
@@ -797,16 +788,11 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       excludeNeverReviewed: true,
       cardTypes: widget.cardTypes,
     );
-    final neverReviewed = await _reviewRepo.cardsNeverReviewed(scope, cardTypes: widget.cardTypes);
-    const cardTypeOrder = {
-      CardType.drawFromMeaning: 0,
-      CardType.kanjiRecognition: 1,
-      CardType.readingCloze: 2,
-      CardType.drawInSentence: 3,
-    };
-    neverReviewed.sort((a, b) =>
-        (cardTypeOrder[a.cardType] ?? 9)
-            .compareTo(cardTypeOrder[b.cardType] ?? 9));
+    final neverReviewed = orderNewCards(
+      await _reviewRepo.cardsNeverReviewed(scope, cardTypes: widget.cardTypes),
+      widget.newCardOrder,
+      rtkIndex: widget.deps.rtkIndex.indexOf,
+    );
 
     // Load up to [count] more cards, no cap applied.
     final all = [...reviews, ...neverReviewed];
@@ -831,23 +817,46 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     _loadStoryForCurrentCard();
   }
 
+  /// Whether [c] belongs in the queue: A/B cards always, composita cards
+  /// only while their word is still in the custom selection. Cards can
+  /// linger in review_cards after the user changed that selection.
+  bool _isSelectedComposita(ReviewCard c) {
+    if (c.compositaWord.isEmpty) return true;
+    final selected = _customComposita[c.character];
+    return selected != null && selected.contains(c.compositaWord);
+  }
+
+  /// Due cards this session could still load: same card-kind filter and
+  /// composita selection as [_loadQueue], so the queue-exhausted screen
+  /// never offers cards the session itself would skip.
+  Future<int> _countRemainingDue(StudyScope scope) async {
+    final due = await _reviewRepo.dueCards(scope, cardTypes: widget.cardTypes);
+    return due.where(_isSelectedComposita).length;
+  }
+
   /// Re-queries the actual remaining card count from the DB so the
   /// queue-exhausted screen shows a fresh number, not the stale load-time
   /// snapshot. Also starts a periodic timer to pick up cards that become
   /// due while the user is looking at the "no cards" screen.
   Future<void> _refreshRemainingCount() async {
     final scope = widget.deps.studyScope.scope.value;
-    // countDueCards already includes never-reviewed cards (they have a
-    // dueDate set at introduction time), so no separate query needed.
-    final dueCount = await _reviewRepo.countDueCards(scope);
-    if (mounted) setState(() => _remainingBeyondCap = dueCount);
+    // dueCards already includes never-reviewed cards (they have a dueDate
+    // set at introduction time), so no separate query needed.
+    setState(() => _countingRemaining = true);
+    final dueCount = await _countRemainingDue(scope);
+    if (mounted) {
+      setState(() {
+        _remainingBeyondCap = dueCount;
+        _countingRemaining = false;
+      });
+    }
 
     // Start periodic refresh so newly-due cards appear automatically.
     _dueRefreshTimer?.cancel();
     _dueRefreshTimer = Timer.periodic(
       const Duration(seconds: 30),
       (_) async {
-        final count = await _reviewRepo.countDueCards(scope);
+        final count = await _countRemainingDue(scope);
         if (mounted) setState(() => _remainingBeyondCap = count);
       },
     );
@@ -862,10 +871,12 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(remaining > 0
-                ? l.reviewDailyLimitReached(remaining)
-                : l.reviewNoCardsDue),
-            if (remaining > 0) ...[
+            Text(_countingRemaining
+                ? l.reviewStartCountingDue
+                : remaining > 0
+                    ? l.reviewDailyLimitReached(remaining)
+                    : l.reviewNoCardsDue),
+            if (!_countingRemaining && remaining > 0) ...[
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,

@@ -2,12 +2,24 @@ import 'package:flutter/material.dart';
 
 import '../../core/db/tables.dart';
 import '../../l10n/app_localizations.dart';
+import '../review/review_repository.dart' show NewCardOrder;
+
+/// What the user chose in [ReviewTypeSheet].
+class ReviewSessionOptions {
+  final Set<CardType> cardTypes;
+  final NewCardOrder newCardOrder;
+  const ReviewSessionOptions({
+    required this.cardTypes,
+    required this.newCardOrder,
+  });
+}
 
 /// Bottom sheet shown when starting a review: lets the user pick which
-/// card kinds the session includes. Pops with the selected set, or null
-/// when dismissed.
+/// card kinds the session includes and the order new kanji are introduced
+/// in. Pops with a [ReviewSessionOptions], or null when dismissed.
 class ReviewTypeSheet extends StatefulWidget {
   final Set<CardType> initial;
+  final NewCardOrder initialOrder;
 
   /// Due cards per kind (raw count, before the daily caps the session
   /// applies). Shown next to each option once loaded.
@@ -16,6 +28,7 @@ class ReviewTypeSheet extends StatefulWidget {
   const ReviewTypeSheet({
     super.key,
     required this.initial,
+    this.initialOrder = NewCardOrder.rtk,
     required this.dueCounts,
   });
 
@@ -25,7 +38,7 @@ class ReviewTypeSheet extends StatefulWidget {
 
 class _ReviewTypeSheetState extends State<ReviewTypeSheet> {
   /// Display order: kanji first, then composita; recall before recognition.
-  static const _order = [
+  static const _displayOrder = [
     CardType.drawFromMeaning,
     CardType.kanjiRecognition,
     CardType.drawInSentence,
@@ -33,6 +46,7 @@ class _ReviewTypeSheetState extends State<ReviewTypeSheet> {
   ];
 
   late final Set<CardType> _selected = {...widget.initial};
+  late NewCardOrder _order = widget.initialOrder;
   Map<CardType, int>? _dueCounts;
 
   @override
@@ -75,7 +89,31 @@ class _ReviewTypeSheetState extends State<ReviewTypeSheet> {
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
               child: Text(l.reviewTypesTitle, style: theme.textTheme.titleMedium),
             ),
-            for (final type in _order) _buildOption(l, type),
+            for (final type in _displayOrder) _buildOption(l, type),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+              child: Row(
+                children: [
+                  Expanded(child: Text(l.reviewNewCardOrder)),
+                  SegmentedButton<NewCardOrder>(
+                    key: const ValueKey('new-card-order'),
+                    segments: [
+                      ButtonSegment(
+                        value: NewCardOrder.rtk,
+                        label: Text(l.reviewNewCardOrderRtk),
+                      ),
+                      ButtonSegment(
+                        value: NewCardOrder.random,
+                        label: Text(l.reviewNewCardOrderRandom),
+                      ),
+                    ],
+                    selected: {_order},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (s) => setState(() => _order = s.first),
+                  ),
+                ],
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: SizedBox(
@@ -84,7 +122,12 @@ class _ReviewTypeSheetState extends State<ReviewTypeSheet> {
                   key: const ValueKey('review-start'),
                   onPressed: _selected.isEmpty
                       ? null
-                      : () => Navigator.of(context).pop(_selected),
+                      : () => Navigator.of(context).pop(
+                            ReviewSessionOptions(
+                              cardTypes: _selected,
+                              newCardOrder: _order,
+                            ),
+                          ),
                   icon: const Icon(Icons.play_circle_filled),
                   label: Text(
                     l.reviewTypesStart,

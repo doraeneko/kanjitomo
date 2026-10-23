@@ -621,16 +621,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get statisticsJlptLearnt => 'Đã thuộc';
 
   @override
+  String get statisticsJlptComplete => 'Hoàn thành';
+
+  @override
   String get statisticsInspectAllKanji => 'Xem tất cả kanji';
 
   @override
   String statisticsLearnt(int count, int total) {
-    return '$count / $total đã thuộc';
+    return '$count / $total kanji đã thuộc';
   }
 
   @override
-  String statisticsLearntKanjiOnly(int count, int total) {
-    return '$count / $total without composita';
+  String statisticsComplete(int count, int total) {
+    return '$count / $total hoàn thành cả từ ghép';
   }
 
   @override
@@ -790,6 +793,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String reviewTypeDue(int count) {
     return '$count đến hạn';
   }
+
+  @override
+  String get reviewNewCardOrder => 'Thẻ mới';
+
+  @override
+  String get reviewNewCardOrderRtk => 'Thứ tự RTK';
+
+  @override
+  String get reviewNewCardOrderRandom => 'Ngẫu nhiên';
 
   @override
   String get reviewTypesStart => 'Bắt đầu';

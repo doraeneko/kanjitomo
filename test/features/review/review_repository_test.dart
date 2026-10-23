@@ -511,4 +511,17 @@ void main() {
       expect(oneAgain.story, 'A short story.');
     },
   );
+
+  test('Easy on both kanji cards makes a new kanji known right away', () async {
+    await repo.introduceCardsForCharacters({'一', '二'});
+    for (final type in [CardType.kanjiRecognition, CardType.drawFromMeaning]) {
+      await repo.gradeCard(character: '一', cardType: type, quality: 5, easy: true);
+      await repo.gradeCard(character: '二', cardType: type, quality: 4);
+    }
+    final progress = await repo.overallProgress();
+    expect(progress['一']!.reading, CardProgress.known);
+    expect(progress['一']!.writing, CardProgress.known);
+    // A single Good is not enough yet.
+    expect(progress['二']!.reading, CardProgress.missed);
+  });
 }

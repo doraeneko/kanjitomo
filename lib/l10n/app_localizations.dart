@@ -1126,11 +1126,17 @@ abstract class AppLocalizations {
   /// **'Learning'**
   String get statisticsJlptLearning;
 
-  /// Column header: fully learnt (green)
+  /// Column header: kanji learnt (recognition + drawing), composita aside
   ///
   /// In en, this message translates to:
   /// **'Learnt'**
   String get statisticsJlptLearnt;
+
+  /// Column header: kanji learnt including all composita
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get statisticsJlptComplete;
 
   /// Button to open kanji browser
   ///
@@ -1138,17 +1144,17 @@ abstract class AppLocalizations {
   /// **'Inspect all kanji'**
   String get statisticsInspectAllKanji;
 
-  /// Count of fully learnt kanji (green/green)
+  /// Count of kanji whose recognition and drawing cards are both known, ignoring composita
   ///
   /// In en, this message translates to:
-  /// **'{count} / {total} learnt'**
+  /// **'{count} / {total} kanji learnt'**
   String statisticsLearnt(int count, int total);
 
-  /// Count of kanji learnt based on recognition+drawing only, ignoring composita
+  /// Count of kanji that are learnt and whose selected composita are all covered
   ///
   /// In en, this message translates to:
-  /// **'{count} / {total} without composita'**
-  String statisticsLearntKanjiOnly(int count, int total);
+  /// **'{count} / {total} complete with composita'**
+  String statisticsComplete(int count, int total);
 
   /// Button to reset all stats
   ///
@@ -1425,6 +1431,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} due'**
   String reviewTypeDue(int count);
+
+  /// Label for the choice of order in which new kanji are introduced
+  ///
+  /// In en, this message translates to:
+  /// **'New cards'**
+  String get reviewNewCardOrder;
+
+  /// Introduce new kanji in Remembering the Kanji order
+  ///
+  /// In en, this message translates to:
+  /// **'RTK order'**
+  String get reviewNewCardOrderRtk;
+
+  /// Introduce new kanji in random order
+  ///
+  /// In en, this message translates to:
+  /// **'Random'**
+  String get reviewNewCardOrderRandom;
 
   /// Button that starts the review with the selected card kinds
   ///

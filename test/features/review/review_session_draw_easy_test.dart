@@ -96,7 +96,7 @@ void main() {
                     t.cardType.equalsValue(CardType.drawFromMeaning),
               ))
               .getSingle();
-      expect(card.repetitions, 1);
+      expect(card.repetitions, 2); // easy counts as known right away
       expect(card.intervalDays, 4); // easy first step, not 1 day
 
       // One log entry for the answer, not one per grade.

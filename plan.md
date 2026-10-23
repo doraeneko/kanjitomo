@@ -22,14 +22,15 @@ Four card types per kanji:
 - **C: readingCloze** (composita recognition) — sentence with word highlighted, recall reading (self-graded)
 - **D: drawInSentence** (composita recall) — sentence with target kanji replaced by draw canvas
 
-"Green" (mastered) = A+B passed. C+D tracked separately in statistics only.
+A card is "known" at 2 consecutive passes (`repetitions >= 2`); Easy counts as known immediately.
+**Kanji learnt** = A+B known. **Complete** = learnt and every selected composita passed in both directions (C+D). Statistics show both.
 
-**Starting a review:** one Review button opens a sheet where the user ticks which of the four card kinds to include (with due counts per kind). The selection is remembered (`review.card_types` in SharedPreferences). All four ticked = unfiltered session.
+**Starting a review:** one Review button opens a sheet where the user ticks which of the four card kinds to include (with due counts per kind) and picks the new-card order (RTK or random, `orderNewCards`). Both are remembered (`review.card_types`, `review.new_card_order` in SharedPreferences). All four ticked = unfiltered session.
 
 **Grading:**
 - Self-graded cards (B, C): Again (q=2) / Good (q=4) / Easy (q=5 + easy bonus).
 - Drawing cards (A, D): graded by the recognizer (`gradeDrawAndPick`, q=0–5). After a correct drawing the user can tap Continue (keep that grade) or Easy (rolled back and re-graded with the easy bonus — one review-log entry per answer, undo still works).
-- Easy bonus (`sm2.dart`): fresh card → 4 days (instead of 1), second review → 8 days (instead of 6), afterwards interval × ease × 1.3. Only applied when the user explicitly picks Easy.
+- Easy bonus (`sm2.dart`): fresh card → 4 days (instead of 1), second review → 8 days (instead of 6), afterwards interval × ease × 1.3; repetitions set to at least 2 (known). Only applied when the user explicitly picks Easy.
 
 ### Composita system
 Each kanji has ranked compound words (composita) from bundled data (~95k entries).

@@ -66,14 +66,27 @@ void main() {
   });
 
   group('computeNextReview easy', () {
-    test('fresh card answered easy skips to 4 days', () {
-      expect(computeNextReview(null, 5, easy: true).intervalDays, 4);
-      expect(computeNextReview(null, 4).intervalDays, 1);
+    test('fresh card answered easy skips to 4 days and counts as known', () {
+      final easy = computeNextReview(null, 5, easy: true);
+      expect(easy.intervalDays, 4);
+      expect(easy.repetitions, 2); // known threshold, like two passes
+      final good = computeNextReview(null, 4);
+      expect(good.intervalDays, 1);
+      expect(good.repetitions, 1);
+    });
+
+    test('review after an easy start continues from the easy interval', () {
+      final easy = computeNextReview(null, 5, easy: true);
+      final next = computeNextReview(easy, 4);
+      expect(next.intervalDays, (4 * easy.easeFactor).round());
+      expect(next.repetitions, 3);
     });
 
     test('second review answered easy beats good', () {
       const state = Sm2State(easeFactor: 2.5, intervalDays: 1, repetitions: 1);
-      expect(computeNextReview(state, 5, easy: true).intervalDays, 8);
+      final easy = computeNextReview(state, 5, easy: true);
+      expect(easy.intervalDays, 8);
+      expect(easy.repetitions, 2);
       expect(computeNextReview(state, 4).intervalDays, 6);
     });
 

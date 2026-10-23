@@ -636,20 +636,22 @@
   "@statisticsJlptLearning": { "description": "Column header: started but not fully learnt" },
 
   "statisticsJlptLearnt": "Learnt",
-  "@statisticsJlptLearnt": { "description": "Column header: fully learnt (green)" },
+  "@statisticsJlptLearnt": { "description": "Column header: kanji learnt (recognition + drawing), composita aside" },
+  "statisticsJlptComplete": "Complete",
+  "@statisticsJlptComplete": { "description": "Column header: kanji learnt including all composita" },
 
   "statisticsInspectAllKanji": "Inspect all kanji",
   "@statisticsInspectAllKanji": { "description": "Button to open kanji browser" },
 
-  "statisticsLearnt": "{count} / {total} learnt",
+  "statisticsLearnt": "{count} / {total} kanji learnt",
   "@statisticsLearnt": {
-    "description": "Count of fully learnt kanji (green/green)",
+    "description": "Count of kanji whose recognition and drawing cards are both known, ignoring composita",
     "placeholders": { "count": { "type": "int" }, "total": { "type": "int" } }
   },
 
-  "statisticsLearntKanjiOnly": "{count} / {total} without composita",
-  "@statisticsLearntKanjiOnly": {
-    "description": "Count of kanji learnt based on recognition+drawing only, ignoring composita",
+  "statisticsComplete": "{count} / {total} complete with composita",
+  "@statisticsComplete": {
+    "description": "Count of kanji that are learnt and whose selected composita are all covered",
     "placeholders": { "count": { "type": "int" }, "total": { "type": "int" } }
   },
 
@@ -817,6 +819,12 @@
   "@reviewTypeCompositaRecognitionHelp": { "description": "Explanation of the composita recognition card kind" },
   "reviewTypeDue": "{count} due",
   "@reviewTypeDue": { "description": "Number of due cards of one card kind", "placeholders": { "count": { "type": "int" } } },
+  "reviewNewCardOrder": "New cards",
+  "@reviewNewCardOrder": { "description": "Label for the choice of order in which new kanji are introduced" },
+  "reviewNewCardOrderRtk": "RTK order",
+  "@reviewNewCardOrderRtk": { "description": "Introduce new kanji in Remembering the Kanji order" },
+  "reviewNewCardOrderRandom": "Random",
+  "@reviewNewCardOrderRandom": { "description": "Introduce new kanji in random order" },
   "reviewTypesStart": "Start",
   "@reviewTypesStart": { "description": "Button that starts the review with the selected card kinds" },
 

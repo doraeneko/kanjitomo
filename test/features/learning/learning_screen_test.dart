@@ -116,6 +116,8 @@ void main() {
       // Untick both composita kinds.
       await tester.tap(find.byKey(const ValueKey('review-type-drawInSentence')));
       await tester.tap(find.byKey(const ValueKey('review-type-readingCloze')));
+      // RTK order is the default; switch new cards to random.
+      await tester.tap(find.text('Random'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const ValueKey('review-start')));
@@ -132,11 +134,13 @@ void main() {
       );
       expect(session.cardTypes,
           {CardType.drawFromMeaning, CardType.kanjiRecognition});
+      expect(session.newCardOrder, NewCardOrder.random);
 
       // Selection is remembered for next time.
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getStringList('review.card_types')?.toSet(),
           {'drawFromMeaning', 'kanjiRecognition'});
+      expect(prefs.getString('review.new_card_order'), 'random');
     },
   );
 }

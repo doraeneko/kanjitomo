@@ -26,15 +26,22 @@ const double _easyBonus = 1.3;
 /// Interval for a fresh card answered "Easy" -- skips the 1-day step.
 const int _easyFirstInterval = 4;
 
+/// An "Easy" answer counts as this many consecutive passes at minimum --
+/// the "known" threshold.
+const int _easyMinRepetitions = 2;
+
 /// The SM-2 algorithm (Wozniak). [current] is null for a card with no prior
 /// review (fresh/new card) -- treated as ease=2.5, interval=0, repetitions=0.
 ///
-/// [easy] is set only when the user explicitly pressed "Easy" on a
-/// self-graded card: the interval then gets [_easyBonus] on top (and a
-/// fresh card jumps straight to [_easyFirstInterval] days). Plain SM-2
-/// would only raise the ease factor for q=5, which doesn't lengthen the
-/// interval until the *next* review. Recognizer-graded q=5 draw cards
-/// don't set it, so their scheduling stays plain SM-2.
+/// [easy] is set only when the user explicitly pressed "Easy" (self-graded
+/// cards, or after a correct drawing): the interval then gets [_easyBonus]
+/// on top (and a fresh card jumps straight to [_easyFirstInterval] days).
+/// Plain SM-2 would only raise the ease factor for q=5, which doesn't
+/// lengthen the interval until the *next* review. Easy also counts as at
+/// least [_easyMinRepetitions] passes in a row, so the card is "known"
+/// (repetitions >= 2, see ReviewRepository.overallProgress) right away.
+/// Recognizer-graded q=5 draw cards don't set it, so their scheduling
+/// stays plain SM-2.
 Sm2State computeNextReview(
   Sm2State? current,
   int quality, {
@@ -51,7 +58,9 @@ Sm2State computeNextReview(
     nextRepetitions = 0;
     nextInterval = 1;
   } else {
-    nextRepetitions = repetitions + 1;
+    nextRepetitions = easy && repetitions + 1 < _easyMinRepetitions
+        ? _easyMinRepetitions
+        : repetitions + 1;
     nextInterval = easy
         ? switch (repetitions) {
             0 => _easyFirstInterval,

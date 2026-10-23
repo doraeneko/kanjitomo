@@ -33,6 +33,7 @@ class _LearningScreenState extends State<LearningScreen> {
   static const _newCardsPerSessionKey = 'review.new_cards_per_session';
   static const _maxReviewsPerDayKey = 'review.max_reviews_per_day';
   static const _reviewCardTypesKey = 'review.card_types';
+  static const _newCardOrderKey = 'review.new_card_order';
 
   late final ReviewRepository _reviewRepo;
   Timer? _refreshTimer;
@@ -135,22 +136,32 @@ class _LearningScreenState extends State<LearningScreen> {
     final initial = saved == null
         ? CardType.values.toSet()
         : CardType.values.where((t) => saved.contains(t.name)).toSet();
+    final savedOrder = prefs.getString(_newCardOrderKey);
+    final initialOrder = NewCardOrder.values.firstWhere(
+      (o) => o.name == savedOrder,
+      orElse: () => NewCardOrder.rtk,
+    );
     if (!context.mounted) return;
 
-    final selected = await showModalBottomSheet<Set<CardType>>(
+    final options = await showModalBottomSheet<ReviewSessionOptions>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
       builder: (_) => ReviewTypeSheet(
         initial: initial.isEmpty ? CardType.values.toSet() : initial,
+        initialOrder: initialOrder,
         dueCounts: _loadDueCountsByType(scope),
       ),
     );
-    if (selected == null || selected.isEmpty || !context.mounted) return;
+    if (options == null || options.cardTypes.isEmpty || !context.mounted) {
+      return;
+    }
+    final selected = options.cardTypes;
     await prefs.setStringList(
       _reviewCardTypesKey,
       [for (final t in selected) t.name],
     );
+    await prefs.setString(_newCardOrderKey, options.newCardOrder.name);
     if (!context.mounted) return;
 
     Navigator.of(context).push(
@@ -159,6 +170,7 @@ class _LearningScreenState extends State<LearningScreen> {
           deps: widget.deps,
           // All kinds selected = unfiltered session.
           cardTypes: selected.length == CardType.values.length ? null : selected,
+          newCardOrder: options.newCardOrder,
         ),
       ),
     ).then((_) => _loadCounts());

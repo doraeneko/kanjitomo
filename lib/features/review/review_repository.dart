@@ -1,4 +1,4 @@
-import 'dart:math' show min;
+import 'dart:math' show Random, min;
 
 import 'package:drift/drift.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -106,6 +106,45 @@ class KanjiProgress {
   final CardProgress writing;
 
   const KanjiProgress({required this.reading, required this.writing});
+}
+
+/// Order in which never-reviewed cards are introduced (and so which new
+/// kanji make it under the per-session new-card cap).
+enum NewCardOrder { rtk, random }
+
+/// Sorts never-reviewed [cards] by character -- RTK index for
+/// [NewCardOrder.rtk] (unknown last), a random per-character rank for
+/// [NewCardOrder.random] -- and within a character puts the kanji cards
+/// (A, B) before its composita cards (C/D), so a kanji is always learnt
+/// before its compound words are tested.
+List<ReviewCard> orderNewCards(
+  List<ReviewCard> cards,
+  NewCardOrder order, {
+  required int? Function(String character) rtkIndex,
+  Random? random,
+}) {
+  const cardTypeOrder = {
+    CardType.drawFromMeaning: 0,
+    CardType.kanjiRecognition: 1,
+    CardType.readingCloze: 2, // C and D share the same priority --
+    CardType.drawInSentence: 2, // both are composita cards, interleaved.
+  };
+  final int Function(String) charRank;
+  switch (order) {
+    case NewCardOrder.rtk:
+      charRank = (c) => rtkIndex(c) ?? 99999;
+    case NewCardOrder.random:
+      final rng = random ?? Random();
+      final chars = cards.map((c) => c.character).toSet().toList()..shuffle(rng);
+      final ranks = {for (var i = 0; i < chars.length; i++) chars[i]: i};
+      charRank = (c) => ranks[c]!;
+  }
+  return [...cards]..sort((a, b) {
+      final byChar = charRank(a.character).compareTo(charRank(b.character));
+      if (byChar != 0) return byChar;
+      return (cardTypeOrder[a.cardType] ?? 9)
+          .compareTo(cardTypeOrder[b.cardType] ?? 9);
+    });
 }
 
 /// Reorders [cards] so cards for the same character aren't adjacent when
