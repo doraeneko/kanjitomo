@@ -24,7 +24,7 @@ void main() {
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
-      await tester.runAsync(() => deps.load());
+      await tester.runAsync(() => deps.load(loadAll: true));
       // Unlock Pro so gates don't interfere.
       deps.proStatus.isProUnlocked.value = true;
       await deps.studyScope.update(const StudyScope(

@@ -2876,6 +2876,328 @@ class UserSentencesCompanion extends UpdateCompanion<UserSentence> {
   }
 }
 
+class $ScopeSettingsTable extends ScopeSettings
+    with TableInfo<$ScopeSettingsTable, ScopeSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScopeSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _charactersMeta = const VerificationMeta(
+    'characters',
+  );
+  @override
+  late final GeneratedColumn<String> characters = GeneratedColumn<String>(
+    'characters',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _compositaCeilingMeta = const VerificationMeta(
+    'compositaCeiling',
+  );
+  @override
+  late final GeneratedColumn<int> compositaCeiling = GeneratedColumn<int>(
+    'composita_ceiling',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _maxCompositaPerKanjiMeta =
+      const VerificationMeta('maxCompositaPerKanji');
+  @override
+  late final GeneratedColumn<int> maxCompositaPerKanji = GeneratedColumn<int>(
+    'max_composita_per_kanji',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(4),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    characters,
+    compositaCeiling,
+    maxCompositaPerKanji,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'scope_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScopeSetting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('characters')) {
+      context.handle(
+        _charactersMeta,
+        characters.isAcceptableOrUnknown(data['characters']!, _charactersMeta),
+      );
+    }
+    if (data.containsKey('composita_ceiling')) {
+      context.handle(
+        _compositaCeilingMeta,
+        compositaCeiling.isAcceptableOrUnknown(
+          data['composita_ceiling']!,
+          _compositaCeilingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('max_composita_per_kanji')) {
+      context.handle(
+        _maxCompositaPerKanjiMeta,
+        maxCompositaPerKanji.isAcceptableOrUnknown(
+          data['max_composita_per_kanji']!,
+          _maxCompositaPerKanjiMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ScopeSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScopeSetting(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      characters: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}characters'],
+      )!,
+      compositaCeiling: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}composita_ceiling'],
+      ),
+      maxCompositaPerKanji: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}max_composita_per_kanji'],
+      )!,
+    );
+  }
+
+  @override
+  $ScopeSettingsTable createAlias(String alias) {
+    return $ScopeSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class ScopeSetting extends DataClass implements Insertable<ScopeSetting> {
+  /// Always 0 -- enforces the single-row invariant via the primary key.
+  final int id;
+
+  /// JSON-encoded list of characters in the study pool.
+  final String characters;
+  final int? compositaCeiling;
+  final int maxCompositaPerKanji;
+  const ScopeSetting({
+    required this.id,
+    required this.characters,
+    this.compositaCeiling,
+    required this.maxCompositaPerKanji,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['characters'] = Variable<String>(characters);
+    if (!nullToAbsent || compositaCeiling != null) {
+      map['composita_ceiling'] = Variable<int>(compositaCeiling);
+    }
+    map['max_composita_per_kanji'] = Variable<int>(maxCompositaPerKanji);
+    return map;
+  }
+
+  ScopeSettingsCompanion toCompanion(bool nullToAbsent) {
+    return ScopeSettingsCompanion(
+      id: Value(id),
+      characters: Value(characters),
+      compositaCeiling: compositaCeiling == null && nullToAbsent
+          ? const Value.absent()
+          : Value(compositaCeiling),
+      maxCompositaPerKanji: Value(maxCompositaPerKanji),
+    );
+  }
+
+  factory ScopeSetting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScopeSetting(
+      id: serializer.fromJson<int>(json['id']),
+      characters: serializer.fromJson<String>(json['characters']),
+      compositaCeiling: serializer.fromJson<int?>(json['compositaCeiling']),
+      maxCompositaPerKanji: serializer.fromJson<int>(
+        json['maxCompositaPerKanji'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'characters': serializer.toJson<String>(characters),
+      'compositaCeiling': serializer.toJson<int?>(compositaCeiling),
+      'maxCompositaPerKanji': serializer.toJson<int>(maxCompositaPerKanji),
+    };
+  }
+
+  ScopeSetting copyWith({
+    int? id,
+    String? characters,
+    Value<int?> compositaCeiling = const Value.absent(),
+    int? maxCompositaPerKanji,
+  }) => ScopeSetting(
+    id: id ?? this.id,
+    characters: characters ?? this.characters,
+    compositaCeiling: compositaCeiling.present
+        ? compositaCeiling.value
+        : this.compositaCeiling,
+    maxCompositaPerKanji: maxCompositaPerKanji ?? this.maxCompositaPerKanji,
+  );
+  ScopeSetting copyWithCompanion(ScopeSettingsCompanion data) {
+    return ScopeSetting(
+      id: data.id.present ? data.id.value : this.id,
+      characters: data.characters.present
+          ? data.characters.value
+          : this.characters,
+      compositaCeiling: data.compositaCeiling.present
+          ? data.compositaCeiling.value
+          : this.compositaCeiling,
+      maxCompositaPerKanji: data.maxCompositaPerKanji.present
+          ? data.maxCompositaPerKanji.value
+          : this.maxCompositaPerKanji,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScopeSetting(')
+          ..write('id: $id, ')
+          ..write('characters: $characters, ')
+          ..write('compositaCeiling: $compositaCeiling, ')
+          ..write('maxCompositaPerKanji: $maxCompositaPerKanji')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, characters, compositaCeiling, maxCompositaPerKanji);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScopeSetting &&
+          other.id == this.id &&
+          other.characters == this.characters &&
+          other.compositaCeiling == this.compositaCeiling &&
+          other.maxCompositaPerKanji == this.maxCompositaPerKanji);
+}
+
+class ScopeSettingsCompanion extends UpdateCompanion<ScopeSetting> {
+  final Value<int> id;
+  final Value<String> characters;
+  final Value<int?> compositaCeiling;
+  final Value<int> maxCompositaPerKanji;
+  const ScopeSettingsCompanion({
+    this.id = const Value.absent(),
+    this.characters = const Value.absent(),
+    this.compositaCeiling = const Value.absent(),
+    this.maxCompositaPerKanji = const Value.absent(),
+  });
+  ScopeSettingsCompanion.insert({
+    this.id = const Value.absent(),
+    this.characters = const Value.absent(),
+    this.compositaCeiling = const Value.absent(),
+    this.maxCompositaPerKanji = const Value.absent(),
+  });
+  static Insertable<ScopeSetting> custom({
+    Expression<int>? id,
+    Expression<String>? characters,
+    Expression<int>? compositaCeiling,
+    Expression<int>? maxCompositaPerKanji,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (characters != null) 'characters': characters,
+      if (compositaCeiling != null) 'composita_ceiling': compositaCeiling,
+      if (maxCompositaPerKanji != null)
+        'max_composita_per_kanji': maxCompositaPerKanji,
+    });
+  }
+
+  ScopeSettingsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? characters,
+    Value<int?>? compositaCeiling,
+    Value<int>? maxCompositaPerKanji,
+  }) {
+    return ScopeSettingsCompanion(
+      id: id ?? this.id,
+      characters: characters ?? this.characters,
+      compositaCeiling: compositaCeiling ?? this.compositaCeiling,
+      maxCompositaPerKanji: maxCompositaPerKanji ?? this.maxCompositaPerKanji,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (characters.present) {
+      map['characters'] = Variable<String>(characters.value);
+    }
+    if (compositaCeiling.present) {
+      map['composita_ceiling'] = Variable<int>(compositaCeiling.value);
+    }
+    if (maxCompositaPerKanji.present) {
+      map['max_composita_per_kanji'] = Variable<int>(
+        maxCompositaPerKanji.value,
+      );
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScopeSettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('characters: $characters, ')
+          ..write('compositaCeiling: $compositaCeiling, ')
+          ..write('maxCompositaPerKanji: $maxCompositaPerKanji')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2890,6 +3212,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $UserCompositaTable userComposita = $UserCompositaTable(this);
   late final $UserSentencesTable userSentences = $UserSentencesTable(this);
+  late final $ScopeSettingsTable scopeSettings = $ScopeSettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2903,6 +3226,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     customComposita,
     userComposita,
     userSentences,
+    scopeSettings,
   ];
 }
 
@@ -4505,6 +4829,187 @@ typedef $$UserSentencesTableProcessedTableManager =
       UserSentence,
       PrefetchHooks Function()
     >;
+typedef $$ScopeSettingsTableCreateCompanionBuilder =
+    ScopeSettingsCompanion Function({
+      Value<int> id,
+      Value<String> characters,
+      Value<int?> compositaCeiling,
+      Value<int> maxCompositaPerKanji,
+    });
+typedef $$ScopeSettingsTableUpdateCompanionBuilder =
+    ScopeSettingsCompanion Function({
+      Value<int> id,
+      Value<String> characters,
+      Value<int?> compositaCeiling,
+      Value<int> maxCompositaPerKanji,
+    });
+
+class $$ScopeSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $ScopeSettingsTable> {
+  $$ScopeSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get characters => $composableBuilder(
+    column: $table.characters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get compositaCeiling => $composableBuilder(
+    column: $table.compositaCeiling,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get maxCompositaPerKanji => $composableBuilder(
+    column: $table.maxCompositaPerKanji,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ScopeSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ScopeSettingsTable> {
+  $$ScopeSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get characters => $composableBuilder(
+    column: $table.characters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get compositaCeiling => $composableBuilder(
+    column: $table.compositaCeiling,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get maxCompositaPerKanji => $composableBuilder(
+    column: $table.maxCompositaPerKanji,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ScopeSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ScopeSettingsTable> {
+  $$ScopeSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get characters => $composableBuilder(
+    column: $table.characters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get compositaCeiling => $composableBuilder(
+    column: $table.compositaCeiling,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get maxCompositaPerKanji => $composableBuilder(
+    column: $table.maxCompositaPerKanji,
+    builder: (column) => column,
+  );
+}
+
+class $$ScopeSettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ScopeSettingsTable,
+          ScopeSetting,
+          $$ScopeSettingsTableFilterComposer,
+          $$ScopeSettingsTableOrderingComposer,
+          $$ScopeSettingsTableAnnotationComposer,
+          $$ScopeSettingsTableCreateCompanionBuilder,
+          $$ScopeSettingsTableUpdateCompanionBuilder,
+          (
+            ScopeSetting,
+            BaseReferences<_$AppDatabase, $ScopeSettingsTable, ScopeSetting>,
+          ),
+          ScopeSetting,
+          PrefetchHooks Function()
+        > {
+  $$ScopeSettingsTableTableManager(_$AppDatabase db, $ScopeSettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScopeSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ScopeSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ScopeSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> characters = const Value.absent(),
+                Value<int?> compositaCeiling = const Value.absent(),
+                Value<int> maxCompositaPerKanji = const Value.absent(),
+              }) => ScopeSettingsCompanion(
+                id: id,
+                characters: characters,
+                compositaCeiling: compositaCeiling,
+                maxCompositaPerKanji: maxCompositaPerKanji,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> characters = const Value.absent(),
+                Value<int?> compositaCeiling = const Value.absent(),
+                Value<int> maxCompositaPerKanji = const Value.absent(),
+              }) => ScopeSettingsCompanion.insert(
+                id: id,
+                characters: characters,
+                compositaCeiling: compositaCeiling,
+                maxCompositaPerKanji: maxCompositaPerKanji,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ScopeSettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ScopeSettingsTable,
+      ScopeSetting,
+      $$ScopeSettingsTableFilterComposer,
+      $$ScopeSettingsTableOrderingComposer,
+      $$ScopeSettingsTableAnnotationComposer,
+      $$ScopeSettingsTableCreateCompanionBuilder,
+      $$ScopeSettingsTableUpdateCompanionBuilder,
+      (
+        ScopeSetting,
+        BaseReferences<_$AppDatabase, $ScopeSettingsTable, ScopeSetting>,
+      ),
+      ScopeSetting,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4525,4 +5030,6 @@ class $AppDatabaseManager {
       $$UserCompositaTableTableManager(_db, _db.userComposita);
   $$UserSentencesTableTableManager get userSentences =>
       $$UserSentencesTableTableManager(_db, _db.userSentences);
+  $$ScopeSettingsTableTableManager get scopeSettings =>
+      $$ScopeSettingsTableTableManager(_db, _db.scopeSettings);
 }

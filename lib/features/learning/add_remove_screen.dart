@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
     show FilteringTextInputFormatter, LengthLimitingTextInputFormatter;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app_dependencies.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/kanji_recognizer.dart';
 import '../../data/composita_repository.dart';
 import '../../l10n/app_localizations.dart';
@@ -13,19 +15,19 @@ import '../review/draw_and_pick.dart';
 import '../review/review_repository.dart';
 import '../review/sentence_selection.dart';
 import '../review/study_scope.dart';
+import 'anki_import_screen.dart';
 import 'composita_picker.dart';
 
 enum _PoolSort { rtk, added, modified }
 
 /// Unified screen for adding kanji to (and removing them from) the learning
-/// pool. Four tabs via bottom navigation:
-/// 1. Add by JLPT level
-/// 2. Add by RTK order
-/// 3. Add by drawing
-/// 4. Learning pool (view/edit/remove)
+/// pool. Three tabs via bottom navigation:
+/// 1. Browse all kanji (by JLPT level, then stroke count)
+/// 2. Add by drawing
+/// 3. Learning pool (view/edit/remove)
 ///
-/// Composita settings (ceiling, max per kanji) live at the top of the JLPT
-/// and RTK tabs since they affect the auto-selection algorithm.
+/// Composita settings (ceiling, max per kanji) are in an ExpansionTile on the
+/// Browse tab since they affect the auto-selection algorithm.
 class AddRemoveScreen extends StatefulWidget {
   final AppDependencies deps;
 
@@ -36,21 +38,28 @@ class AddRemoveScreen extends StatefulWidget {
 }
 
 class _AddRemoveScreenState extends State<AddRemoveScreen> {
-  static const _jlptLevelKey = 'add_remove.jlpt_level';
   static const _tabIndexKey = 'add_remove.tab_index';
-  static const _countKey = 'add_remove.count';
 
   late final ReviewRepository _reviewRepo;
-  final _countController = TextEditingController(text: '5');
   final _poolSearchController = TextEditingController();
-  int _selectedJlptLevel = 5;
+  final _browseSearchController = TextEditingController();
+  final _batchCountController = TextEditingController(text: '5');
   int _tabIndex = 0;
   String _poolQuery = '';
+  String _browseQuery = '';
   _PoolSort _poolSort = _PoolSort.rtk;
+  bool _adding = false;
   // Composita counts for pool kanji (character -> word count).
   Map<String, int> _compositaCounts = {};
   Map<String, DateTime> _addedDates = {};
   Map<String, DateTime> _modifiedDates = {};
+  // Pre-sorted kanji list for browse tab (computed once, filtered on search).
+  List<String> _browseKanji = [];
+  // JLPT level for each kanji in the browse list.
+  Map<String, int?> _browseJlptLevels = {};
+  // Which JLPT level to show in the browse tab.
+  // -1 means "All", null means "Other" (non-JLPT), 1–5 means that level.
+  int _browseLevelSelection = -1; // -1 = All
 
   @override
   void initState() {
@@ -59,31 +68,57 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
     _loadCompositaCounts();
     _loadDates();
     _loadSavedPrefs();
+    _buildBrowseList();
     _poolSearchController.addListener(() {
       setState(() => _poolQuery = _poolSearchController.text.trim());
+    });
+    _browseSearchController.addListener(() {
+      setState(() => _browseQuery = _browseSearchController.text.trim());
     });
     widget.deps.studyScope.scope.addListener(_onScopeChanged);
   }
 
   Future<void> _loadSavedPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final level = prefs.getInt(_jlptLevelKey);
     final tab = prefs.getInt(_tabIndexKey);
-    final count = prefs.getInt(_countKey);
     if (mounted) {
       setState(() {
-        if (level != null) _selectedJlptLevel = level;
-        if (tab != null && tab >= 0 && tab < 4) _tabIndex = tab;
-        if (count != null && count > 0) _countController.text = count.toString();
+        if (tab != null && tab >= 0 && tab < 3) _tabIndex = tab;
       });
     }
+  }
+
+  /// Build the pre-sorted kanji list for the browse tab: primary sort by
+  /// JLPT level (N5=5 first → N1=1 last, non-JLPT at bottom), secondary
+  /// sort by stroke count ascending.
+  void _buildBrowseList() {
+    final allKanji = widget.deps.kanjiInfo.characters;
+    final levels = <String, int?>{};
+    for (final char in allKanji) {
+      levels[char] = widget.deps.jlptLevels.levelOf(char);
+    }
+    _browseJlptLevels = levels;
+
+    allKanji.sort((a, b) {
+      final la = levels[a];
+      final lb = levels[b];
+      // Non-JLPT kanji sort after all JLPT kanji.
+      final levelA = la != null ? (6 - la) : 100; // N5→1, N4→2, ..., N1→5, null→100
+      final levelB = lb != null ? (6 - lb) : 100;
+      if (levelA != levelB) return levelA.compareTo(levelB);
+      final sa = widget.deps.strokePaths.lookup(a)?.strokeCount ?? 99;
+      final sb = widget.deps.strokePaths.lookup(b)?.strokeCount ?? 99;
+      return sa.compareTo(sb);
+    });
+    _browseKanji = allKanji;
   }
 
   @override
   void dispose() {
     widget.deps.studyScope.scope.removeListener(_onScopeChanged);
-    _countController.dispose();
     _poolSearchController.dispose();
+    _browseSearchController.dispose();
+    _batchCountController.dispose();
     super.dispose();
   }
 
@@ -114,17 +149,21 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
 
   StudyScope get _scope => widget.deps.studyScope.scope.value;
 
-  /// Returns the next N kanji in RTK order from [candidates] that aren't
-  /// already in the pool.
-  List<String> _nextKanjiInRtkOrder(List<String> candidates, int count) {
-    final pool = _scope.characters;
-    final sorted = candidates.where((c) => !pool.contains(c)).toList();
-    sorted.sort((a, b) {
-      final ai = widget.deps.rtkIndex.indexOf(a) ?? 99999;
-      final bi = widget.deps.rtkIndex.indexOf(b) ?? 99999;
-      return ai.compareTo(bi);
-    });
-    return sorted.take(count).toList();
+  void _updateCompositaCeiling(int? ceiling) {
+    widget.deps.studyScope.update(
+      _scope.copyWith(
+        compositaCeiling: ceiling,
+        clearCompositaCeiling: ceiling == null,
+      ),
+    );
+    setState(() {});
+  }
+
+  void _updateMaxComposita(int max) {
+    widget.deps.studyScope.update(
+      _scope.copyWith(maxCompositaPerKanji: max),
+    );
+    setState(() {});
   }
 
   /// Auto-selects composita for [chars] using the scope's ceiling + max per
@@ -159,31 +198,71 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
     return result;
   }
 
-  Future<void> _addByJlpt() async {
-    final count = int.tryParse(_countController.text) ?? 5;
-    if (count <= 0) return;
-    SharedPreferences.getInstance().then((p) => p.setInt(_countKey, count));
+  /// Returns the next N kanji in RTK order from [candidates] that aren't
+  /// already in the pool.
+  List<String> _nextKanjiInRtkOrder(List<String> candidates, int count) {
+    final pool = _scope.characters;
+    final sorted = candidates.where((c) => !pool.contains(c)).toList();
+    sorted.sort((a, b) {
+      final ai = widget.deps.rtkIndex.indexOf(a) ?? 99999;
+      final bi = widget.deps.rtkIndex.indexOf(b) ?? 99999;
+      return ai.compareTo(bi);
+    });
+    return sorted.take(count).toList();
+  }
 
-    final allInLevel = widget.deps.jlptLevels.charsInLevels({_selectedJlptLevel});
-    final toAdd = _nextKanjiInRtkOrder(allInLevel, count);
+  /// Add a single kanji from the browse tab.
+  Future<void> _addSingleKanji(String char) async {
+    if (_scope.characters.contains(char) || _adding) return;
+    await widget.deps.ensureComposita();
+    await _addKanjiToPool([char]);
+  }
+
+  /// Batch-add kanji from a specific JLPT level (or all non-JLPT) in RTK order.
+  Future<void> _addBatchFromLevel(int levelSelection, int count) async {
+    if (count <= 0 || _adding) return;
+    await widget.deps.ensureComposita();
+    final List<String> candidates;
+    if (levelSelection == 0) {
+      // "Other" — non-JLPT kanji
+      candidates = widget.deps.kanjiInfo.characters
+          .where((c) => widget.deps.jlptLevels.levelOf(c) == null)
+          .toList();
+    } else {
+      candidates = widget.deps.jlptLevels.charsInLevels({levelSelection});
+    }
+    final toAdd = _nextKanjiInRtkOrder(candidates, count);
     if (toAdd.isEmpty) return;
-
     await _addKanjiToPool(toAdd);
   }
 
-  Future<void> _addByRtk() async {
-    final count = int.tryParse(_countController.text) ?? 5;
-    if (count <= 0) return;
-    SharedPreferences.getInstance().then((p) => p.setInt(_countKey, count));
+  Future<void> _importFromAnki() async {
+    final result = await Navigator.of(context).push<AnkiImportResult>(
+      MaterialPageRoute(
+        builder: (_) => AnkiImportScreen(deps: widget.deps),
+      ),
+    );
+    if (result == null || !mounted) return;
 
-    final allKanji = widget.deps.kanjiInfo.characters;
-    final toAdd = _nextKanjiInRtkOrder(allKanji, count);
-    if (toAdd.isEmpty) return;
+    await widget.deps.ensureComposita();
 
-    await _addKanjiToPool(toAdd);
+    // Merge extra composita from the import.
+    for (final entry in result.extraComposita.entries) {
+      for (final word in entry.value) {
+        await _reviewRepo.addCustomComposita(entry.key, word);
+      }
+    }
+
+    if (result.kanji.isNotEmpty) {
+      await _addKanjiToPool(result.kanji);
+    } else {
+      // Only composita updates, no new kanji.
+      await _loadCompositaCounts();
+    }
   }
 
   Future<void> _addKanjiToPool(List<String> chars) async {
+    setState(() => _adding = true);
     final compositaByChar = _autoSelectComposita(chars);
 
     for (final entry in compositaByChar.entries) {
@@ -202,23 +281,44 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
     await _loadDates();
 
     if (!mounted) return;
+    setState(() => _adding = false);
 
-    // Skip the slideshow for large batches — tapping through 50+ slides
-    // isn't useful. The user can always review individual kanji in the pool.
-    if (chars.length <= 10) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => IntroSlideshowScreen(
-            deps: widget.deps,
-            characters: chars,
-            compositaByChar: compositaByChar,
-          ),
+    if (chars.length > 1) {
+      // Ask whether to go through the new kanji.
+      final l = AppLocalizations.of(context)!;
+      final goThrough = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l.addRemoveGoThroughTitle(chars.length)),
+          content: Text(l.addRemoveGoThroughMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(l.addRemoveGoThroughNo),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(l.addRemoveGoThroughYes),
+            ),
+          ],
         ),
       );
+      if (goThrough != true || !mounted) return;
     }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => IntroSlideshowScreen(
+          deps: widget.deps,
+          characters: chars,
+          compositaByChar: compositaByChar,
+        ),
+      ),
+    );
   }
 
   Future<void> _addByDraw(List<Prediction> _, String picked) async {
+    await widget.deps.ensureComposita();
     if (_scope.characters.contains(picked)) {
       if (mounted) {
         final l = AppLocalizations.of(context)!;
@@ -346,7 +446,7 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: CompositaPicker(
                 character: char,
-                composita: widget.deps.composita.lookup(char),
+                composita: rankComposita(widget.deps.composita.lookup(char)),
                 reviewRepo: _reviewRepo,
                 wordIndex: widget.deps.wordIndex,
                 recognizer: widget.deps.recognizer,
@@ -358,124 +458,369 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
     ).then((_) => _loadCompositaCounts());
   }
 
-  // ── Tab bodies ────────────────────────────────────────────────────────
+  // ── Composita settings ───────────────────────────────────────────────
 
-  Widget _buildTip(AppLocalizations l) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.lightbulb_outline, size: 18, color: Colors.amber.shade700),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              l.addRemoveAddTip,
-              style: TextStyle(
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
-                color: Colors.grey.shade700,
+  void _openCompositaSettings(AppLocalizations l) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l.addRemoveCompositaSettings,
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 12),
+                  _buildCompositaSettingsContent(l, setSheetState),
+                ],
               ),
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildHelp(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        text,
-        style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-      ),
-    );
-  }
-
-  Widget _buildJlptTab(AppLocalizations l) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+  Widget _buildCompositaSettingsContent(AppLocalizations l, StateSetter setSheetState) {
+    final scope = _scope;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHelp(l.addRemoveJlptHelp),
-        _buildTip(l),
+        Text(l.addRemoveCompositaCeiling,
+            style: const TextStyle(fontWeight: FontWeight.w500)),
+        Text(l.addRemoveCompositaCeilingHelp,
+            style: TextStyle(fontSize: 12, color: context.appColors.textTertiary)),
+        const SizedBox(height: 4),
         Wrap(
           spacing: 8,
           children: [
-            for (final level in [5, 4, 3, 2, 1])
+            ChoiceChip(
+              label: Text(l.addRemoveCeilingOff),
+              selected: scope.compositaCeiling == null,
+              onSelected: (_) {
+                _updateCompositaCeiling(null);
+                setSheetState(() {});
+              },
+            ),
+            for (final level in [5, 4, 3, 2])
               ChoiceChip(
                 label: Text('N$level'),
-                selected: _selectedJlptLevel == level,
+                selected: scope.compositaCeiling == level,
                 onSelected: (_) {
-                  setState(() => _selectedJlptLevel = level);
-                  SharedPreferences.getInstance().then((p) => p.setInt(_jlptLevelKey, level));
+                  _updateCompositaCeiling(level);
+                  setSheetState(() {});
                 },
               ),
           ],
         ),
         const SizedBox(height: 12),
-        Text(l.addRemoveKanjiCount),
+        Text(l.addRemoveMaxComposita,
+            style: const TextStyle(fontWeight: FontWeight.w500)),
+        Text(l.addRemoveMaxCompositaHelp,
+            style: TextStyle(fontSize: 12, color: context.appColors.textTertiary)),
         const SizedBox(height: 4),
-        Row(
+        Wrap(
+          spacing: 8,
           children: [
-            SizedBox(
-              width: 60,
-              child: TextField(
-                controller: _countController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(3),
-                ],
-                decoration: const InputDecoration(
-                  isDense: true,
-                  border: OutlineInputBorder(),
-                ),
+            for (final n in [2, 3, 4, 5])
+              ChoiceChip(
+                label: Text('$n'),
+                selected: scope.maxCompositaPerKanji == n,
+                onSelected: (_) {
+                  _updateMaxComposita(n);
+                  setSheetState(() {});
+                },
               ),
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: _addByJlpt,
-              child: Text(l.addRemoveAddJlptButton),
-            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildRtkTab(AppLocalizations l) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+  Widget _buildCompositaSettings(AppLocalizations l) {
+    final scope = _scope;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHelp(l.addRemoveRtkHelp),
-        _buildTip(l),
-        Text(l.addRemoveKanjiCount),
+        const Divider(),
         const SizedBox(height: 4),
-        Row(
+        Text(l.addRemoveCompositaCeiling,
+            style: const TextStyle(fontWeight: FontWeight.w500)),
+        Text(l.addRemoveCompositaCeilingHelp,
+            style: TextStyle(fontSize: 12, color: context.appColors.textTertiary)),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
           children: [
-            SizedBox(
-              width: 60,
-              child: TextField(
-                controller: _countController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(3),
-                ],
-                decoration: const InputDecoration(
-                  isDense: true,
-                  border: OutlineInputBorder(),
-                ),
+            ChoiceChip(
+              label: Text(l.addRemoveCeilingOff),
+              selected: scope.compositaCeiling == null,
+              onSelected: (_) => _updateCompositaCeiling(null),
+            ),
+            for (final level in [5, 4, 3, 2])
+              ChoiceChip(
+                label: Text('N$level'),
+                selected: scope.compositaCeiling == level,
+                onSelected: (_) => _updateCompositaCeiling(level),
               ),
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: _addByRtk,
-              child: Text(l.addRemoveAddRtkButton),
-            ),
           ],
         ),
+        const SizedBox(height: 12),
+        Text(l.addRemoveMaxComposita,
+            style: const TextStyle(fontWeight: FontWeight.w500)),
+        Text(l.addRemoveMaxCompositaHelp,
+            style: TextStyle(fontSize: 12, color: context.appColors.textTertiary)),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final n in [2, 3, 4, 5])
+              ChoiceChip(
+                label: Text('$n'),
+                selected: scope.maxCompositaPerKanji == n,
+                onSelected: (_) => _updateMaxComposita(n),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Tab bodies ────────────────────────────────────────────────────────
+
+  Widget _buildHelp(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 13, color: context.appColors.textSecondary),
+      ),
+    );
+  }
+
+  Widget _buildBrowseTab(AppLocalizations l) {
+    final pool = _scope.characters;
+    final levelFiltered = _browseLevelSelection == -1
+        ? _browseKanji
+        : _browseKanji.where((char) {
+            final level = _browseJlptLevels[char];
+            if (_browseLevelSelection == 0) return level == null; // "Other"
+            return level == _browseLevelSelection;
+          }).toList();
+    final filtered = _browseQuery.isEmpty
+        ? levelFiltered
+        : levelFiltered.where((char) {
+            return matchesKanjiSearch(
+              character: char,
+              info: widget.deps.kanjiInfo.lookup(char),
+              strokeCount: widget.deps.strokePaths.lookup(char)?.strokeCount,
+              query: _browseQuery,
+            );
+          }).toList();
+
+    // Build flat list with section headers interleaved.
+    final items = <_BrowseItem>[];
+    int? lastLevel;
+    bool headerInserted = false;
+    for (final char in filtered) {
+      final level = _browseJlptLevels[char];
+      if (level != lastLevel) {
+        final label = level != null ? 'N$level' : 'Other';
+        items.add(_BrowseItem.header(label));
+        lastLevel = level;
+        headerInserted = true;
+      }
+      items.add(_BrowseItem.kanji(char));
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: TextField(
+            controller: _browseSearchController,
+            decoration: InputDecoration(
+              labelText: l.kanjiBrowserSearchLabel,
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
+              isDense: true,
+              suffixIcon: _browseQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: _browseSearchController.clear,
+                    ),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 40,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            children: [
+              ChoiceChip(
+                label: const Text('All'),
+                selected: _browseLevelSelection == -1,
+                onSelected: (_) => setState(() => _browseLevelSelection = -1),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              const SizedBox(width: 6),
+              for (final level in [5, 4, 3, 2, 1]) ...[
+                ChoiceChip(
+                  label: Text('N$level'),
+                  selected: _browseLevelSelection == level,
+                  onSelected: (_) => setState(() => _browseLevelSelection = level),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                const SizedBox(width: 6),
+              ],
+              ChoiceChip(
+                label: const Text('Other'),
+                selected: _browseLevelSelection == 0,
+                onSelected: (_) => setState(() => _browseLevelSelection = 0),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ],
+          ),
+        ),
+        if (defaultTargetPlatform == TargetPlatform.android)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.download),
+                label: const Text('Import from AnkiDroid'),
+                onPressed: _adding ? null : _importFromAnki,
+              ),
+            ),
+          ),
+        if (_browseLevelSelection != -1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _adding
+                      ? null
+                      : () {
+                          final count = int.tryParse(_batchCountController.text) ?? 0;
+                          _addBatchFromLevel(_browseLevelSelection, count);
+                        },
+                  child: _adding
+                      ? const SizedBox(
+                          width: 18, height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Add next'),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 48,
+                  child: TextField(
+                    controller: _batchCountController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                    ],
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('kanji in RTK order'),
+              ],
+            ),
+          ),
+        if (!headerInserted && filtered.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text(
+                l.kanjiBrowserNoMatch,
+                style: TextStyle(color: context.appColors.textTertiary),
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                if (item.isHeader) {
+                  return Container(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: Text(
+                      item.label!,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: context.appColors.textSecondary,
+                      ),
+                    ),
+                  );
+                }
+                final char = item.char!;
+                final info = widget.deps.kanjiInfo.lookup(char);
+                final strokes = widget.deps.strokePaths.lookup(char)?.strokeCount;
+                final level = _browseJlptLevels[char];
+                final inPool = pool.contains(char);
+                final meaning = info?.meanings.isNotEmpty == true
+                    ? info!.meanings.join(', ')
+                    : '';
+                final subtitleParts = <String>[
+                  if (level != null) 'N$level',
+                  if (strokes != null) '$strokes strokes',
+                ];
+                return ListTile(
+                  dense: true,
+                  leading: Text(
+                    char,
+                    style: const TextStyle(fontSize: 28, fontFamily: 'NotoSansJP'),
+                  ),
+                  title: Text(
+                    meaning,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: subtitleParts.isNotEmpty
+                      ? Text(subtitleParts.join(' · '))
+                      : null,
+                  trailing: inPool
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () => _removeCharacter(char),
+                            ),
+                          ],
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          onPressed: _adding ? null : () => _addSingleKanji(char),
+                        ),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
@@ -543,12 +888,12 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline, size: 16, color: Colors.grey.shade500),
+              Icon(Icons.info_outline, size: 16, color: context.appColors.textDisabled),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   l.addRemovePoolTip,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: context.appColors.textTertiary),
                 ),
               ),
             ],
@@ -615,7 +960,7 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
               ? Center(
                   child: Text(
                     l.addRemovePoolEmpty,
-                    style: TextStyle(color: Colors.grey.shade600),
+                    style: TextStyle(color: context.appColors.textTertiary),
                   ),
                 )
               : ListView(
@@ -662,8 +1007,7 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
     final l = AppLocalizations.of(context)!;
 
     final bodies = [
-      _buildJlptTab(l),
-      _buildRtkTab(l),
+      _buildBrowseTab(l),
       _buildDrawTab(l),
       _buildPoolTab(l),
     ];
@@ -671,8 +1015,33 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-      appBar: AppBar(title: Text(l.addRemoveTitle)),
-      body: SafeArea(child: bodies[_tabIndex]),
+      appBar: AppBar(
+        title: Text(l.addRemoveTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: l.addRemoveCompositaSettings,
+            onPressed: () => _openCompositaSettings(l),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            bodies[_tabIndex],
+            if (_adding)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black26,
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      floatingActionButton: null,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tabIndex,
         onTap: (i) {
@@ -681,13 +1050,9 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
         },
         type: BottomNavigationBarType.fixed,
         items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.school),
-            label: 'JLPT',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.format_list_numbered),
-            label: 'RTK',
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.list_alt),
+            label: l.addRemoveBrowseTab,
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.draw),
@@ -702,6 +1067,16 @@ class _AddRemoveScreenState extends State<AddRemoveScreen> {
     ),
     );
   }
+}
+
+/// Item in the browse tab's flat list — either a section header or a kanji row.
+class _BrowseItem {
+  final String? label; // non-null for headers
+  final String? char; // non-null for kanji rows
+  bool get isHeader => label != null;
+
+  const _BrowseItem.header(this.label) : char = null;
+  const _BrowseItem.kanji(this.char) : label = null;
 }
 
 // ── Introduction slideshow ───────────────────────────────────────────────
@@ -774,7 +1149,7 @@ class IntroSlideshowScreenState extends State<IntroSlideshowScreen> {
                     CompositaPicker(
                       key: ValueKey('picker-$_char'),
                       character: _char,
-                      composita: widget.deps.composita.lookup(_char),
+                      composita: rankComposita(widget.deps.composita.lookup(_char)),
                       reviewRepo: ReviewRepository(widget.deps.database),
                       wordIndex: widget.deps.wordIndex,
                       recognizer: widget.deps.recognizer,

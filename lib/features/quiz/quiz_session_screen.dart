@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../app_dependencies.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/composita_repository.dart';
 import '../../data/sentences_repository.dart';
 import '../../l10n/app_localizations.dart';
@@ -86,6 +87,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
   }
 
   Future<void> _loadQuestions() async {
+    await widget.deps.ensureReviewData();
     final repo = ReviewRepository(widget.deps.database);
     final scope = widget.deps.studyScope.scope.value;
     final scopeChars = scope.characters;
@@ -337,8 +339,8 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                 _selectedChoice == q.correctIndex
                     ? Text(
                         l.quizCorrect,
-                        style: const TextStyle(
-                          color: Colors.green,
+                        style: TextStyle(
+                          color: context.appColors.statusGreen,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -348,8 +350,8 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                         children: [
                           Text(
                             l.quizWrong,
-                            style: const TextStyle(
-                              color: Colors.red,
+                            style: TextStyle(
+                              color: context.appColors.statusRed,
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -371,7 +373,7 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                   '${q.composita.word} (${q.composita.reading}): ${q.composita.meaning}',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: context.appColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -382,9 +384,9 @@ class _QuizSessionScreenState extends State<QuizSessionScreen> {
                 Color? bgColor;
                 if (answered) {
                   if (i == q.correctIndex) {
-                    bgColor = Colors.green.shade100;
+                    bgColor = context.appColors.successBg;
                   } else if (i == _selectedChoice) {
-                    bgColor = Colors.red.shade100;
+                    bgColor = context.appColors.errorBg;
                   }
                 }
                 return Padding(

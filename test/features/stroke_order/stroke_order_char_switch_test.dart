@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kanjitomo/features/stroke_order/stroke_order_screen.dart';
 import 'package:kanjitomo/features/stroke_order/stroke_order_view.dart';
 
+import '../../test_helpers.dart';
 import 'stroke_order_test_helpers.dart';
 
 // Kept in its own file, not merged into stroke_order_screen_test.dart's
@@ -15,7 +16,7 @@ void main() {
   testWidgets('typing a different character swaps the displayed strokes', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: StrokeOrderScreen()));
+    await tester.pumpWidget(testApp(home: const StrokeOrderScreen()));
     await pumpUntilLoaded(tester);
 
     await tester.enterText(find.byType(TextField), '一');

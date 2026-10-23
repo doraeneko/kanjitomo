@@ -35,6 +35,8 @@ class WordIndexRepository {
   static const _asset = 'assets/word_index.json';
 
   Map<String, List<WordEntry>> _byWord = {};
+  bool _loaded = false;
+  bool get isLoaded => _loaded;
 
   Future<void> load() async {
     final raw =
@@ -49,9 +51,13 @@ class WordIndexRepository {
         (indices as List).map((i) => entries[i as int]).toList(),
       ),
     );
+    _loaded = true;
   }
 
   /// Exact match only -- looks up [word] as written (kanji, kana, or a mix),
   /// same as any k_ele/r_ele in JMdict. Empty if the word isn't in JMdict.
   List<WordEntry> lookup(String word) => _byWord[word] ?? const [];
+
+  /// Whether [word] exists as a key in the index (for tokenization).
+  bool containsWord(String word) => _byWord.containsKey(word);
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 
 import '../../app_dependencies.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/composita_repository.dart';
 import '../../data/kanji_info_repository.dart';
 import '../../data/sentences_repository.dart';
@@ -13,7 +14,6 @@ import '../review/furigana_sentence.dart';
 import '../review/review_repository.dart';
 import '../review/sentence_selection.dart'
     show isKanji, compositaWithinCeiling, mergeComposita, selectCompositaForIntroduction;
-import '../review/study_scope.dart';
 import '../stroke_order/stroke_order_view.dart';
 import '../../widgets/tts_button.dart';
 
@@ -55,12 +55,15 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
   late final ReviewRepository _reviewRepo;
   late final TextEditingController _keywordController;
   late final TextEditingController _storyController;
+  late final FocusNode _keywordFocus;
+  late final FocusNode _storyFocus;
   Timer? _keywordDebounce;
   Timer? _storyDebounce;
   Set<String>? _selectedComposita;
   List<Composita> _userComposita = [];
-  /// User-added sentences grouped by word, with their DB ids for deletion.
-  Map<String, List<({int id, ExampleSentence sentence})>> _userSentencesByWord = {};
+  bool _detailDataReady = false;
+  bool _editingKeyword = false;
+  bool _editingStory = false;
 
   static const _autosaveDelay = Duration(milliseconds: 500);
 
@@ -80,6 +83,34 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
     _reviewRepo = ReviewRepository(widget.deps.database);
     _keywordController = TextEditingController();
     _storyController = TextEditingController();
+    _keywordFocus = FocusNode();
+    _storyFocus = FocusNode();
+    _keywordFocus.addListener(() {
+      if (!_keywordFocus.hasFocus && _editingKeyword) {
+        setState(() => _editingKeyword = false);
+        // Flush any pending autosave immediately on focus loss.
+        _keywordDebounce?.cancel();
+        _reviewRepo.upsertStoryKeyword(widget.character, _keywordController.text);
+      }
+    });
+    _storyFocus.addListener(() {
+      if (!_storyFocus.hasFocus && _editingStory) {
+        setState(() => _editingStory = false);
+        _storyDebounce?.cancel();
+        _reviewRepo.upsertNote(widget.character, _storyController.text);
+      }
+    });
+    _detailDataReady = widget.deps.composita.isLoaded &&
+        widget.deps.sentences.isLoaded &&
+        widget.deps.strokePaths.isLoaded &&
+        widget.deps.readingFrequency.isLoaded;
+    if (!_detailDataReady) {
+      widget.deps.ensureDetailData().then((_) {
+        if (mounted) {
+          setState(() => _detailDataReady = true);
+        }
+      });
+    }
     if (!_isKana) {
       // Plain one-shot reads, not Streams: this widget is the only editor of
       // its own keyword/story fields, so there's no other writer to react to
@@ -101,118 +132,7 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
       _reviewRepo.userCompositaFor(widget.character).then((user) {
         if (mounted) setState(() => _userComposita = user);
       });
-      _loadUserSentences();
     }
-  }
-
-  Future<void> _loadUserSentences() async {
-    // Load user sentences for all composita words of this character.
-    final bundled = widget.deps.composita.lookup(widget.character);
-    final user = await _reviewRepo.userCompositaFor(widget.character);
-    final merged = mergeComposita(bundled, user);
-    final result = <String, List<({int id, ExampleSentence sentence})>>{};
-    for (final c in merged) {
-      final sentences = await _reviewRepo.userSentencesFor(c.word, c.reading);
-      if (sentences.isNotEmpty) {
-        result[c.word] = sentences;
-      }
-    }
-    if (mounted) setState(() => _userSentencesByWord = result);
-  }
-
-  Future<void> _showAddSentenceDialog(String word) async {
-    final l = AppLocalizations.of(context)!;
-    final sentenceController = TextEditingController();
-    final translationController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l.addSentenceButton),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: sentenceController,
-                decoration: InputDecoration(
-                  hintText: l.addSentenceHint(word),
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (v) {
-                  if (v == null || !v.contains(word)) {
-                    return l.addSentenceValidation(word);
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: translationController,
-                decoration: InputDecoration(
-                  hintText: l.addSentenceTranslationHint,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l.dialogCancel),
-          ),
-          TextButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.of(ctx).pop(true);
-              }
-            },
-            child: Text(l.addSentenceButton),
-          ),
-        ],
-      ),
-    );
-
-    if (saved == true && mounted) {
-      final sentence = sentenceController.text;
-      final translation = translationController.text.isEmpty
-          ? null
-          : translationController.text;
-      await _reviewRepo.addUserSentence(word, sentence, translation);
-      await _loadUserSentences();
-    }
-  }
-
-  void _showWordPickerForSentence(List<Composita> composita) {
-    if (composita.length == 1) {
-      _showAddSentenceDialog(composita.first.word);
-      return;
-    }
-    // Multiple composita — let the user pick which word to add a sentence for.
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final c in composita)
-                ListTile(
-                  title: Text('${c.word} (${c.reading})'),
-                  subtitle: Text(c.meaning, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  onTap: () {
-                    Navigator.of(ctx).pop();
-                    _showAddSentenceDialog(c.word);
-                  },
-                ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   void _onKeywordChanged(String text) {
@@ -244,6 +164,8 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
   void dispose() {
     _keywordDebounce?.cancel();
     _storyDebounce?.cancel();
+    _keywordFocus.dispose();
+    _storyFocus.dispose();
     _keywordController.dispose();
     _storyController.dispose();
     super.dispose();
@@ -270,19 +192,14 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
     return result;
   }
 
-  List<(Composita, ExampleSentence, int?)> _exampleSentencesFor(
+  List<(Composita, ExampleSentence)> _exampleSentencesFor(
     List<Composita> composita,
   ) {
-    final entries = <(Composita, ExampleSentence, int?)>[];
+    final entries = <(Composita, ExampleSentence)>[];
     for (final c in composita) {
-      // User sentences first, with their DB ids for deletion.
-      final userSentences = _userSentencesByWord[c.word] ?? [];
-      for (final us in userSentences) {
-        entries.add((c, us.sentence, us.id));
-      }
       final sentences = widget.deps.sentences.lookup(c.word);
       for (final s in sentences.take(_maxSentencesPerComposita)) {
-        entries.add((c, s, null));
+        entries.add((c, s));
       }
     }
     return entries;
@@ -293,15 +210,17 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
     final l = AppLocalizations.of(context)!;
     final isKana = _isKana;
     final info = widget.deps.kanjiInfo.lookup(widget.character);
-    final strokes = widget.deps.strokePaths.lookup(widget.character);
-    final composita = isKana
+    final strokes = _detailDataReady
+        ? widget.deps.strokePaths.lookup(widget.character)
+        : null;
+    final composita = (isKana || !_detailDataReady)
         ? const <Composita>[]
         : _selectComposita(mergeComposita(
             widget.deps.composita.lookup(widget.character),
             _userComposita,
           ));
-    final exampleSentences = isKana
-        ? const <(Composita, ExampleSentence, int?)>[]
+    final exampleSentences = (isKana || !_detailDataReady)
+        ? const <(Composita, ExampleSentence)>[]
         : _exampleSentencesFor(composita);
 
     final column = Column(
@@ -329,7 +248,7 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
           if (info == null && !isKana)
             Text(
               l.kanjiDetailNoDictionaryEntry,
-              style: const TextStyle(color: Colors.black54),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
             )
           else if (info != null) ...[
             if (info.on.isNotEmpty)
@@ -348,6 +267,8 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
               ),
             if (info.meanings.isNotEmpty)
               _InfoLine(label: l.kanjiDetailMeaning, value: info.meanings.join(', ')),
+            if (widget.deps.jlptLevels.levelOf(widget.character) != null)
+              _InfoLine(label: 'JLPT', value: 'N${widget.deps.jlptLevels.levelOf(widget.character)}'),
           ],
           if (strokes != null && !widget.compact) ...[
             const SizedBox(height: 16),
@@ -366,34 +287,108 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
           ],
           if (!isKana) ...[
             const SizedBox(height: 16),
-            Text(
-              l.kanjiDetailKeyword,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Text(
+                  l.kanjiDetailKeyword,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 4),
+                if (!_editingKeyword)
+                  InkWell(
+                    onTap: () {
+                      setState(() => _editingKeyword = true);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _keywordFocus.requestFocus();
+                      });
+                    },
+                    child: Icon(Icons.edit, size: 16, color: context.appColors.textTertiary),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: _keywordController,
-              onChanged: _onKeywordChanged,
-              decoration: InputDecoration(
-                hintText: l.kanjiDetailKeywordHint,
-                border: const OutlineInputBorder(),
-                isDense: true,
+            if (_editingKeyword)
+              TextField(
+                controller: _keywordController,
+                focusNode: _keywordFocus,
+                onChanged: _onKeywordChanged,
+                decoration: InputDecoration(
+                  hintText: l.kanjiDetailKeywordHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              )
+            else
+              GestureDetector(
+                onTap: () {
+                  setState(() => _editingKeyword = true);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _keywordFocus.requestFocus();
+                  });
+                },
+                child: _keywordController.text.isEmpty
+                    ? Text(
+                        l.kanjiDetailKeywordHint,
+                        style: TextStyle(
+                          color: context.appColors.textDisabled,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      )
+                    : Text(_keywordController.text),
               ),
-            ),
             const SizedBox(height: 16),
-            Text(l.kanjiDetailStory, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _storyController,
-              onChanged: _onStoryChanged,
-              maxLines: null,
-              minLines: 2,
-              decoration: InputDecoration(
-                hintText: l.kanjiDetailStoryHint,
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
+            Row(
+              children: [
+                Text(l.kanjiDetailStory, style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(width: 4),
+                if (!_editingStory)
+                  InkWell(
+                    onTap: () {
+                      setState(() => _editingStory = true);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _storyFocus.requestFocus();
+                      });
+                    },
+                    child: Icon(Icons.edit, size: 16, color: context.appColors.textTertiary),
+                  ),
+              ],
             ),
+            const SizedBox(height: 8),
+            if (_editingStory)
+              TextField(
+                controller: _storyController,
+                focusNode: _storyFocus,
+                onChanged: _onStoryChanged,
+                maxLines: null,
+                minLines: 2,
+                decoration: InputDecoration(
+                  hintText: l.kanjiDetailStoryHint,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              )
+            else
+              GestureDetector(
+                onTap: () {
+                  setState(() => _editingStory = true);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _storyFocus.requestFocus();
+                  });
+                },
+                child: _storyController.text.isEmpty
+                    ? Text(
+                        l.kanjiDetailStoryHint,
+                        style: TextStyle(
+                          color: context.appColors.textDisabled,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      )
+                    : Text(_storyController.text),
+              ),
+          ],
+          if (!_detailDataReady && !widget.compact) ...[
+            const SizedBox(height: 16),
+            const Center(child: CircularProgressIndicator()),
           ],
           if (composita.isNotEmpty && !widget.compact) ...[
             const SizedBox(height: 16),
@@ -420,29 +415,8 @@ class _KanjiDetailContentState extends State<KanjiDetailContent> {
                 composita: exampleSentences[i].$1,
                 sentence: exampleSentences[i].$2,
                 kanjiLookup: widget.deps.kanjiInfo.lookup,
-                userSentenceId: exampleSentences[i].$3,
-                onDelete: exampleSentences[i].$3 != null
-                    ? () async {
-                        await _reviewRepo.removeUserSentence(
-                            exampleSentences[i].$3!);
-                        await _loadUserSentences();
-                      }
-                    : null,
               ),
             ],
-          ],
-          if (composita.isNotEmpty && !widget.compact) ...[
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  // Show a picker dialog for which composita word to add a sentence for.
-                  _showWordPickerForSentence(composita);
-                },
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(l.addSentenceButton),
-              ),
-            ),
           ],
         ],
       );
@@ -523,7 +497,7 @@ class _ReadingsLine extends StatelessWidget {
       if (rare) {
         spans.add(TextSpan(
           text: '[$r]',
-          style: TextStyle(color: Colors.grey.shade500),
+          style: TextStyle(color: context.appColors.textDisabled),
         ));
       } else {
         spans.add(TextSpan(text: r));
@@ -586,7 +560,7 @@ class _CompositaLine extends StatelessWidget {
                 text: composita.isLevelInferred
                     ? ' [N${composita.effectiveJlptLevel}?]'
                     : ' [N${composita.effectiveJlptLevel}]',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(color: context.appColors.textTertiary),
               ),
           ],
         ),
@@ -701,7 +675,7 @@ class _PoolActionButtonState extends State<_PoolActionButton> {
     final l = AppLocalizations.of(context)!;
     if (_inPool) {
       return IconButton(
-        icon: const Icon(Icons.tune, color: Colors.indigo),
+        icon: Icon(Icons.tune, color: Theme.of(context).colorScheme.primary),
         tooltip: l.kanjiDetailEditComposita,
         onPressed: _openCompositaPicker,
       );
@@ -718,51 +692,26 @@ class _ExampleSentenceBlock extends StatelessWidget {
   final Composita composita;
   final ExampleSentence sentence;
   final KanjiInfo? Function(String char)? kanjiLookup;
-  final int? userSentenceId;
-  final VoidCallback? onDelete;
 
   const _ExampleSentenceBlock({
     required this.composita,
     required this.sentence,
     this.kanjiLookup,
-    this.userSentenceId,
-    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    final isUser = sentence.source == 'user';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                composita.word,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              if (isUser) ...[
-                const SizedBox(width: 6),
-                Text(
-                  l.userSentenceSource,
-                  style: TextStyle(fontSize: 11, color: Colors.blue.shade400),
-                ),
-              ],
-              const Spacer(),
-              if (isUser && onDelete != null)
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: onDelete,
-                ),
-            ],
+          Text(
+            composita.word,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: context.appColors.textSecondary,
+            ),
           ),
           const SizedBox(height: 4),
           Row(
@@ -782,14 +731,14 @@ class _ExampleSentenceBlock extends StatelessWidget {
               ),
             ],
           ),
-          if (!isUser && sentence.source != 'synthetic')
+          if (sentence.source != 'synthetic')
             Align(
               alignment: Alignment.centerRight,
               child: Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
                   sentence.source == 'tatoeba' ? 'Tatoeba' : 'LLM-generated',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 11, color: context.appColors.textDisabled),
                 ),
               ),
             ),
@@ -799,7 +748,7 @@ class _ExampleSentenceBlock extends StatelessWidget {
               sentence.translation!,
               style: TextStyle(
                 fontStyle: FontStyle.italic,
-                color: Colors.grey.shade700,
+                color: context.appColors.textSecondary,
               ),
             ),
           ],

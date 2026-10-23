@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/kanji_mascot.dart';
+import '../core/theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
 
 /// Preference key for whether the welcome screen has been seen.
@@ -55,7 +56,7 @@ class WelcomeScreen extends StatelessWidget {
                 Text(
                   l.welcomeFeatureList,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: context.appColors.textTertiary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -102,32 +103,32 @@ class TourStep {
   });
 }
 
-List<TourStep> tourSteps(AppLocalizations l) => [
+List<TourStep> tourSteps(AppLocalizations l, BuildContext context) => [
   TourStep(
     tabIndex: 0,
     icon: Icons.brush,
-    color: Colors.deepOrange.shade700,
+    color: context.appColors.navLookup,
     title: l.ftdLookupTitle,
     message: l.ftdLookupMessage,
   ),
   TourStep(
     tabIndex: 1,
     icon: Icons.text_fields,
-    color: Colors.teal.shade700,
+    color: context.appColors.navWords,
     title: l.ftdWordLookupTitle,
     message: l.ftdWordLookupMessage,
   ),
   TourStep(
     tabIndex: 2,
     icon: Icons.school,
-    color: Colors.orange.shade700,
+    color: context.appColors.navLearn,
     title: l.ftdLearningTitle,
     message: l.ftdLearningMessage,
   ),
   TourStep(
     tabIndex: 3,
     icon: Icons.grid_view,
-    color: Colors.indigo.shade700,
+    color: context.appColors.navBrowse,
     title: l.ftdBrowserTitle,
     message: l.ftdBrowserMessage,
   ),

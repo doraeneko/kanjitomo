@@ -26,7 +26,7 @@ void main() {
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
-      await tester.runAsync(() => deps.load());
+      await tester.runAsync(() => deps.load(loadAll: true));
       // Scope limited to just 一, so the pre-introduced drawFromMeaning
       // card is unambiguous.
       await deps.studyScope.update(
@@ -101,8 +101,9 @@ void main() {
       );
       expect(find.text('Keyword', skipOffstage: false), findsOneWidget);
       expect(find.text('Story', skipOffstage: false), findsOneWidget);
-      // The editable keyword + story fields.
-      expect(find.byType(TextField), findsNWidgets(2));
+      // Keyword/story fields are read-only by default (shown as Text, not
+      // TextField). Edit icons are shown next to each label.
+      expect(find.byIcon(Icons.edit, skipOffstage: false), findsNWidgets(2));
 
       await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
       await tester.pump();

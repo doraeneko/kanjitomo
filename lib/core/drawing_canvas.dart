@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'kanji_rasterizer.dart';
+import 'theme/app_colors.dart';
 
 /// A fixed-size square drawing surface -- raw pointer capture converted to
 /// 64x64 grid-space points, plus live stroke rendering. Stateless/
@@ -78,7 +79,7 @@ class DrawingCanvas extends StatelessWidget {
         width: displaySize,
         height: displaySize,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400, width: 2),
+          border: Border.all(color: context.appColors.border, width: 2),
         ),
         child: CustomPaint(
           painter: StrokesPainter(
@@ -110,6 +111,30 @@ class StrokesPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset.zero & size, Paint()..color = Colors.white);
+
+    // Quadrant guide lines — light dashed cross through the center.
+    final guidePaint = Paint()
+      ..color = Colors.grey.shade300
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+    const double dashLen = 6;
+    const double gapLen = 4;
+    // Horizontal
+    double x = 0;
+    final midY = size.height / 2;
+    while (x < size.width) {
+      final end = (x + dashLen).clamp(0.0, size.width);
+      canvas.drawLine(Offset(x, midY), Offset(end, midY), guidePaint);
+      x += dashLen + gapLen;
+    }
+    // Vertical
+    double y = 0;
+    final midX = size.width / 2;
+    while (y < size.height) {
+      final end = (y + dashLen).clamp(0.0, size.height);
+      canvas.drawLine(Offset(midX, y), Offset(midX, end), guidePaint);
+      y += dashLen + gapLen;
+    }
 
     final paint = Paint()
       ..color = Colors.black87

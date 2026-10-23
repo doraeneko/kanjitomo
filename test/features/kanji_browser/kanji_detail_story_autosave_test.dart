@@ -34,24 +34,30 @@ void main() {
       );
       await tester.pump();
 
-      // deps.load() seeds kanji_notes from the bundled stories.json (see
+      // deps.load(loadAll: true) seeds kanji_notes from the bundled stories.json (see
       // AppDatabase.seedStories) -- 一's keyword is "eins" (a real
       // karten.json entry split on its first colon), with an empty story
-      // body, so the keyword field starts pre-filled and the story field
-      // starts empty.
-      expect(find.widgetWithText(TextField, 'eins'), findsOneWidget);
-      expect(find.byType(TextField), findsNWidgets(2));
+      // body, so the keyword field starts pre-filled (as read-only Text)
+      // and the story field starts empty (showing hint text).
+      //
+      // Fields are now read-only by default -- keyword shows as plain Text,
+      // story shows hint text. Tap the edit icon to switch to a TextField.
+      expect(find.text('eins'), findsOneWidget);
+      // No TextFields initially — both fields are in read-only mode.
+      expect(find.byType(TextField), findsNothing);
 
-      // The story field is the second one (keyword renders first).
-      await tester.enterText(
-        find.byType(TextField).at(1),
-        'My test mnemonic',
-      );
+      // Tap the story edit icon to enter editing mode, then type.
+      final editIcons = find.byIcon(Icons.edit);
+      expect(editIcons, findsNWidgets(2)); // keyword + story edit icons
+      await tester.tap(editIcons.at(1)); // second icon = story
+      await tester.pump();
+      expect(find.byType(TextField), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'My test mnemonic');
       await tester.pump();
 
       expect(find.text('My test mnemonic'), findsOneWidget);
-      // Unaffected by editing the story field.
-      expect(find.widgetWithText(TextField, 'eins'), findsOneWidget);
+      // Keyword still displayed as read-only Text, unaffected.
+      expect(find.text('eins'), findsOneWidget);
     },
   );
 }

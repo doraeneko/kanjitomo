@@ -26,9 +26,12 @@ class StrokePathsRepository {
 
   Map<String, dynamic> _raw = {};
   final Map<String, KanjiStrokes> _cache = {};
+  bool _loaded = false;
+  bool get isLoaded => _loaded;
 
   Future<void> load() async {
     _raw = jsonDecode(await rootBundle.loadString(_asset)) as Map<String, dynamic>;
+    _loaded = true;
   }
 
   /// Null for REJECT or any character absent from the bundled data (not

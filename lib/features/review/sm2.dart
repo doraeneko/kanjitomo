@@ -19,9 +19,27 @@ class Sm2State {
 const double _minEaseFactor = 1.3;
 const double _defaultEaseFactor = 2.5;
 
+/// Extra interval multiplier for a self-graded "Easy" answer (Anki's
+/// default easy bonus).
+const double _easyBonus = 1.3;
+
+/// Interval for a fresh card answered "Easy" -- skips the 1-day step.
+const int _easyFirstInterval = 4;
+
 /// The SM-2 algorithm (Wozniak). [current] is null for a card with no prior
 /// review (fresh/new card) -- treated as ease=2.5, interval=0, repetitions=0.
-Sm2State computeNextReview(Sm2State? current, int quality) {
+///
+/// [easy] is set only when the user explicitly pressed "Easy" on a
+/// self-graded card: the interval then gets [_easyBonus] on top (and a
+/// fresh card jumps straight to [_easyFirstInterval] days). Plain SM-2
+/// would only raise the ease factor for q=5, which doesn't lengthen the
+/// interval until the *next* review. Recognizer-graded q=5 draw cards
+/// don't set it, so their scheduling stays plain SM-2.
+Sm2State computeNextReview(
+  Sm2State? current,
+  int quality, {
+  bool easy = false,
+}) {
   assert(quality >= 0 && quality <= 5);
   final easeFactor = current?.easeFactor ?? _defaultEaseFactor;
   final repetitions = current?.repetitions ?? 0;
@@ -34,11 +52,17 @@ Sm2State computeNextReview(Sm2State? current, int quality) {
     nextInterval = 1;
   } else {
     nextRepetitions = repetitions + 1;
-    nextInterval = switch (repetitions) {
-      0 => 1,
-      1 => 6,
-      _ => (priorInterval * easeFactor).round(),
-    };
+    nextInterval = easy
+        ? switch (repetitions) {
+            0 => _easyFirstInterval,
+            1 => (6 * _easyBonus).round(),
+            _ => (priorInterval * easeFactor * _easyBonus).round(),
+          }
+        : switch (repetitions) {
+            0 => 1,
+            1 => 6,
+            _ => (priorInterval * easeFactor).round(),
+          };
   }
 
   final delta = 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02);
@@ -84,5 +108,9 @@ int gradeDrawAndPick({
   final rank = topCandidates.indexWhere((c) => c.label == target);
   if (rank == -1) return 0;
   if (userPick != target) return 2;
-  return switch (rank) { 0 => 5, 1 => 4, _ => 3 };
+  return switch (rank) {
+    0 => 5,
+    1 => 4,
+    _ => 3,
+  };
 }

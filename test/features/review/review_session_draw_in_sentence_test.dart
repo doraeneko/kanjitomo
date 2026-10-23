@@ -35,7 +35,7 @@ void main() {
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
-      await tester.runAsync(() => deps.load());
+      await tester.runAsync(() => deps.load(loadAll: true));
 
       // Scope limited to just 一 -- same "avoid competing auto-introduced
       // cards" reasoning as review_session_reading_cloze_test.dart.
@@ -153,7 +153,7 @@ void main() {
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
-      await tester.runAsync(() => deps.load());
+      await tester.runAsync(() => deps.load(loadAll: true));
 
       const scope = StudyScope(characters: {'一'});
       await deps.studyScope.update(scope);

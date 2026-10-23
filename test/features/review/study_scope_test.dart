@@ -1,10 +1,15 @@
+import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:kanjitomo/core/first_time_dialog.dart';
+import 'package:kanjitomo/core/db/tables.dart';
+
+import 'package:kanjitomo/core/db/app_database.dart';
 import 'package:kanjitomo/features/review/study_scope.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('StudyScope', () {
     test('matches checks set membership', () {
       const scope = StudyScope(characters: {'一', '二'});
@@ -59,14 +64,17 @@ void main() {
   });
 
   group('StudyScopeRepository persistence', () {
-    testWidgets('round-trips characters through shared_preferences', (
-      tester,
-    ) async {
-      SharedPreferences.setMockInitialValues({
-        ...ftdSuppressedPrefs,
-        'study_scope.migrated_to_unified': true,
-      });
-      final repo = StudyScopeRepository();
+    late AppDatabase db;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+    });
+
+    tearDown(() => db.close());
+
+    test('round-trips characters through SQLite', () async {
+      final repo = StudyScopeRepository(db);
       await repo.load();
       expect(repo.scope.value, const StudyScope()); // default: empty
 
@@ -74,35 +82,77 @@ void main() {
         const StudyScope(characters: {'一', '二', '三'}),
       );
 
-      final reloaded = StudyScopeRepository();
+      // Reload from the same DB to verify persistence.
+      final reloaded = StudyScopeRepository(db);
       await reloaded.load();
       expect(reloaded.scope.value.characters, {'一', '二', '三'});
     });
 
-    testWidgets(
-      'round-trips compositaCeiling (including back to null)',
-      (tester) async {
-        SharedPreferences.setMockInitialValues({
-          ...ftdSuppressedPrefs,
-          'study_scope.migrated_to_unified': true,
-        });
-        final repo = StudyScopeRepository();
-        await repo.load();
+    test('round-trips compositaCeiling (including back to null)', () async {
+      final repo = StudyScopeRepository(db);
+      await repo.load();
 
-        await repo.update(
-          const StudyScope(characters: {'一'}, compositaCeiling: 3),
-        );
-        final withCeiling = StudyScopeRepository();
-        await withCeiling.load();
-        expect(withCeiling.scope.value.compositaCeiling, 3);
+      await repo.update(
+        const StudyScope(characters: {'一'}, compositaCeiling: 3),
+      );
+      final withCeiling = StudyScopeRepository(db);
+      await withCeiling.load();
+      expect(withCeiling.scope.value.compositaCeiling, 3);
 
-        await repo.update(
-          repo.scope.value.copyWith(clearCompositaCeiling: true),
-        );
-        final cleared = StudyScopeRepository();
-        await cleared.load();
-        expect(cleared.scope.value.compositaCeiling, isNull);
-      },
-    );
+      await repo.update(
+        repo.scope.value.copyWith(clearCompositaCeiling: true),
+      );
+      final cleared = StudyScopeRepository(db);
+      await cleared.load();
+      expect(cleared.scope.value.compositaCeiling, isNull);
+    });
+
+    test('round-trips maxCompositaPerKanji', () async {
+      final repo = StudyScopeRepository(db);
+      await repo.load();
+
+      await repo.update(
+        const StudyScope(characters: {'一'}, maxCompositaPerKanji: 6),
+      );
+      final reloaded = StudyScopeRepository(db);
+      await reloaded.load();
+      expect(reloaded.scope.value.maxCompositaPerKanji, 6);
+    });
+
+    test('addCharacters and removeCharacters', () async {
+      final repo = StudyScopeRepository(db);
+      await repo.load();
+
+      await repo.addCharacters({'一', '二'});
+      expect(repo.scope.value.characters, {'一', '二'});
+
+      await repo.addCharacters({'三'});
+      expect(repo.scope.value.characters, {'一', '二', '三'});
+
+      await repo.removeCharacters({'二'});
+      expect(repo.scope.value.characters, {'一', '三'});
+    });
+
+    test('orphan repair: characters with review progress but not in pool are restored', () async {
+      // Simulate orphaned review data: insert ReviewCards rows directly
+      // into the DB for characters not in the scope.
+      await db.into(db.reviewCards).insert(ReviewCardsCompanion.insert(
+        character: '食',
+        cardType: CardType.drawFromMeaning,
+        dueDate: DateTime.now(),
+      ));
+      await db.into(db.reviewCards).insert(ReviewCardsCompanion.insert(
+        character: '飲',
+        cardType: CardType.drawFromMeaning,
+        dueDate: DateTime.now(),
+      ));
+
+      // First load with empty SharedPreferences → pool should include
+      // the orphaned characters.
+      final repo = StudyScopeRepository(db);
+      await repo.load();
+      expect(repo.scope.value.characters, contains('食'));
+      expect(repo.scope.value.characters, contains('飲'));
+    });
   });
 }

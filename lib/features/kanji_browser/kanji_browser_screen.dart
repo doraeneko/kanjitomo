@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app_dependencies.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/kanji_info_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../review/review_repository.dart';
@@ -10,9 +11,8 @@ import 'kanji_search.dart';
 import '../../widgets/coffee_button.dart';
 
 /// A general "browse every Jōyō kanji" table, reachable from the main
-/// lookup screen. Scope-based filtering (JLPT/RTK/Custom) and custom-set
-/// editing used to live here, but both moved to the Learning section (see
-/// jlpt_edit_screen.dart/custom_edit_screen.dart) -- this screen is now
+/// lookup screen. Scope-based filtering and custom-set editing moved to
+/// the Learning section (add_remove_screen.dart) -- this screen is now
 /// just a flat utility for inspecting/editing any kanji's story field,
 /// with a search box (see kanji_search.dart's matchesKanjiSearch) to find
 /// one by reading, meaning, or stroke count instead of scrolling the whole
@@ -69,6 +69,9 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
       setState(() => _query = _searchController.text.trim());
     });
     widget.deps.studyScope.scope.addListener(_onScopeChanged);
+    widget.deps.ensureBrowserData().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -284,6 +287,7 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
     final strokeCount = widget.deps.strokePaths.lookup(char)?.strokeCount;
     final progress = _progress[char];
     final keyword = _keywords[char];
+    final jlptLevel = widget.deps.jlptLevels.levelOf(char);
     final inPool = widget.deps.studyScope.scope.value.characters.contains(char);
     return InkWell(
       key: ValueKey(char),
@@ -303,10 +307,20 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
                     style: TextStyle(
                       fontSize: 22,
                       fontFamily: 'NotoSansJP',
-                      color: inPool ? Colors.indigo : null,
+                      color: inPool ? Theme.of(context).colorScheme.primary : null,
                       fontWeight: inPool ? FontWeight.bold : null,
                     ),
                   ),
+                  if (jlptLevel != null) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      'N$jlptLevel',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: context.appColors.textTertiary,
+                      ),
+                    ),
+                  ],
                   if (progress != null &&
                       (progress.reading != CardProgress.none ||
                           progress.writing != CardProgress.none)) ...[
@@ -338,7 +352,7 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontStyle: FontStyle.italic,
-                  color: Colors.grey.shade700,
+                  color: context.appColors.textSecondary,
                 ),
               ),
             ),
@@ -368,7 +382,7 @@ class _KanjiBrowserScreenState extends State<KanjiBrowserScreen> {
     height: 8,
     decoration: BoxDecoration(
       shape: BoxShape.circle,
-      color: progress == CardProgress.known ? Colors.green : Colors.orange,
+      color: progress == CardProgress.known ? context.appColors.statusGreen : context.appColors.statusOrange,
     ),
   );
 }

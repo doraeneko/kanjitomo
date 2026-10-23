@@ -6,6 +6,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../lib/core/kanji_mascot.dart';
 
 // We need to re-create the painter here since _CatMascotPainter is private.
@@ -13,6 +14,12 @@ import '../lib/core/kanji_mascot.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load NotoSansJP-Bold so TextPainter can render 字 on the forehead.
+  // In a tool entrypoint the pubspec font declarations aren't active, so we
+  // must register the font manually via loadFontFromList.
+  final fontData = await rootBundle.load('assets/fonts/NotoSansJP-Bold.ttf');
+  await ui.loadFontFromList(fontData.buffer.asUint8List(), fontFamily: 'NotoSansJP');
 
   // Launcher icon sizes (mipmap)
   final iconSizes = {
@@ -72,7 +79,25 @@ void main() async {
     print('Wrote $path (${size}x$size)');
   }
 
+  // High-res source icon for assets/icon/app_icon.png and store listing
+  final appIcon = await _renderMascot(1024, 1024, scale: 1.3);
+  final appIconPath = '$basePath/app_icon.png';
+  await _savePng(appIcon, appIconPath);
+  print('Wrote $appIconPath (1024x1024)');
+
+  // Also load the regular weight for the feature graphic text
+  final fontRegData = await rootBundle.load('assets/fonts/NotoSansJP-Regular.ttf');
+  await ui.loadFontFromList(fontRegData.buffer.asUint8List(), fontFamily: 'NotoSansJP');
+
+  // Feature graphic for Google Play Store (1024x500)
+  final featureGraphic = await _renderFeatureGraphic();
+  final featurePath = '$basePath/feature_graphic.png';
+  await _savePng(featureGraphic, featurePath);
+  print('Wrote $featurePath (1024x500)');
+
   print('\nDone! All icons generated.');
+  print('Copy app_icon.png to assets/icon/app_icon.png, then run:');
+  print('  flutter pub run flutter_launcher_icons');
   exit(0);
 }
 
@@ -176,6 +201,7 @@ void _paintCatMascot(Canvas canvas, double mascotSize) {
       text: '字',
       style: TextStyle(
         fontSize: s * 0.24,
+        fontFamily: 'NotoSansJP',
         fontWeight: FontWeight.w900,
         color: const Color(0xBF4E342E),
       ),
@@ -266,4 +292,109 @@ void _paintCatMascot(Canvas canvas, double mascotSize) {
     Rect.fromCenter(center: Offset(s * 0.78, s * 0.66), width: s * 0.11, height: s * 0.07),
     blushPaint,
   );
+}
+
+Future<ui.Image> _renderFeatureGraphic() async {
+  const w = 1024.0;
+  const h = 500.0;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, w, h));
+
+  // Background: warm cream matching the app theme
+  canvas.drawRect(
+    const Rect.fromLTWH(0, 0, w, h),
+    Paint()..color = const Color(0xFFFFF8E1),
+  );
+
+  // Subtle decorative kanji scattered in background
+  final bgKanji = ['漢', '読', '書', '学', '語', '記', '話', '文'];
+  final bgPaint = const Color(0x0A4E342E);
+  for (var i = 0; i < bgKanji.length; i++) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: bgKanji[i],
+        style: TextStyle(
+          fontSize: 80,
+          fontFamily: 'NotoSansJP',
+          fontWeight: FontWeight.w700,
+          color: bgPaint,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final x = (i % 4) * 260.0 + 20;
+    final y = (i ~/ 4) * 280.0 + 30;
+    tp.paint(canvas, Offset(x, y));
+  }
+
+  // Cat mascot on the left, vertically centered, with padding
+  final mascotSize = h * 0.78;
+  final mascotX = 60.0;
+  final mascotY = (h - mascotSize) / 2;
+
+  canvas.save();
+  canvas.translate(mascotX, mascotY);
+  _paintCatMascot(canvas, mascotSize);
+  canvas.restore();
+
+  // Text block on the right side
+  final textX = mascotX + mascotSize + 60;
+  final textAreaWidth = w - textX - 40;
+
+  // App name
+  final titlePainter = TextPainter(
+    text: const TextSpan(
+      text: 'kanjitomo',
+      style: TextStyle(
+        fontSize: 64,
+        fontFamily: 'NotoSansJP',
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF4E342E),
+        letterSpacing: 1,
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout(maxWidth: textAreaWidth);
+
+  // Tagline
+  final taglinePainter = TextPainter(
+    text: const TextSpan(
+      text: 'Draw. Recall. Master.',
+      style: TextStyle(
+        fontSize: 30,
+        fontFamily: 'NotoSansJP',
+        fontWeight: FontWeight.w400,
+        color: Color(0xFF795548),
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout(maxWidth: textAreaWidth);
+
+  // Subtitle
+  final subtitlePainter = TextPainter(
+    text: const TextSpan(
+      text: 'Learn kanji by hand',
+      style: TextStyle(
+        fontSize: 24,
+        fontFamily: 'NotoSansJP',
+        fontWeight: FontWeight.w400,
+        color: Color(0xFF8D6E63),
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout(maxWidth: textAreaWidth);
+
+  // Vertically center the text block
+  final totalTextHeight =
+      titlePainter.height + 12 + taglinePainter.height + 8 + subtitlePainter.height;
+  var textY = (h - totalTextHeight) / 2;
+
+  titlePainter.paint(canvas, Offset(textX, textY));
+  textY += titlePainter.height + 12;
+  taglinePainter.paint(canvas, Offset(textX, textY));
+  textY += taglinePainter.height + 8;
+  subtitlePainter.paint(canvas, Offset(textX, textY));
+
+  final picture = recorder.endRecording();
+  return picture.toImage(w.toInt(), h.toInt());
 }

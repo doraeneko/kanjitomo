@@ -15,20 +15,37 @@ class Prediction {
   const Prediction(this.label, this.probability, this.isReject);
 }
 
+/// Which recognition model to use.
+enum ModelVariant {
+  /// JIS Level 1 (~3,000 kanji + kana + reject).
+  standard('assets/model/standard'),
+
+  /// JIS Level 1 + 2 (~6,500 kanji + kana + reject).
+  extended('assets/model/extended');
+
+  final String assetDir;
+  const ModelVariant(this.assetDir);
+}
+
 /// Loads the exported model + class list + inference contract from assets
 /// (see scripts/export_onnx.py) and runs top-k inference.
 class KanjiRecognizer {
-  static const _modelAsset = 'assets/model/model.onnx';
-  static const _classesAsset = 'assets/model/classes.json';
-  static const _inferenceConfigAsset = 'assets/model/inference_config.json';
-
   OrtSession? _session;
   List<String> _classes = [];
   int _rejectIndex = -1;
+  ModelVariant _loadedVariant = ModelVariant.standard;
   bool get isReady => _session != null;
+  ModelVariant get loadedVariant => _loadedVariant;
 
-  Future<void> load() async {
+  Future<void> load({ModelVariant variant = ModelVariant.standard}) async {
+    // Close previous session if reloading with a different variant.
+    if (_session != null) {
+      await _session!.close();
+      _session = null;
+    }
+
     final ort = OnnxRuntime();
+    final modelAsset = '${variant.assetDir}/model.onnx';
     // NOT createSessionFromAsset(_modelAsset): that plugin method caches the
     // extracted file by filename only (e.g. "model.onnx") in the temp
     // directory, and reuses whatever's there across app rebuilds WITHOUT
@@ -39,7 +56,7 @@ class KanjiRecognizer {
     // identical input. Content-addressed caching (hash in the filename) makes
     // that class of bug structurally impossible: a changed asset always gets
     // a new path, so there's never a stale hit.
-    final modelData = await rootBundle.load(_modelAsset);
+    final modelData = await rootBundle.load(modelAsset);
     final modelBytes = modelData.buffer.asUint8List(
       modelData.offsetInBytes,
       modelData.lengthInBytes,
@@ -52,13 +69,16 @@ class KanjiRecognizer {
     }
     _session = await ort.createSession(versionedFile.path);
 
-    final classesJson = await rootBundle.loadString(_classesAsset);
+    final classesAsset = '${variant.assetDir}/classes.json';
+    final classesJson = await rootBundle.loadString(classesAsset);
     _classes = List<String>.from(jsonDecode(classesJson) as List);
 
+    final inferenceAsset = '${variant.assetDir}/inference_config.json';
     final inferenceJson =
-        jsonDecode(await rootBundle.loadString(_inferenceConfigAsset))
+        jsonDecode(await rootBundle.loadString(inferenceAsset))
             as Map<String, dynamic>;
     _rejectIndex = inferenceJson['reject_class_index'] as int;
+    _loadedVariant = variant;
   }
 
   Future<void> dispose() async {

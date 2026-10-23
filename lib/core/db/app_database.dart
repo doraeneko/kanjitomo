@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
@@ -15,6 +17,7 @@ part 'app_database.g.dart';
     CustomComposita,
     UserComposita,
     UserSentences,
+    ScopeSettings,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -25,11 +28,25 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
+    onCreate: (m) async {
+      await m.createAll();
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_review_cards_due_date '
+        'ON review_cards (due_date)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_review_cards_last_reviewed '
+        'ON review_cards (last_reviewed_at)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_review_cards_character '
+        'ON review_cards (character)',
+      );
+    },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.addColumn(kanjiStatic, kanjiStatic.levelRank);
@@ -66,6 +83,23 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 9) {
         await m.createTable(userSentences);
+      }
+      if (from < 10) {
+        await m.createTable(scopeSettings);
+      }
+      if (from < 11) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_review_cards_due_date '
+          'ON review_cards (due_date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_review_cards_last_reviewed '
+          'ON review_cards (last_reviewed_at)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_review_cards_character '
+          'ON review_cards (character)',
+        );
       }
     },
   );
@@ -186,5 +220,58 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
     }
+  }
+
+  /// Reads the single-row scope_settings, returning null if no row exists yet.
+  Future<ScopeSetting?> loadScope() async {
+    return (select(scopeSettings)..limit(1)).getSingleOrNull();
+  }
+
+  /// Returns all distinct characters that have review progress (ReviewCards,
+  /// CompositaProgress, or CustomComposita rows) but are not in [poolChars].
+  /// Used as a one-time repair after SharedPreferences was lost but SQLite
+  /// review data survived.
+  Future<Set<String>> orphanedCharacters(Set<String> poolChars) async {
+    final result = <String>{};
+
+    final rc = selectOnly(reviewCards, distinct: true)
+      ..addColumns([reviewCards.character]);
+    for (final row in await rc.get()) {
+      final c = row.read(reviewCards.character)!;
+      if (!poolChars.contains(c)) result.add(c);
+    }
+
+    final cp = selectOnly(compositaProgress, distinct: true)
+      ..addColumns([compositaProgress.character]);
+    for (final row in await cp.get()) {
+      final c = row.read(compositaProgress.character)!;
+      if (!poolChars.contains(c)) result.add(c);
+    }
+
+    final cc = selectOnly(customComposita, distinct: true)
+      ..addColumns([customComposita.character]);
+    for (final row in await cc.get()) {
+      final c = row.read(customComposita.character)!;
+      if (!poolChars.contains(c)) result.add(c);
+    }
+
+    return result;
+  }
+
+  /// Upserts the scope into the single-row scope_settings table.
+  Future<void> saveScope({
+    required Set<String> characters,
+    required int? compositaCeiling,
+    required int maxCompositaPerKanji,
+  }) async {
+    await into(scopeSettings).insert(
+      ScopeSettingsCompanion(
+        id: const Value(0),
+        characters: Value(jsonEncode(characters.toList())),
+        compositaCeiling: Value(compositaCeiling),
+        maxCompositaPerKanji: Value(maxCompositaPerKanji),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
   }
 }

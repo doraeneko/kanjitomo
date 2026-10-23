@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../data/kanji_info_repository.dart';
 import '../../data/sentences_repository.dart';
 import 'reading_splitter.dart' show splitReading, katakanaToHiragana;
@@ -230,14 +231,14 @@ class _RubyUnit extends StatelessWidget {
   /// centered above it and may overflow slightly for narrow kanji with
   /// wide readings (standard ruby behaviour). A ・ separator is shown
   /// between adjacent furigana readings.
-  Widget _buildSplitRow(List<_CharReading> segments) {
+  Widget _buildSplitRow(BuildContext context, List<_CharReading> segments) {
     final rubyHeight = furiganaFontSize * 1.4;
     final baseStyle = TextStyle(fontSize: fontSize, fontFamily: 'NotoSansJP', fontWeight: FontWeight.bold);
     final furiStyle = TextStyle(
       fontSize: furiganaFontSize,
       fontFamily: 'NotoSansJP',
-      color: emphasize ? Colors.red : null,
-      fontWeight: emphasize ? FontWeight.bold : null,
+      color: emphasize ? context.appColors.statusRed : null,
+      fontWeight: FontWeight.bold,
     );
     final allKana = token.surface.codeUnits.every(_isKana);
     final underline = highlightBox && !allKana;
@@ -266,7 +267,7 @@ class _RubyUnit extends StatelessWidget {
         baseText = Container(
           padding: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.red, width: 2),
+            border: Border.all(color: context.appColors.statusRed, width: 2),
           ),
           child: baseText,
         );
@@ -297,7 +298,7 @@ class _RubyUnit extends StatelessWidget {
     if (underline) {
       row = Container(
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.red, width: 2)),
+          border: Border(bottom: BorderSide(color: context.appColors.statusRed, width: 2)),
         ),
         child: row,
       );
@@ -319,7 +320,7 @@ class _RubyUnit extends StatelessWidget {
       base = Container(
         padding: const EdgeInsets.symmetric(horizontal: 2),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.red, width: 2),
+          border: Border.all(color: context.appColors.statusRed, width: 2),
         ),
         child: base,
       );
@@ -333,7 +334,7 @@ class _RubyUnit extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.red, width: 2),
+                border: Border.all(color: context.appColors.statusRed, width: 2),
               ),
               child: w,
             );
@@ -380,7 +381,7 @@ class _RubyUnit extends StatelessWidget {
             }
             return _CharReading(chars[i], splits[i]);
           });
-          return _buildSplitRow(segments);
+          return _buildSplitRow(context, segments);
         }
       }
 
@@ -403,6 +404,12 @@ class _RubyUnit extends StatelessWidget {
         if (hasLeading || hasTrailing) {
           final leadLen = hasLeading ? leadingHira.length : 0;
           final trailLen = hasTrailing ? trailingHira.length : 0;
+          // Guard: if leading + trailing kana overlap in the reading
+          // (e.g. the entire reading matches both prefix and suffix),
+          // skip the split and fall through to simple rendering.
+          if (leadLen + trailLen > token.reading.length) {
+            // fall through below
+          } else {
           final stemStart = hasLeading ? leadingKana.length : 0;
           final stemEnd = hasTrailing
               ? token.surface.length - trailingKana.length
@@ -437,8 +444,9 @@ class _RubyUnit extends StatelessWidget {
           if (hasTrailing) {
             segments.add(_CharReading(trailingKana, trailingKana));
           }
-          return _buildSplitRow(segments);
+          return _buildSplitRow(context, segments);
         }
+        } // else (no overlap)
       }
     }
 
@@ -449,7 +457,7 @@ class _RubyUnit extends StatelessWidget {
     if (highlightBox && highlightCharacter != null && !allKana) {
       base = Container(
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.red, width: 2)),
+          border: Border(bottom: BorderSide(color: context.appColors.statusRed, width: 2)),
         ),
         child: base,
       );
@@ -469,8 +477,8 @@ class _RubyUnit extends StatelessWidget {
                   style: TextStyle(
                     fontSize: furiganaFontSize,
                     fontFamily: 'NotoSansJP',
-                    color: emphasize ? Colors.red : null,
-                    fontWeight: emphasize ? FontWeight.bold : null,
+                    color: emphasize ? context.appColors.statusRed : null,
+                    fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),

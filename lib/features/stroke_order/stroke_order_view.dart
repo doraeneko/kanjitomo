@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import 'stroke_order_painter.dart';
 
 /// Animated reference stroke-order display: plays automatically on a loop,
@@ -58,7 +59,7 @@ class _StrokeOrderViewState extends State<StrokeOrderView>
       width: widget.displaySize,
       height: widget.displaySize,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade400),
+        border: Border.all(color: context.appColors.border),
       ),
       child: AnimatedBuilder(
         animation: _controller,
@@ -68,6 +69,7 @@ class _StrokeOrderViewState extends State<StrokeOrderView>
             painter: StrokeOrderPainter(
               paths: widget.paths,
               progress: _controller.value * widget.paths.length,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           );
         },

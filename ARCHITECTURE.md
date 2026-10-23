@@ -32,7 +32,7 @@ lib/
     stroke_paths_repository.dart
     word_index_repository.dart
   features/
-    lookup/                 – main draw-to-recognize screen + word lookup
+    lookup/                 – main draw-to-recognize screen + word lookup + camera OCR
     kanji_browser/           – browse-all-kanji grid + kanji detail view
     learning/                – Learning section (JLPT/Custom edit, Help)
     review/                  – StudyScope, SM-2 engine, review session/start/stats
@@ -59,10 +59,18 @@ assets/*.json         SQLite file              assets/model/*.onnx
 
 - **`data/` repositories** are the only thing that ever calls
   `rootBundle.loadString`/`rootBundle.load`. Each one loads exactly one
-  `assets/*.json` file once (via `AppDependencies.load()`, run in parallel
-  with `Future.wait`) and serves synchronous, in-memory lookups afterwards —
-  there is no lazy/streamed asset loading anywhere. They are pure data
-  classes; none of them know about Flutter widgets or the database.
+  `assets/*.json` file and serves synchronous, in-memory lookups afterwards.
+  The 6 critical-path repos (~1MB total: `kanjiInfo`, `jlptLevels`,
+  `rtkIndex`, `kanjiLevelRank`, `stories`, `proStatus`) are loaded eagerly
+  at startup via `AppDependencies.load()`. The 5 largest repos (~80MB
+  total: `composita`, `sentences`, `wordIndex`, `strokePaths`,
+  `readingFrequency`) are **deferred** — loaded lazily on first access via
+  `Completer`-based `ensure*()` methods on `AppDependencies` (e.g.
+  `ensureComposita()`, `ensureDetailData()`, `ensureReviewData()`). Each
+  repo exposes a `bool get isLoaded` getter. Screens call the appropriate
+  `ensure*()` before accessing deferred data, showing a spinner while
+  loading. They are pure data classes; none of them know about Flutter
+  widgets or the database.
 - **`core/db`** is the only mutable, persisted state: SM-2 review progress,
   per-character personal notes, and the user's custom kanji/composita
   selections. Everything else the app shows is derived from the read-only
@@ -96,8 +104,10 @@ recolors the entire app instantly. The chosen theme key is persisted in
 `SharedPreferences` under `'app.color_theme'` and restored in `main()` before
 `runApp`. The picker UI lives on the Help & About screen (`help_screen.dart`).
 
-`AppDependencies.load()` parallel-loads every JSON-backed repository, then
-syncs two derived pieces of state into the database:
+`AppDependencies.load()` parallel-loads the 6 critical-path repositories
+(the ones needed before the home screen can render), then syncs two
+derived pieces of state into the database. The 5 large deferred repos are
+loaded on demand — see "Deferred asset loading" below.
 
 1. `database.syncKanjiStatic(...)` — upserts a `kanji_static` row per
    character with its JLPT level / RTK index / level-rank, so the review
@@ -112,6 +122,40 @@ creation is the slowest, most failure-prone step, and only the lookup/draw
 screens need it. Each of those screens loads it independently and shows its
 own spinner/error state, so a slow or failed model load never blocks the
 rest of the app.
+
+### Deferred asset loading
+
+The 5 largest JSON repos are **not** loaded at startup — they're lazy-loaded
+on first access to keep app launch fast (~1s vs 3–5s):
+
+| Repository | Size | Loaded when |
+|---|---|---|
+| `wordIndex` | 35MB | Words tab opened, word lookup screen |
+| `composita` | 22MB | Kanji detail, review/quiz session, add/remove, statistics |
+| `sentences` | 17MB | Kanji detail, review/quiz session |
+| `strokePaths` | 3.4MB | Kanji browser, kanji detail |
+| `readingFrequency` | 2.6MB | Kanji detail |
+
+Each repo has a `bool get isLoaded` getter. `AppDependencies` provides
+`Completer`-based `ensure*()` methods that are safe to call concurrently
+(multiple callers share the same in-flight future):
+
+- `ensureComposita()`, `ensureSentences()`, `ensureStrokePaths()`,
+  `ensureWordIndex()`, `ensureReadingFrequency()` — individual repos.
+- `ensureDetailData()` — composita + sentences + strokePaths +
+  readingFrequency (everything the kanji detail sheet needs).
+- `ensureBrowserData()` — strokePaths (for sort/filter by stroke count).
+- `ensureReviewData()` — composita + sentences (for review/quiz sessions).
+
+Screens call the appropriate group before accessing data. `KanjiDetailContent`
+self-manages its own loading with a `_detailDataReady` flag and shows a
+spinner until all detail data is available.
+
+`HomeScreen` pre-triggers loading on tab switch (Words → `ensureWordIndex()`,
+Learning → `ensureReviewData()`, Browse → `ensureBrowserData()`).
+
+For tests, `deps.load(loadAll: true)` eagerly loads everything, bypassing
+the lazy pattern so tests don't need to call individual `ensure*()` methods.
 
 Tests construct `AppDependencies(database: AppDatabase.forTesting(...))` to
 swap in an in-memory SQLite database (the real constructor needs
@@ -392,6 +436,53 @@ patterns recur throughout and are worth knowing before adding a test:
   navigates to a screen containing it must use bounded `tester.pump(duration)`
   calls rather than `tester.pumpAndSettle()`, which would never see frame
   scheduling stop.
+
+## Camera OCR (`features/lookup/camera_ocr_screen.dart`)
+
+Both the kanji lookup and word lookup screens have a camera button that opens
+`CameraOcrScreen`. It supports two modes (`CameraOcrMode`):
+
+- **`kanji`** — shows individual CJK characters (no kana) as tappable
+  overlays on the photo, mapped from ML Kit's pixel-space bounding boxes to
+  display coordinates (accounting for `BoxFit.contain` scaling). Multi-select
+  with toggle.
+- **`word`** — ML Kit returns phrase-level text elements, so the screen
+  tokenizes them into dictionary words via greedy longest-match against
+  `WordIndexRepository` (max 8-character candidates). Only words containing
+  at least one kanji are shown. Multi-select with toggle.
+
+Image capture uses the `camera` package directly (not `image_picker`'s
+camera intent) to guarantee rear-camera default and skip the system
+confirm/retry dialog. Gallery picking still uses `image_picker`. Text
+recognition uses `google_mlkit_text_recognition` with
+`TextRecognitionScript.japanese`.
+
+Selected items are returned as `List<String>` and shown as a horizontal
+chip queue on the parent lookup screen, letting the user cycle through
+multiple picks from one photo.
+
+`lib/core/font_renderer.dart` renders a single character to a 256×256
+`ui.Image` (white background, black NotoSansJP) so the kanji lookup screen
+can feed camera-picked characters through the existing `canonicalize()` →
+`predictTopK()` pipeline without requiring the user to draw them.
+
+## AnkiDroid import (Android only)
+
+`features/learning/anki_import_screen.dart` is an Android-only feature that
+reads kanji from AnkiDroid via its Content Provider API. A custom
+`MethodChannel` (`com.kanjitomo/anki_notes`) in `MainActivity.kt` handles
+permission requests and queries the `content://com.ichi2.anki.flashcards/`
+URIs for models (`/models`) and notes (`/notes`, filtered by model ID).
+
+The wizard lets the user pick a note type, then a field. It extracts kanji
+characters from the chosen field, optionally filters by JLPT level, and
+optionally extracts composita via greedy longest-match tokenization against
+`WordIndexRepository`. The result feeds into the existing `_addKanjiToPool`
+flow in `add_remove_screen.dart`.
+
+The import button is conditionally shown only on Android
+(`defaultTargetPlatform == TargetPlatform.android`) on the Browse tab of
+the Add/Remove screen.
 
 ## The `kanjirec` pipeline (external, sibling project)
 

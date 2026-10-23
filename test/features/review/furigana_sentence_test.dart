@@ -1,6 +1,7 @@
 import '../../test_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kanjitomo/core/theme/app_colors.dart';
 import 'package:kanjitomo/data/sentences_repository.dart';
 import 'package:kanjitomo/features/review/furigana_sentence.dart';
 
@@ -204,7 +205,7 @@ void main() {
         ),
       );
       final decoration = container.decoration as BoxDecoration;
-      expect(decoration.border!.top.color, Colors.red);
+      expect(decoration.border!.top.color, AppColors.light.statusRed);
     },
   );
 
@@ -226,6 +227,6 @@ void main() {
       ),
     );
     final decoration = container.decoration as BoxDecoration;
-    expect(decoration.border!.top.color, Colors.red);
+    expect(decoration.border!.top.color, AppColors.light.statusRed);
   });
 }

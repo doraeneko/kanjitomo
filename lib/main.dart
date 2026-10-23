@@ -4,11 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_dependencies.dart';
+import 'core/theme/app_colors.dart';
 import 'features/home_screen.dart';
 import 'l10n/app_localizations.dart';
 
 // ── Color theme presets ─────────────────────────────────────────────────
 const String kThemePrefKey = 'app.color_theme';
+const String kThemeModePrefKey = 'app.theme_mode';
+const String kModelVariantPrefKey = 'app.model_variant';
 const String kDefaultTheme = 'indigo';
 
 const Map<String, Color> themePresets = {
@@ -22,6 +25,10 @@ const Map<String, Color> themePresets = {
 /// Global notifier so both MaterialApp and the settings UI can react.
 final ValueNotifier<Color> themeColorNotifier =
     ValueNotifier(themePresets[kDefaultTheme]!);
+
+/// Global notifier for brightness mode (Auto / Light / Dark).
+final ValueNotifier<ThemeMode> themeModeNotifier =
+    ValueNotifier(ThemeMode.light);
 
 Future<void> main() async {
   // Portrait only -- every review/edit screen's layout (see
@@ -42,6 +49,13 @@ Future<void> main() async {
   final savedTheme = prefs.getString(kThemePrefKey) ?? kDefaultTheme;
   themeColorNotifier.value =
       themePresets[savedTheme] ?? themePresets[kDefaultTheme]!;
+  final savedMode = prefs.getString(kThemeModePrefKey);
+  if (savedMode != null) {
+    themeModeNotifier.value = ThemeMode.values.firstWhere(
+      (m) => m.name == savedMode,
+      orElse: () => ThemeMode.light,
+    );
+  }
   _registerThirdPartyLicenses();
   runApp(const KanjitomoApp());
 }
@@ -88,10 +102,37 @@ void _registerThirdPartyLicenses() {
       'Institute of Advanced Industrial Science and Technology (AIST). '
       'See https://etlcdb.db.aist.go.jp/ for details.',
     );
+    yield LicenseEntryWithLineBreaks(
+      const ['Google ML Kit'],
+      'Camera-based text recognition uses Google ML Kit '
+      '(https://developers.google.com/ml-kit), licensed under the '
+      'Apache License, Version 2.0.',
+    );
   });
 }
 
-class KanjitomoApp extends StatelessWidget {
+ThemeData _buildTheme(Color seedColor, Brightness brightness) {
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: seedColor,
+    brightness: brightness,
+  );
+  final appColors = brightness == Brightness.light
+      ? AppColors.light
+      : AppColors.dark;
+  return ThemeData(
+    colorScheme: colorScheme,
+    useMaterial3: true,
+    extensions: [appColors],
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: colorScheme.primaryContainer,
+        foregroundColor: colorScheme.onPrimaryContainer,
+      ),
+    ),
+  );
+}
+
+class KanjitomoApp extends StatefulWidget {
   /// Overridable for tests, which need an in-memory database (the real one
   /// needs path_provider, unavailable in a plain widget test) -- production
   /// always uses the default.
@@ -100,23 +141,40 @@ class KanjitomoApp extends StatelessWidget {
   const KanjitomoApp({super.key, this.deps});
 
   @override
+  State<KanjitomoApp> createState() => _KanjitomoAppState();
+}
+
+class _KanjitomoAppState extends State<KanjitomoApp> {
+  late final AppDependencies _deps;
+
+  @override
+  void initState() {
+    super.initState();
+    _deps = widget.deps ?? AppDependencies();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Color>(
       valueListenable: themeColorNotifier,
       builder: (context, seedColor, _) {
-        return MaterialApp(
-          title: 'kanjitomo',
-          theme: ThemeData(
-            colorSchemeSeed: seedColor,
-            useMaterial3: true,
-          ),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          // No app-wide locale override — setting locale: Locale('ja') on
-          // DefaultTextStyle causes Samsung devices to use their CJK font
-          // (OneUISansKR) for ALL text including English UI. Instead,
-          // NotoSansJP is applied directly to Japanese text widgets.
-          home: _AppStartup(deps: deps ?? AppDependencies()),
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeModeNotifier,
+          builder: (context, themeMode, _) {
+            return MaterialApp(
+              title: 'kanjitomo',
+              theme: _buildTheme(seedColor, Brightness.light),
+              darkTheme: _buildTheme(seedColor, Brightness.dark),
+              themeMode: themeMode,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              // No app-wide locale override — setting locale: Locale('ja') on
+              // DefaultTextStyle causes Samsung devices to use their CJK font
+              // (OneUISansKR) for ALL text including English UI. Instead,
+              // NotoSansJP is applied directly to Japanese text widgets.
+              home: _AppStartup(deps: _deps),
+            );
+          },
         );
       },
     );
@@ -174,7 +232,7 @@ class _AppStartupState extends State<_AppStartup> {
             padding: const EdgeInsets.all(24),
             child: Text(
               l?.failedToLoadAppData(_error!) ?? 'Failed to load app data: $_error',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
         ),

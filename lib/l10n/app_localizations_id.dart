@@ -121,7 +121,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get helpFeatureRecognitionDesc =>
-      'Gambar kanji apa pun untuk pengenalan offline instan — jaringan saraf, 6.500+ karakter.';
+      'Gambar kanji apa pun untuk pengenalan offline instan — jaringan saraf, 6.500+ karakter. Atau foto teks Jepang cetak untuk mencari kanji.';
 
   @override
   String get helpFeatureSrsTitle => 'Pengulangan Berjarak (SRS)';
@@ -472,6 +472,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get reviewGood => 'Bagus';
 
   @override
+  String get reviewEasy => 'Mudah';
+
+  @override
   String get reviewShowTranslation => 'Tampilkan terjemahan';
 
   @override
@@ -604,11 +607,31 @@ class AppLocalizationsId extends AppLocalizations {
   String get statisticsWritingTested => 'Tulisan diuji';
 
   @override
+  String get statisticsJlptOverview => 'Ikhtisar JLPT';
+
+  @override
+  String get statisticsJlptNotSelected => 'Belum dipilih';
+
+  @override
+  String get statisticsJlptNew => 'Baru';
+
+  @override
+  String get statisticsJlptLearning => 'Sedang belajar';
+
+  @override
+  String get statisticsJlptLearnt => 'Sudah hafal';
+
+  @override
   String get statisticsInspectAllKanji => 'Periksa semua kanji';
 
   @override
   String statisticsLearnt(int count, int total) {
     return '$count / $total dipelajari';
+  }
+
+  @override
+  String statisticsLearntKanjiOnly(int count, int total) {
+    return '$count / $total without composita';
   }
 
   @override
@@ -737,6 +760,44 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get reviewTypesTitle => 'Apa yang ingin kamu ulas?';
+
+  @override
+  String get reviewTypeKanjiRecall => 'Mengingat kanji';
+
+  @override
+  String get reviewTypeKanjiRecallHelp => 'Lihat arti, tulis kanjinya';
+
+  @override
+  String get reviewTypeKanjiRecognition => 'Mengenali kanji';
+
+  @override
+  String get reviewTypeKanjiRecognitionHelp =>
+      'Lihat kanji, ingat bacaan dan artinya';
+
+  @override
+  String get reviewTypeCompositaRecall => 'Mengingat kata majemuk';
+
+  @override
+  String get reviewTypeCompositaRecallHelp =>
+      'Tulis kanji yang hilang dalam kalimat';
+
+  @override
+  String get reviewTypeCompositaRecognition => 'Mengenali kata majemuk';
+
+  @override
+  String get reviewTypeCompositaRecognitionHelp =>
+      'Baca kata yang disorot dalam kalimat';
+
+  @override
+  String reviewTypeDue(int count) {
+    return '$count jatuh tempo';
+  }
+
+  @override
+  String get reviewTypesStart => 'Mulai';
+
+  @override
   String get learningQuiz => 'Kuis Gaya JLPT';
 
   @override
@@ -831,7 +892,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get ftdLookupMessage =>
-      'Gambar kanji apa pun di kanvas — jaringan saraf mengenalinya secara instan, bahkan dengan tulisan tangan yang berantakan. Mendukung 6.500+ karakter, sepenuhnya offline.\n\nKetuk hasil untuk melihat bacaan, arti, urutan goresan, kalimat contoh, dan kata majemuk.\n\nCoba sekarang — perkecil kartu ini dan gambar sesuatu!';
+      'Gambar kanji apa pun di kanvas — jaringan saraf mengenalinya secara instan, bahkan dengan tulisan tangan yang berantakan. Mendukung 6.500+ karakter, sepenuhnya offline.\n\nAtau ketuk tombol Kamera untuk memfoto teks Jepang cetak — ketuk karakter yang dikenali untuk mencarinya secara instan.\n\nKetuk hasil untuk melihat bacaan, arti, urutan goresan, kalimat contoh, dan kata majemuk.\n\nCoba sekarang — perkecil kartu ini dan gambar sesuatu!';
 
   @override
   String get ftdWordLookupTitle => 'Pencarian kata';
@@ -881,7 +942,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get welcomeTakeTour => 'Ikuti tur';
 
   @override
-  String get welcomeSkip => 'Lewati';
+  String get welcomeSkip => 'Nanti saja';
 
   @override
   String get welcomeDone => 'Mulai belajar!';
@@ -1109,6 +1170,21 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String addRemoveGoThroughTitle(int count) {
+    return 'Menambahkan $count kanji';
+  }
+
+  @override
+  String get addRemoveGoThroughMessage =>
+      'Apakah Anda ingin melihatnya sekarang?';
+
+  @override
+  String get addRemoveGoThroughYes => 'Lihat sekarang';
+
+  @override
+  String get addRemoveGoThroughNo => 'Nanti';
+
+  @override
   String get addRemoveSlideshowComposita => 'Composita terpilih:';
 
   @override
@@ -1213,4 +1289,112 @@ class AppLocalizationsId extends AppLocalizations {
   String modelSwitchFailed(String error) {
     return 'Gagal mengganti model: $error';
   }
+
+  @override
+  String get lookupCamera => 'Kamera';
+
+  @override
+  String get cameraOcrTitle => 'Cari kanji di foto';
+
+  @override
+  String get cameraOcrProcessing => 'Mengenali teks...';
+
+  @override
+  String get cameraOcrNoText =>
+      'Tidak ada teks Jepang ditemukan di gambar ini.';
+
+  @override
+  String get cameraOcrInstruction => 'Ketuk karakter untuk mencarinya';
+
+  @override
+  String get cameraOcrFromCamera => 'Ambil foto';
+
+  @override
+  String get cameraOcrFromGallery => 'Pilih dari galeri';
+
+  @override
+  String get cameraOcrTitleWord => 'Cari kata di foto';
+
+  @override
+  String get cameraOcrInstructionWord => 'Ketuk kata untuk mencarinya';
+
+  @override
+  String get cameraOcrDone => 'Selesai';
+
+  @override
+  String get ankiImportButton => 'Sinkron dengan AnkiDroid';
+
+  @override
+  String get ankiImportTitle => 'Sinkron dengan AnkiDroid';
+
+  @override
+  String get ankiImportSelectDeck => 'Pilih dek';
+
+  @override
+  String get ankiImportSelectField => 'Bidang mana berisi kanji?';
+
+  @override
+  String get ankiImportJlptFilter => 'Filter level JLPT';
+
+  @override
+  String get ankiImportExtractComposita => 'Ekstrak komposita dari isi bidang';
+
+  @override
+  String get ankiImportExtractCompositaHelp =>
+      'Mencari teks bidang di kamus. Kata yang cocok ditambahkan sebagai komposita tambahan.';
+
+  @override
+  String get ankiImportPreview => 'Pratinjau';
+
+  @override
+  String get ankiImportNoKanji =>
+      'Tidak ada kanji ditemukan di bidang yang dipilih.';
+
+  @override
+  String get ankiImportNotInstalled =>
+      'AnkiDroid belum terpasang di perangkat ini.';
+
+  @override
+  String get ankiImportPermissionDenied =>
+      'Izin membaca data AnkiDroid ditolak.';
+
+  @override
+  String get ankiImportAlreadyAdded => 'sudah ditambahkan';
+
+  @override
+  String ankiImportConfirm(int count) {
+    return 'Impor $count kanji';
+  }
+
+  @override
+  String get ankiImportOptions => 'Opsi';
+
+  @override
+  String get ankiImportFilterOff => 'Mati';
+
+  @override
+  String get ankiImportLoadingNotes => 'Membaca catatan dari AnkiDroid...';
+
+  @override
+  String get ankiImportRetry => 'Coba lagi';
+
+  @override
+  String get ankiImportNoNotes => 'Tidak ada catatan ditemukan di AnkiDroid.';
+
+  @override
+  String get ankiImportSelectModel => 'Pilih tipe catatan';
+
+  @override
+  String get learningEmptyPoolHint => 'Tambahkan kanji dulu lewat Tambah/Hapus';
+
+  @override
+  String get ankiImportUnknownError => 'Terjadi kesalahan. Silakan coba lagi.';
+
+  @override
+  String lookupAddedNoComposita(String char) {
+    return 'Menambahkan $char — tidak ada composita';
+  }
+
+  @override
+  String get learningSettingsUnlimitedHint => '0 = tak terbatas';
 }

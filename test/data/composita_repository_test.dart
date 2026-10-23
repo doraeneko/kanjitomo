@@ -16,22 +16,21 @@ void main() {
     // entries now (confirmed directly: 120, i.e. the full 20x6).
     expect(ichi.length, lessThanOrEqualTo(20 * 6));
     // Ranked JLPT-tagged-first, then inferred-level-first, then by
-    // frequency -- the first entries should not be worse-ranked than the
-    // last.
+    // zipfFreq descending within each tier.
     for (var i = 1; i < ichi.length; i++) {
-      final prevKey = (
-        ichi[i - 1].jlptLevel == null,
-        ichi[i - 1].inferredJlptLevel == null,
-        ichi[i - 1].frequencyRank,
-      );
-      final curKey = (
-        ichi[i].jlptLevel == null,
-        ichi[i].inferredJlptLevel == null,
-        ichi[i].frequencyRank,
-      );
+      final prevTagged = ichi[i - 1].jlptLevel == null;
+      final curTagged = ichi[i].jlptLevel == null;
+      final prevInferred = ichi[i - 1].inferredJlptLevel == null;
+      final curInferred = ichi[i].inferredJlptLevel == null;
       final samePriorTiers =
-          prevKey.$1 == curKey.$1 && prevKey.$2 == curKey.$2;
-      expect(samePriorTiers ? prevKey.$3 <= curKey.$3 : true, isTrue);
+          prevTagged == curTagged && prevInferred == curInferred;
+      // Within the same tier, zipfFreq should be non-increasing.
+      expect(
+        samePriorTiers
+            ? ichi[i - 1].zipfFreq >= ichi[i].zipfFreq
+            : true,
+        isTrue,
+      );
     }
 
     // A word with no real tag but whose only kanji (丁) is itself

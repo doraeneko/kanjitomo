@@ -115,7 +115,7 @@
   "helpFeatureRecognitionTitle": "Handwriting Recognition",
   "@helpFeatureRecognitionTitle": { "description": "Feature card title" },
 
-  "helpFeatureRecognitionDesc": "Draw any kanji for instant offline recognition — neural network, 6,500+ characters.",
+  "helpFeatureRecognitionDesc": "Draw any kanji for instant offline recognition — neural network, 6,500+ characters. Or snap a photo to find kanji in printed text.",
   "@helpFeatureRecognitionDesc": { "description": "Feature card description" },
 
   "helpFeatureSrsTitle": "Spaced Repetition (SRS)",
@@ -480,6 +480,8 @@
 
   "reviewGood": "Good",
   "@reviewGood": { "description": "Grade button for successful recall" },
+  "reviewEasy": "Easy",
+  "@reviewEasy": { "description": "Grade button for effortless recall; schedules the card further out than Good" },
 
   "reviewShowTranslation": "Show translation",
   "@reviewShowTranslation": { "description": "Toggle to show sentence translation" },
@@ -621,12 +623,33 @@
   "statisticsWritingTested": "Writing tested",
   "@statisticsWritingTested": { "description": "Label for writing coverage pie" },
 
+  "statisticsJlptOverview": "JLPT overview",
+  "@statisticsJlptOverview": { "description": "Section title for JLPT level breakdown" },
+
+  "statisticsJlptNotSelected": "Not selected",
+  "@statisticsJlptNotSelected": { "description": "Column header: kanji not in study pool" },
+
+  "statisticsJlptNew": "New",
+  "@statisticsJlptNew": { "description": "Column header: selected but not started" },
+
+  "statisticsJlptLearning": "Learning",
+  "@statisticsJlptLearning": { "description": "Column header: started but not fully learnt" },
+
+  "statisticsJlptLearnt": "Learnt",
+  "@statisticsJlptLearnt": { "description": "Column header: fully learnt (green)" },
+
   "statisticsInspectAllKanji": "Inspect all kanji",
   "@statisticsInspectAllKanji": { "description": "Button to open kanji browser" },
 
   "statisticsLearnt": "{count} / {total} learnt",
   "@statisticsLearnt": {
     "description": "Count of fully learnt kanji (green/green)",
+    "placeholders": { "count": { "type": "int" }, "total": { "type": "int" } }
+  },
+
+  "statisticsLearntKanjiOnly": "{count} / {total} without composita",
+  "@statisticsLearntKanjiOnly": {
+    "description": "Count of kanji learnt based on recognition+drawing only, ignoring composita",
     "placeholders": { "count": { "type": "int" }, "total": { "type": "int" } }
   },
 
@@ -774,6 +797,29 @@
     }
   },
 
+  "reviewTypesTitle": "What do you want to review?",
+  "@reviewTypesTitle": { "description": "Title of the sheet that picks which card kinds a review session includes" },
+  "reviewTypeKanjiRecall": "Kanji recall",
+  "@reviewTypeKanjiRecall": { "description": "Card kind: meaning shown, user draws the kanji" },
+  "reviewTypeKanjiRecallHelp": "See the meaning, draw the kanji",
+  "@reviewTypeKanjiRecallHelp": { "description": "Explanation of the kanji recall card kind" },
+  "reviewTypeKanjiRecognition": "Kanji recognition",
+  "@reviewTypeKanjiRecognition": { "description": "Card kind: kanji shown, user recalls reading and meaning" },
+  "reviewTypeKanjiRecognitionHelp": "See the kanji, recall reading and meaning",
+  "@reviewTypeKanjiRecognitionHelp": { "description": "Explanation of the kanji recognition card kind" },
+  "reviewTypeCompositaRecall": "Composita recall",
+  "@reviewTypeCompositaRecall": { "description": "Card kind: sentence with a missing kanji, user draws it" },
+  "reviewTypeCompositaRecallHelp": "Draw the missing kanji in a sentence",
+  "@reviewTypeCompositaRecallHelp": { "description": "Explanation of the composita recall card kind" },
+  "reviewTypeCompositaRecognition": "Composita recognition",
+  "@reviewTypeCompositaRecognition": { "description": "Card kind: word highlighted in a sentence, user recalls its reading" },
+  "reviewTypeCompositaRecognitionHelp": "Read the highlighted word in a sentence",
+  "@reviewTypeCompositaRecognitionHelp": { "description": "Explanation of the composita recognition card kind" },
+  "reviewTypeDue": "{count} due",
+  "@reviewTypeDue": { "description": "Number of due cards of one card kind", "placeholders": { "count": { "type": "int" } } },
+  "reviewTypesStart": "Start",
+  "@reviewTypesStart": { "description": "Button that starts the review with the selected card kinds" },
+
   "learningQuiz": "JLPT-like Quiz",
   "@learningQuiz": { "description": "Button label for quiz on learning screen" },
 
@@ -883,7 +929,7 @@
   "ftdLookupTitle": "Draw to recognize",
   "@ftdLookupTitle": { "description": "First-time dialog title for lookup screen" },
 
-  "ftdLookupMessage": "Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!",
+  "ftdLookupMessage": "Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nOr tap the Camera button to photograph printed Japanese text — tap any recognized character to look it up instantly.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!",
   "@ftdLookupMessage": { "description": "First-time dialog message for lookup screen" },
 
   "ftdWordLookupTitle": "Word lookup",
@@ -928,7 +974,7 @@
   "welcomeTakeTour": "Take a tour",
   "@welcomeTakeTour": { "description": "Button to start guided tour" },
 
-  "welcomeSkip": "Skip",
+  "welcomeSkip": "Not now",
   "@welcomeSkip": { "description": "Button to skip welcome tour" },
 
   "welcomeDone": "Start learning!",
@@ -1153,6 +1199,21 @@
     }
   },
 
+  "addRemoveGoThroughTitle": "Added {count} kanji",
+  "@addRemoveGoThroughTitle": {
+    "description": "Dialog title after bulk-adding kanji",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "addRemoveGoThroughMessage": "Would you like to go through them now?",
+  "@addRemoveGoThroughMessage": { "description": "Dialog body asking whether to view new kanji slideshow" },
+
+  "addRemoveGoThroughYes": "Go through",
+  "@addRemoveGoThroughYes": { "description": "Confirm button to start new kanji slideshow" },
+
+  "addRemoveGoThroughNo": "Later",
+  "@addRemoveGoThroughNo": { "description": "Decline button to skip new kanji slideshow" },
+
   "addRemoveSlideshowComposita": "Selected composita:",
   "@addRemoveSlideshowComposita": { "description": "Label for selected composita in slideshow" },
 
@@ -1265,5 +1326,110 @@
   "@modelSwitchFailed": {
     "description": "Snackbar when model switch fails",
     "placeholders": { "error": { "type": "String" } }
-  }
+  },
+
+  "lookupCamera": "Camera",
+  "@lookupCamera": { "description": "Button label for camera OCR" },
+
+  "cameraOcrTitle": "Find kanji in photo",
+  "@cameraOcrTitle": { "description": "AppBar title for camera OCR screen" },
+
+  "cameraOcrProcessing": "Recognizing text...",
+  "@cameraOcrProcessing": { "description": "Shown while ML Kit is processing" },
+
+  "cameraOcrNoText": "No Japanese text found in this image.",
+  "@cameraOcrNoText": { "description": "Shown when OCR finds no CJK/kana" },
+
+  "cameraOcrInstruction": "Tap a character to look it up",
+  "@cameraOcrInstruction": { "description": "Instruction above recognized characters" },
+
+  "cameraOcrFromCamera": "Take photo",
+  "@cameraOcrFromCamera": { "description": "Bottom sheet option for camera" },
+
+  "cameraOcrFromGallery": "Choose from gallery",
+  "@cameraOcrFromGallery": { "description": "Bottom sheet option for gallery" },
+
+  "cameraOcrTitleWord": "Find word in photo",
+  "@cameraOcrTitleWord": { "description": "AppBar title for camera OCR in word mode" },
+
+  "cameraOcrInstructionWord": "Tap a word to look it up",
+  "@cameraOcrInstructionWord": { "description": "Instruction for word mode" },
+
+  "cameraOcrDone": "Done",
+  "@cameraOcrDone": { "description": "Confirm button for multi-select" },
+
+  "ankiImportButton": "Sync with AnkiDroid",
+  "@ankiImportButton": { "description": "FAB label on browse tab (Android only)" },
+
+  "ankiImportTitle": "Sync with AnkiDroid",
+  "@ankiImportTitle": { "description": "AppBar title for AnkiDroid sync wizard" },
+
+  "ankiImportSelectDeck": "Select a deck",
+  "@ankiImportSelectDeck": { "description": "Step label for deck selection" },
+
+  "ankiImportSelectField": "Which field contains kanji?",
+  "@ankiImportSelectField": { "description": "Step label for field selection" },
+
+  "ankiImportJlptFilter": "JLPT level filter",
+  "@ankiImportJlptFilter": { "description": "Label for JLPT filter chips" },
+
+  "ankiImportExtractComposita": "Extract composita from field content",
+  "@ankiImportExtractComposita": { "description": "Checkbox label for composita extraction" },
+
+  "ankiImportExtractCompositaHelp": "Looks up the field text in the dictionary. Matching words are added as extra composita.",
+  "@ankiImportExtractCompositaHelp": { "description": "Help text for composita extraction" },
+
+  "ankiImportPreview": "Preview",
+  "@ankiImportPreview": { "description": "Step label for preview" },
+
+  "ankiImportNoKanji": "No kanji found in the selected field.",
+  "@ankiImportNoKanji": { "description": "Shown when no kanji were extracted" },
+
+  "ankiImportNotInstalled": "AnkiDroid is not installed on this device.",
+  "@ankiImportNotInstalled": { "description": "Error when AnkiDroid is not found" },
+
+  "ankiImportPermissionDenied": "Permission to read AnkiDroid data was denied.",
+  "@ankiImportPermissionDenied": { "description": "Error when permission is denied" },
+
+  "ankiImportAlreadyAdded": "already added",
+  "@ankiImportAlreadyAdded": { "description": "Label for kanji already in pool" },
+
+  "ankiImportConfirm": "Import {count} kanji",
+  "@ankiImportConfirm": {
+    "description": "Confirm button with count",
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "ankiImportOptions": "Options",
+  "@ankiImportOptions": { "description": "Step label for import options" },
+
+  "ankiImportFilterOff": "Off",
+  "@ankiImportFilterOff": { "description": "Label for no JLPT filter" },
+
+  "ankiImportLoadingNotes": "Reading notes from AnkiDroid...",
+  "@ankiImportLoadingNotes": { "description": "Shown while querying AnkiDroid notes" },
+
+  "ankiImportRetry": "Retry",
+  "@ankiImportRetry": { "description": "Button to retry after permission denial" },
+
+  "ankiImportNoNotes": "No notes found in AnkiDroid.",
+  "@ankiImportNoNotes": { "description": "Error when no note types are found" },
+
+  "ankiImportSelectModel": "Select a note type",
+  "@ankiImportSelectModel": { "description": "Step label for note type selection" },
+
+  "learningEmptyPoolHint": "Add kanji first via Add/Remove",
+  "@learningEmptyPoolHint": { "description": "Hint shown when learning pool is empty and buttons are disabled" },
+
+  "ankiImportUnknownError": "Something went wrong. Please try again.",
+  "@ankiImportUnknownError": { "description": "Generic error message for unknown AnkiDroid import errors" },
+
+  "lookupAddedNoComposita": "Added {char} — no composita available",
+  "@lookupAddedNoComposita": {
+    "description": "Snackbar when kanji is added but has no composita",
+    "placeholders": { "char": { "type": "String" } }
+  },
+
+  "learningSettingsUnlimitedHint": "0 = unlimited",
+  "@learningSettingsUnlimitedHint": { "description": "Helper text below settings fields explaining that 0 means unlimited" }
 }

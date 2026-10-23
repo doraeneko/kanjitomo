@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kanjitomo/features/stroke_order/stroke_order_screen.dart';
 import 'package:kanjitomo/features/stroke_order/stroke_order_view.dart';
 
+import '../../test_helpers.dart';
 import 'stroke_order_test_helpers.dart';
 
 void main() {
@@ -10,7 +10,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: StrokeOrderScreen()),
+      testApp(home: const StrokeOrderScreen()),
     );
     // Real asset load (assets/stroke_paths.json, ~2.4MB) -- not mocked, so
     // this also verifies the asset is registered and well-formed.

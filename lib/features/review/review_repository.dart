@@ -1,10 +1,11 @@
+import 'dart:math' show min;
+
 import 'package:drift/drift.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/db/tables.dart';
 import '../../data/composita_repository.dart';
-import '../../data/sentences_repository.dart';
 import 'sm2.dart';
 import 'study_scope.dart';
 
@@ -207,24 +208,22 @@ class ReviewRepository {
     if (scope.isEmpty) return [];
     final today = asOf ?? DateTime.now();
 
-    final query =
-        db.select(db.reviewCards).join([
-          innerJoin(
-            db.kanjiStatic,
-            db.kanjiStatic.character.equalsExp(db.reviewCards.character),
-          ),
-        ])
-        ..where(_dueExpr(today))
-        ..where(_scopeExpr(scope))
-        ..orderBy([OrderingTerm.asc(db.reviewCards.dueDate)]);
-    final cardTypesExpr = _cardTypesExpr(cardTypes);
-    if (cardTypesExpr != null) query.where(cardTypesExpr);
+    final query = db.select(db.reviewCards)
+        ..where((t) => t.dueDate.isSmallerOrEqualValue(today))
+        ..where((t) => t.character.isIn(scope.characters))
+        ..orderBy([(t) => OrderingTerm.asc(t.dueDate)]);
+    if (cardTypes != null) {
+      query.where(
+        (t) => cardTypes
+            .map((ct) => t.cardType.equalsValue(ct))
+            .reduce((a, b) => a | b),
+      );
+    }
     if (excludeNeverReviewed) {
-      query.where(db.reviewCards.lastReviewedAt.isNotNull());
+      query.where((t) => t.lastReviewedAt.isNotNull());
     }
 
-    final rows = await query.get();
-    final cards = rows.map((row) => row.readTable(db.reviewCards)).toList();
+    final cards = await query.get();
     return interleaveByCharacter(cards);
   }
 
@@ -237,20 +236,20 @@ class ReviewRepository {
   }) async {
     if (scope.isEmpty) return [];
     final today = DateTime.now();
-    final query =
-        db.select(db.reviewCards).join([
-          innerJoin(
-            db.kanjiStatic,
-            db.kanjiStatic.character.equalsExp(db.reviewCards.character),
-          ),
-        ])
-        ..where(db.reviewCards.lastReviewedAt.isNull())
-        ..where(_dueExpr(today))
-        ..where(_scopeExpr(scope));
-    final cardTypesExpr = _cardTypesExpr(cardTypes);
-    if (cardTypesExpr != null) query.where(cardTypesExpr);
-    final rows = await query.get();
-    return rows.map((row) => row.readTable(db.reviewCards)).toList();
+    final query = db.select(db.reviewCards)
+        ..where((t) => t.lastReviewedAt.isNull())
+        ..where((t) => t.dueDate.isSmallerOrEqualValue(today))
+        ..where((t) => t.character.isIn(scope.characters));
+    if (cardTypes != null) {
+      query.where(
+        (t) => cardTypes
+            .map((ct) => t.cardType.equalsValue(ct))
+            .reduce((a, b) => a | b),
+      );
+    }
+    // Note: RTK ordering removed here — callers that need it (e.g.
+    // _loadQueue) re-sort in memory via rtkIndex.indexOf anyway.
+    return query.get();
   }
 
   /// Loads the cards for characters freshly introduced by
@@ -293,14 +292,8 @@ class ReviewRepository {
     final query =
         db.selectOnly(db.reviewCards)
           ..addColumns([count])
-          ..join([
-            innerJoin(
-              db.kanjiStatic,
-              db.kanjiStatic.character.equalsExp(db.reviewCards.character),
-            ),
-          ])
           ..where(_dueExpr(today))
-          ..where(_scopeExpr(scope));
+          ..where(db.reviewCards.character.isIn(scope.characters));
     final cardTypesExpr = _cardTypesExpr(cardTypes);
     if (cardTypesExpr != null) query.where(cardTypesExpr);
 
@@ -349,13 +342,7 @@ class ReviewRepository {
     final query =
         db.selectOnly(db.reviewCards)
           ..addColumns([distinctCount])
-          ..join([
-            innerJoin(
-              db.kanjiStatic,
-              db.kanjiStatic.character.equalsExp(db.reviewCards.character),
-            ),
-          ])
-          ..where(_scopeExpr(scope));
+          ..where(db.reviewCards.character.isIn(scope.characters));
 
     final row = await query.getSingle();
     return row.read(distinctCount) ?? 0;
@@ -574,10 +561,12 @@ class ReviewRepository {
   /// appends a review_log entry. Works for both existing and (defensively)
   /// not-yet-introduced cards. [compositaWord] identifies the specific
   /// composita word for C/D card types (empty for core A/B cards).
+  /// [easy] applies the "Easy" interval bonus (see [computeNextReview]).
   Future<void> gradeCard({
     required String character,
     required CardType cardType,
     required int quality,
+    bool easy = false,
     String compositaWord = '',
     DateTime? now,
   }) async {
@@ -598,7 +587,7 @@ class ReviewRepository {
             intervalDays: existing.intervalDays,
             repetitions: existing.repetitions,
           );
-    final next = computeNextReview(currentState, quality);
+    final next = computeNextReview(currentState, quality, easy: easy);
     final dueDate = today.add(Duration(days: next.intervalDays));
     final wasEstablished = (existing?.repetitions ?? 0) > 0;
     final lapses = (quality < 3 && wasEstablished)
@@ -736,11 +725,16 @@ class ReviewRepository {
   Future<int> countReviewedToday() async {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
-    final rows = await (db.select(db.reviewCards)..where(
-          (t) => t.lastReviewedAt.isBiggerOrEqualValue(startOfDay),
-        ))
-        .get();
-    return rows.length;
+    final count = countAll();
+    // Only count cards that were successfully reviewed (repetitions > 0).
+    // Failed cards (repetitions reset to 0 by SM-2) shouldn't consume
+    // the daily budget — the user hasn't "completed" them yet.
+    final query = db.selectOnly(db.reviewCards)
+      ..addColumns([count])
+      ..where(db.reviewCards.lastReviewedAt.isBiggerOrEqualValue(startOfDay))
+      ..where(db.reviewCards.repetitions.isBiggerThanValue(0));
+    final row = await query.getSingle();
+    return row.read(count) ?? 0;
   }
 
   /// [characters] is the kanji universe to report against -- typically the
@@ -1003,7 +997,7 @@ class ReviewRepository {
   }
 
   /// The words explicitly selected for [character] in the custom set --
-  /// empty until the user picks any (see custom_edit_screen.dart), which
+  /// empty until the user picks any (via the composita picker), which
   /// also means no composita/sentence (C+D) testing happens for that
   /// character yet: unlike JLPT mode's ceiling, there's no "unrestricted"
   /// fallback here -- custom mode's whole point is a hand-picked list.
@@ -1110,6 +1104,33 @@ class ReviewRepository {
       }
     }
     return result;
+  }
+
+  /// Returns a mastery score per character: the minimum intervalDays across
+  /// the two core card types (kanjiRecognition + drawFromMeaning). Higher
+  /// means better learned. Characters with no reviews get 0.
+  Future<Map<String, int>> masteryScores() async {
+    final rows = await db.select(db.reviewCards).get();
+    // Track min interval per character across core card types.
+    final reading = <String, int>{};  // kanjiRecognition
+    final writing = <String, int>{};  // drawFromMeaning
+    for (final row in rows) {
+      switch (row.cardType) {
+        case CardType.kanjiRecognition:
+          final prev = reading[row.character] ?? 0;
+          if (row.intervalDays > prev) reading[row.character] = row.intervalDays;
+        case CardType.drawFromMeaning:
+          final prev = writing[row.character] ?? 0;
+          if (row.intervalDays > prev) writing[row.character] = row.intervalDays;
+        default:
+          break;
+      }
+    }
+    final all = {...reading.keys, ...writing.keys};
+    return {
+      for (final char in all)
+        char: min(reading[char] ?? 0, writing[char] ?? 0),
+    };
   }
 
   Future<void> upsertStoryKeyword(String character, String keyword) async {
@@ -1221,6 +1242,9 @@ class ReviewRepository {
       jlptLevel: null,
       inferredJlptLevel: null,
       frequencyRank: 1,
+      // High zipfFreq so user-added composita sort before auto-selected ones
+      // in selectCompositaForIntroduction's frequency-based ordering.
+      zipfFreq: 9.0,
     );
   }
 
@@ -1249,20 +1273,26 @@ class ReviewRepository {
     final startOfDayAfterTomorrow = startOfToday.add(const Duration(days: 2));
     final startOfBeyondWeek = startOfToday.add(const Duration(days: 8));
 
-    // Fetch all review cards in scope.
+    // Fetch only dueDate and character columns (avoids deserializing full
+    // ReviewCard objects -- the old code loaded every column for every card
+    // in scope just to bucket by date).
+    final dueDateCol = db.reviewCards.dueDate;
+    final charCol = db.reviewCards.character;
     final query =
-        db.select(db.reviewCards).join([
-          innerJoin(
-            db.kanjiStatic,
-            db.kanjiStatic.character.equalsExp(db.reviewCards.character),
-          ),
-        ])
-        ..where(_scopeExpr(scope));
+        db.selectOnly(db.reviewCards)
+          ..addColumns([dueDateCol, charCol])
+          ..join([
+            innerJoin(
+              db.kanjiStatic,
+              db.kanjiStatic.character.equalsExp(db.reviewCards.character),
+            ),
+          ])
+          ..where(_scopeExpr(scope));
     final cardTypesExpr = _cardTypesExpr(cardTypes);
     if (cardTypesExpr != null) query.where(cardTypesExpr);
 
     final rows = await query.get();
-    final cards = rows.map((row) => row.readTable(db.reviewCards)).toList();
+    final seenCharacters = <String>{};
 
     var overdue = 0;
     var today = 0;
@@ -1270,14 +1300,16 @@ class ReviewRepository {
     var thisWeek = 0;
     var later = 0;
 
-    for (final card in cards) {
-      if (card.dueDate.isBefore(startOfToday)) {
+    for (final row in rows) {
+      final dueDate = row.read(dueDateCol)!;
+      seenCharacters.add(row.read(charCol)!);
+      if (dueDate.isBefore(startOfToday)) {
         overdue++;
-      } else if (card.dueDate.isBefore(startOfTomorrow)) {
+      } else if (dueDate.isBefore(startOfTomorrow)) {
         today++;
-      } else if (card.dueDate.isBefore(startOfDayAfterTomorrow)) {
+      } else if (dueDate.isBefore(startOfDayAfterTomorrow)) {
         tomorrow++;
-      } else if (card.dueDate.isBefore(startOfBeyondWeek)) {
+      } else if (dueDate.isBefore(startOfBeyondWeek)) {
         thisWeek++;
       } else {
         later++;
@@ -1286,7 +1318,6 @@ class ReviewRepository {
 
     // "Not started": characters in scope with no review card at all for
     // the requested card types.
-    final seenCharacters = cards.map((c) => c.character).toSet();
     final totalInScope = await _countScopeCharacters(scope);
     final notStarted = totalInScope - seenCharacters.length;
 
@@ -1365,21 +1396,16 @@ class ReviewRepository {
     final query =
         db.selectOnly(db.reviewCards)
           ..addColumns([count])
-          ..join([
-            innerJoin(
-              db.kanjiStatic,
-              db.kanjiStatic.character.equalsExp(db.reviewCards.character),
-            ),
-          ])
           ..where(db.reviewCards.lastReviewedAt.isNull())
           ..where(db.reviewCards.dueDate.isSmallerOrEqualValue(DateTime.now()))
-          ..where(_scopeExpr(scope));
+          ..where(db.reviewCards.character.isIn(scope.characters));
     final row = await query.getSingle();
     return row.read(count) ?? 0;
   }
 
-  /// Deletes all review progress for [chars]: ReviewCards, CompositaProgress,
-  /// CustomComposita. Leaves kanji_notes (personal stories/keywords) intact.
+  /// Deletes review progress for [chars]: ReviewCards, ReviewLog,
+  /// CompositaProgress, CustomComposita. Leaves KanjiNotes (personal
+  /// stories/keywords) intact so they survive pool clears.
   Future<void> deleteProgressForCharacters(Set<String> chars) async {
     if (chars.isEmpty) return;
     await (db.delete(db.reviewCards)
@@ -1394,130 +1420,6 @@ class ReviewRepository {
     await (db.delete(db.customComposita)
           ..where((t) => t.character.isIn(chars)))
         .go();
-  }
-
-  // ── User sentences (user-authored example sentences for composita) ────
-
-  /// Adds a user-authored example sentence for [word].
-  Future<int> addUserSentence(
-    String word,
-    String sentence,
-    String? translation,
-  ) async {
-    return db
-        .into(db.userSentences)
-        .insert(
-          UserSentencesCompanion.insert(
-            word: word,
-            sentence: sentence,
-            translation: Value(translation),
-          ),
-        );
-  }
-
-  /// Deletes a single user sentence by its autoIncrement id.
-  Future<void> removeUserSentence(int id) async {
-    await (db.delete(db.userSentences)..where((t) => t.id.equals(id)))
-        .go();
-  }
-
-  /// All user sentences for [word], converted to [ExampleSentence] objects
-  /// with source 'user'. The [reading] is attached to the target token so
-  /// FuriganaSentence can render furigana on the composita word.
-  Future<List<({int id, ExampleSentence sentence})>> userSentencesFor(
-    String word,
-    String reading,
-  ) async {
-    final rows = await (db.select(db.userSentences)
-          ..where((t) => t.word.equals(word)))
-        .get();
-    return rows
-        .map((r) => (
-              id: r.id,
-              sentence: _tokenizeUserSentence(
-                r.sentence,
-                word,
-                reading,
-                translation: r.translation,
-              ),
-            ))
-        .toList();
-  }
-
-  /// Batch-loads all user sentences grouped by word -- for the review
-  /// session's up-front load so _sentenceForWord can merge them with
-  /// bundled sentences without per-card DB round-trips.
-  Future<Map<String, List<ExampleSentence>>> allUserSentencesByWord() async {
-    final rows = await db.select(db.userSentences).get();
-    final result = <String, List<ExampleSentence>>{};
-    for (final row in rows) {
-      // Reading is unknown here — will be filled in by _sentenceForWord
-      // which knows the composita's reading. Store with empty reading for
-      // now; the caller replaces the target token's reading.
-      result
-          .putIfAbsent(row.word, () => [])
-          .add(_tokenizeUserSentence(
-            row.sentence,
-            row.word,
-            '', // placeholder — caller fills in the real reading
-            translation: row.translation,
-          ));
-    }
-    return result;
-  }
-
-  /// Simple string-based tokenization: find [targetWord] in [sentence],
-  /// split into before/target/after tokens. No morphological analyzer
-  /// needed — sufficient for user-added content.
-  static ExampleSentence _tokenizeUserSentence(
-    String sentence,
-    String targetWord,
-    String reading, {
-    String? translation,
-  }) {
-    final idx = sentence.indexOf(targetWord);
-    final tokens = <SentenceToken>[];
-    if (idx < 0) {
-      // Word not found (shouldn't happen with validation, but defensive).
-      tokens.add(SentenceToken(
-        surface: sentence,
-        reading: '',
-        isTarget: false,
-      ));
-      tokens.add(SentenceToken(
-        surface: targetWord,
-        reading: reading,
-        isTarget: true,
-      ));
-    } else {
-      if (idx > 0) {
-        tokens.add(SentenceToken(
-          surface: sentence.substring(0, idx),
-          reading: '',
-          isTarget: false,
-        ));
-      }
-      tokens.add(SentenceToken(
-        surface: targetWord,
-        reading: reading,
-        isTarget: true,
-      ));
-      final afterIdx = idx + targetWord.length;
-      if (afterIdx < sentence.length) {
-        tokens.add(SentenceToken(
-          surface: sentence.substring(afterIdx),
-          reading: '',
-          isTarget: false,
-        ));
-      }
-    }
-    return ExampleSentence(
-      sentence: sentence,
-      tokens: tokens,
-      jlptLevel: 5,
-      source: 'user',
-      translation: translation,
-    );
   }
 
   /// Creates A+B+C+D cards immediately for [chars] with dueDate=now.

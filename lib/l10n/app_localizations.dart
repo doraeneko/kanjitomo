@@ -307,7 +307,7 @@ abstract class AppLocalizations {
   /// Feature card description
   ///
   /// In en, this message translates to:
-  /// **'Draw any kanji for instant offline recognition — neural network, 6,500+ characters.'**
+  /// **'Draw any kanji for instant offline recognition — neural network, 6,500+ characters. Or snap a photo to find kanji in printed text.'**
   String get helpFeatureRecognitionDesc;
 
   /// Feature card title
@@ -880,6 +880,12 @@ abstract class AppLocalizations {
   /// **'Good'**
   String get reviewGood;
 
+  /// Grade button for effortless recall; schedules the card further out than Good
+  ///
+  /// In en, this message translates to:
+  /// **'Easy'**
+  String get reviewEasy;
+
   /// Toggle to show sentence translation
   ///
   /// In en, this message translates to:
@@ -1096,6 +1102,36 @@ abstract class AppLocalizations {
   /// **'Writing tested'**
   String get statisticsWritingTested;
 
+  /// Section title for JLPT level breakdown
+  ///
+  /// In en, this message translates to:
+  /// **'JLPT overview'**
+  String get statisticsJlptOverview;
+
+  /// Column header: kanji not in study pool
+  ///
+  /// In en, this message translates to:
+  /// **'Not selected'**
+  String get statisticsJlptNotSelected;
+
+  /// Column header: selected but not started
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get statisticsJlptNew;
+
+  /// Column header: started but not fully learnt
+  ///
+  /// In en, this message translates to:
+  /// **'Learning'**
+  String get statisticsJlptLearning;
+
+  /// Column header: fully learnt (green)
+  ///
+  /// In en, this message translates to:
+  /// **'Learnt'**
+  String get statisticsJlptLearnt;
+
   /// Button to open kanji browser
   ///
   /// In en, this message translates to:
@@ -1107,6 +1143,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} / {total} learnt'**
   String statisticsLearnt(int count, int total);
+
+  /// Count of kanji learnt based on recognition+drawing only, ignoring composita
+  ///
+  /// In en, this message translates to:
+  /// **'{count} / {total} without composita'**
+  String statisticsLearntKanjiOnly(int count, int total);
 
   /// Button to reset all stats
   ///
@@ -1324,6 +1366,72 @@ abstract class AppLocalizations {
   /// **'Tomorrow: {tomorrow} · This week: {week} · Later: {later}'**
   String dueOverviewCompact(int tomorrow, int week, int later);
 
+  /// Title of the sheet that picks which card kinds a review session includes
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want to review?'**
+  String get reviewTypesTitle;
+
+  /// Card kind: meaning shown, user draws the kanji
+  ///
+  /// In en, this message translates to:
+  /// **'Kanji recall'**
+  String get reviewTypeKanjiRecall;
+
+  /// Explanation of the kanji recall card kind
+  ///
+  /// In en, this message translates to:
+  /// **'See the meaning, draw the kanji'**
+  String get reviewTypeKanjiRecallHelp;
+
+  /// Card kind: kanji shown, user recalls reading and meaning
+  ///
+  /// In en, this message translates to:
+  /// **'Kanji recognition'**
+  String get reviewTypeKanjiRecognition;
+
+  /// Explanation of the kanji recognition card kind
+  ///
+  /// In en, this message translates to:
+  /// **'See the kanji, recall reading and meaning'**
+  String get reviewTypeKanjiRecognitionHelp;
+
+  /// Card kind: sentence with a missing kanji, user draws it
+  ///
+  /// In en, this message translates to:
+  /// **'Composita recall'**
+  String get reviewTypeCompositaRecall;
+
+  /// Explanation of the composita recall card kind
+  ///
+  /// In en, this message translates to:
+  /// **'Draw the missing kanji in a sentence'**
+  String get reviewTypeCompositaRecallHelp;
+
+  /// Card kind: word highlighted in a sentence, user recalls its reading
+  ///
+  /// In en, this message translates to:
+  /// **'Composita recognition'**
+  String get reviewTypeCompositaRecognition;
+
+  /// Explanation of the composita recognition card kind
+  ///
+  /// In en, this message translates to:
+  /// **'Read the highlighted word in a sentence'**
+  String get reviewTypeCompositaRecognitionHelp;
+
+  /// Number of due cards of one card kind
+  ///
+  /// In en, this message translates to:
+  /// **'{count} due'**
+  String reviewTypeDue(int count);
+
+  /// Button that starts the review with the selected card kinds
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get reviewTypesStart;
+
   /// Button label for quiz on learning screen
   ///
   /// In en, this message translates to:
@@ -1489,7 +1597,7 @@ abstract class AppLocalizations {
   /// First-time dialog message for lookup screen
   ///
   /// In en, this message translates to:
-  /// **'Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!'**
+  /// **'Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nOr tap the Camera button to photograph printed Japanese text — tap any recognized character to look it up instantly.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!'**
   String get ftdLookupMessage;
 
   /// First-time dialog title for word lookup screen
@@ -1579,7 +1687,7 @@ abstract class AppLocalizations {
   /// Button to skip welcome tour
   ///
   /// In en, this message translates to:
-  /// **'Skip'**
+  /// **'Not now'**
   String get welcomeSkip;
 
   /// Button on final tour step
@@ -1954,6 +2062,30 @@ abstract class AppLocalizations {
   /// **'New kanji ({current}/{total})'**
   String addRemoveSlideshowTitle(int current, int total);
 
+  /// Dialog title after bulk-adding kanji
+  ///
+  /// In en, this message translates to:
+  /// **'Added {count} kanji'**
+  String addRemoveGoThroughTitle(int count);
+
+  /// Dialog body asking whether to view new kanji slideshow
+  ///
+  /// In en, this message translates to:
+  /// **'Would you like to go through them now?'**
+  String get addRemoveGoThroughMessage;
+
+  /// Confirm button to start new kanji slideshow
+  ///
+  /// In en, this message translates to:
+  /// **'Go through'**
+  String get addRemoveGoThroughYes;
+
+  /// Decline button to skip new kanji slideshow
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get addRemoveGoThroughNo;
+
   /// Label for selected composita in slideshow
   ///
   /// In en, this message translates to:
@@ -2145,6 +2277,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to switch model: {error}'**
   String modelSwitchFailed(String error);
+
+  /// Button label for camera OCR
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get lookupCamera;
+
+  /// AppBar title for camera OCR screen
+  ///
+  /// In en, this message translates to:
+  /// **'Find kanji in photo'**
+  String get cameraOcrTitle;
+
+  /// Shown while ML Kit is processing
+  ///
+  /// In en, this message translates to:
+  /// **'Recognizing text...'**
+  String get cameraOcrProcessing;
+
+  /// Shown when OCR finds no CJK/kana
+  ///
+  /// In en, this message translates to:
+  /// **'No Japanese text found in this image.'**
+  String get cameraOcrNoText;
+
+  /// Instruction above recognized characters
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a character to look it up'**
+  String get cameraOcrInstruction;
+
+  /// Bottom sheet option for camera
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get cameraOcrFromCamera;
+
+  /// Bottom sheet option for gallery
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get cameraOcrFromGallery;
+
+  /// AppBar title for camera OCR in word mode
+  ///
+  /// In en, this message translates to:
+  /// **'Find word in photo'**
+  String get cameraOcrTitleWord;
+
+  /// Instruction for word mode
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a word to look it up'**
+  String get cameraOcrInstructionWord;
+
+  /// Confirm button for multi-select
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get cameraOcrDone;
+
+  /// FAB label on browse tab (Android only)
+  ///
+  /// In en, this message translates to:
+  /// **'Sync with AnkiDroid'**
+  String get ankiImportButton;
+
+  /// AppBar title for AnkiDroid sync wizard
+  ///
+  /// In en, this message translates to:
+  /// **'Sync with AnkiDroid'**
+  String get ankiImportTitle;
+
+  /// Step label for deck selection
+  ///
+  /// In en, this message translates to:
+  /// **'Select a deck'**
+  String get ankiImportSelectDeck;
+
+  /// Step label for field selection
+  ///
+  /// In en, this message translates to:
+  /// **'Which field contains kanji?'**
+  String get ankiImportSelectField;
+
+  /// Label for JLPT filter chips
+  ///
+  /// In en, this message translates to:
+  /// **'JLPT level filter'**
+  String get ankiImportJlptFilter;
+
+  /// Checkbox label for composita extraction
+  ///
+  /// In en, this message translates to:
+  /// **'Extract composita from field content'**
+  String get ankiImportExtractComposita;
+
+  /// Help text for composita extraction
+  ///
+  /// In en, this message translates to:
+  /// **'Looks up the field text in the dictionary. Matching words are added as extra composita.'**
+  String get ankiImportExtractCompositaHelp;
+
+  /// Step label for preview
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get ankiImportPreview;
+
+  /// Shown when no kanji were extracted
+  ///
+  /// In en, this message translates to:
+  /// **'No kanji found in the selected field.'**
+  String get ankiImportNoKanji;
+
+  /// Error when AnkiDroid is not found
+  ///
+  /// In en, this message translates to:
+  /// **'AnkiDroid is not installed on this device.'**
+  String get ankiImportNotInstalled;
+
+  /// Error when permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Permission to read AnkiDroid data was denied.'**
+  String get ankiImportPermissionDenied;
+
+  /// Label for kanji already in pool
+  ///
+  /// In en, this message translates to:
+  /// **'already added'**
+  String get ankiImportAlreadyAdded;
+
+  /// Confirm button with count
+  ///
+  /// In en, this message translates to:
+  /// **'Import {count} kanji'**
+  String ankiImportConfirm(int count);
+
+  /// Step label for import options
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get ankiImportOptions;
+
+  /// Label for no JLPT filter
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get ankiImportFilterOff;
+
+  /// Shown while querying AnkiDroid notes
+  ///
+  /// In en, this message translates to:
+  /// **'Reading notes from AnkiDroid...'**
+  String get ankiImportLoadingNotes;
+
+  /// Button to retry after permission denial
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get ankiImportRetry;
+
+  /// Error when no note types are found
+  ///
+  /// In en, this message translates to:
+  /// **'No notes found in AnkiDroid.'**
+  String get ankiImportNoNotes;
+
+  /// Step label for note type selection
+  ///
+  /// In en, this message translates to:
+  /// **'Select a note type'**
+  String get ankiImportSelectModel;
+
+  /// Hint shown when learning pool is empty and buttons are disabled
+  ///
+  /// In en, this message translates to:
+  /// **'Add kanji first via Add/Remove'**
+  String get learningEmptyPoolHint;
+
+  /// Generic error message for unknown AnkiDroid import errors
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get ankiImportUnknownError;
+
+  /// Snackbar when kanji is added but has no composita
+  ///
+  /// In en, this message translates to:
+  /// **'Added {char} — no composita available'**
+  String lookupAddedNoComposita(String char);
+
+  /// Helper text below settings fields explaining that 0 means unlimited
+  ///
+  /// In en, this message translates to:
+  /// **'0 = unlimited'**
+  String get learningSettingsUnlimitedHint;
 }
 
 class _AppLocalizationsDelegate

@@ -26,7 +26,7 @@ void main() {
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
-      await tester.runAsync(() => deps.load());
+      await tester.runAsync(() => deps.load(loadAll: true));
 
       // Scope limited to just 一 -- a broader scope would make _loadQueue()'s
       // own introduceNewCards calls seed many *other* due cards too, which

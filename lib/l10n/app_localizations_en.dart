@@ -121,7 +121,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get helpFeatureRecognitionDesc =>
-      'Draw any kanji for instant offline recognition — neural network, 6,500+ characters.';
+      'Draw any kanji for instant offline recognition — neural network, 6,500+ characters. Or snap a photo to find kanji in printed text.';
 
   @override
   String get helpFeatureSrsTitle => 'Spaced Repetition (SRS)';
@@ -471,6 +471,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewGood => 'Good';
 
   @override
+  String get reviewEasy => 'Easy';
+
+  @override
   String get reviewShowTranslation => 'Show translation';
 
   @override
@@ -604,11 +607,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statisticsWritingTested => 'Writing tested';
 
   @override
+  String get statisticsJlptOverview => 'JLPT overview';
+
+  @override
+  String get statisticsJlptNotSelected => 'Not selected';
+
+  @override
+  String get statisticsJlptNew => 'New';
+
+  @override
+  String get statisticsJlptLearning => 'Learning';
+
+  @override
+  String get statisticsJlptLearnt => 'Learnt';
+
+  @override
   String get statisticsInspectAllKanji => 'Inspect all kanji';
 
   @override
   String statisticsLearnt(int count, int total) {
     return '$count / $total learnt';
+  }
+
+  @override
+  String statisticsLearntKanjiOnly(int count, int total) {
+    return '$count / $total without composita';
   }
 
   @override
@@ -736,6 +759,44 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get reviewTypesTitle => 'What do you want to review?';
+
+  @override
+  String get reviewTypeKanjiRecall => 'Kanji recall';
+
+  @override
+  String get reviewTypeKanjiRecallHelp => 'See the meaning, draw the kanji';
+
+  @override
+  String get reviewTypeKanjiRecognition => 'Kanji recognition';
+
+  @override
+  String get reviewTypeKanjiRecognitionHelp =>
+      'See the kanji, recall reading and meaning';
+
+  @override
+  String get reviewTypeCompositaRecall => 'Composita recall';
+
+  @override
+  String get reviewTypeCompositaRecallHelp =>
+      'Draw the missing kanji in a sentence';
+
+  @override
+  String get reviewTypeCompositaRecognition => 'Composita recognition';
+
+  @override
+  String get reviewTypeCompositaRecognitionHelp =>
+      'Read the highlighted word in a sentence';
+
+  @override
+  String reviewTypeDue(int count) {
+    return '$count due';
+  }
+
+  @override
+  String get reviewTypesStart => 'Start';
+
+  @override
   String get learningQuiz => 'JLPT-like Quiz';
 
   @override
@@ -830,7 +891,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ftdLookupMessage =>
-      'Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!';
+      'Draw any kanji on the canvas — the neural network recognizes it instantly, even with messy handwriting. Supports 6,500+ characters, entirely offline.\n\nOr tap the Camera button to photograph printed Japanese text — tap any recognized character to look it up instantly.\n\nTap a result to see readings, meaning, stroke order, example sentences, and compound words.\n\nTry it now — minimize this card and draw something!';
 
   @override
   String get ftdWordLookupTitle => 'Word lookup';
@@ -880,7 +941,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeTakeTour => 'Take a tour';
 
   @override
-  String get welcomeSkip => 'Skip';
+  String get welcomeSkip => 'Not now';
 
   @override
   String get welcomeDone => 'Start learning!';
@@ -1107,6 +1168,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String addRemoveGoThroughTitle(int count) {
+    return 'Added $count kanji';
+  }
+
+  @override
+  String get addRemoveGoThroughMessage =>
+      'Would you like to go through them now?';
+
+  @override
+  String get addRemoveGoThroughYes => 'Go through';
+
+  @override
+  String get addRemoveGoThroughNo => 'Later';
+
+  @override
   String get addRemoveSlideshowComposita => 'Selected composita:';
 
   @override
@@ -1211,4 +1287,112 @@ class AppLocalizationsEn extends AppLocalizations {
   String modelSwitchFailed(String error) {
     return 'Failed to switch model: $error';
   }
+
+  @override
+  String get lookupCamera => 'Camera';
+
+  @override
+  String get cameraOcrTitle => 'Find kanji in photo';
+
+  @override
+  String get cameraOcrProcessing => 'Recognizing text...';
+
+  @override
+  String get cameraOcrNoText => 'No Japanese text found in this image.';
+
+  @override
+  String get cameraOcrInstruction => 'Tap a character to look it up';
+
+  @override
+  String get cameraOcrFromCamera => 'Take photo';
+
+  @override
+  String get cameraOcrFromGallery => 'Choose from gallery';
+
+  @override
+  String get cameraOcrTitleWord => 'Find word in photo';
+
+  @override
+  String get cameraOcrInstructionWord => 'Tap a word to look it up';
+
+  @override
+  String get cameraOcrDone => 'Done';
+
+  @override
+  String get ankiImportButton => 'Sync with AnkiDroid';
+
+  @override
+  String get ankiImportTitle => 'Sync with AnkiDroid';
+
+  @override
+  String get ankiImportSelectDeck => 'Select a deck';
+
+  @override
+  String get ankiImportSelectField => 'Which field contains kanji?';
+
+  @override
+  String get ankiImportJlptFilter => 'JLPT level filter';
+
+  @override
+  String get ankiImportExtractComposita =>
+      'Extract composita from field content';
+
+  @override
+  String get ankiImportExtractCompositaHelp =>
+      'Looks up the field text in the dictionary. Matching words are added as extra composita.';
+
+  @override
+  String get ankiImportPreview => 'Preview';
+
+  @override
+  String get ankiImportNoKanji => 'No kanji found in the selected field.';
+
+  @override
+  String get ankiImportNotInstalled =>
+      'AnkiDroid is not installed on this device.';
+
+  @override
+  String get ankiImportPermissionDenied =>
+      'Permission to read AnkiDroid data was denied.';
+
+  @override
+  String get ankiImportAlreadyAdded => 'already added';
+
+  @override
+  String ankiImportConfirm(int count) {
+    return 'Import $count kanji';
+  }
+
+  @override
+  String get ankiImportOptions => 'Options';
+
+  @override
+  String get ankiImportFilterOff => 'Off';
+
+  @override
+  String get ankiImportLoadingNotes => 'Reading notes from AnkiDroid...';
+
+  @override
+  String get ankiImportRetry => 'Retry';
+
+  @override
+  String get ankiImportNoNotes => 'No notes found in AnkiDroid.';
+
+  @override
+  String get ankiImportSelectModel => 'Select a note type';
+
+  @override
+  String get learningEmptyPoolHint => 'Add kanji first via Add/Remove';
+
+  @override
+  String get ankiImportUnknownError =>
+      'Something went wrong. Please try again.';
+
+  @override
+  String lookupAddedNoComposita(String char) {
+    return 'Added $char — no composita available';
+  }
+
+  @override
+  String get learningSettingsUnlimitedHint => '0 = unlimited';
 }

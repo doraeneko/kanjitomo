@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../app_dependencies.dart';
 import '../../core/db/tables.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/composita_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../kanji_browser/kanji_detail_screen.dart';
@@ -35,6 +36,9 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   Map<String, int>? _dueDist;
   Map<String, KanjiProgress>? _progress;
   Map<String, Set<String>>? _wordsByCharacter;
+  // Per-character composita dot: 0=grey, 1=orange, 2=green.
+  Map<String, int> _compositaDotScore = {};
+  List<_JlptLevelStats>? _jlptStats;
 
   @override
   void initState() {
@@ -48,6 +52,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Future<void> _load() async {
+    await widget.deps.ensureComposita();
     final scope = widget.deps.studyScope.scope.value;
     final characters = _scopeCharacters(scope);
 
@@ -86,6 +91,72 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
     final progress = await _reviewRepo.overallProgress();
 
+    // Pre-compute per-character composita dot status for sorting.
+    final compositaDots = <String, int>{};
+    if (wordsByCharacter.isNotEmpty) {
+      final charSet = wordsByCharacter.keys.toSet();
+      final testedReading = await _reviewRepo.testedCompositaWordsFor(
+        charSet, CompositaDirection.reading);
+      final testedWriting = await _reviewRepo.testedCompositaWordsFor(
+        charSet, CompositaDirection.writing);
+      for (final entry in wordsByCharacter.entries) {
+        final char = entry.key;
+        final words = entry.value;
+        final rDone = words.where(
+          (testedReading[char] ?? const {}).contains).length;
+        final wDone = words.where(
+          (testedWriting[char] ?? const {}).contains).length;
+        if (rDone >= words.length && wDone >= words.length) {
+          compositaDots[char] = 2; // green
+        } else if (rDone > 0 || wDone > 0) {
+          compositaDots[char] = 1; // orange
+        } else {
+          compositaDots[char] = 0; // grey
+        }
+      }
+    }
+
+    // Compute per-JLPT-level breakdown.
+    final jlptRepo = widget.deps.jlptLevels;
+    final jlptStats = <int, _JlptLevelStats>{};
+    for (final level in [5, 4, 3, 2, 1]) {
+      jlptStats[level] = _JlptLevelStats(level: level);
+    }
+    // Level 0 = no JLPT tag.
+    jlptStats[0] = _JlptLevelStats(level: 0);
+    for (final char in characters) {
+      final level = jlptRepo.levelOf(char) ?? 0;
+      final ls = jlptStats[level]!;
+      final dot = _mainDot(progress[char]);
+      // null = no testable composita → treat as done.
+      final cDot = compositaDots[char];
+      final isLearnt = dot == 2 && (cDot == null || cDot == 2);
+      final isLearning = !isLearnt && (dot >= 1 || (cDot != null && cDot >= 1));
+      if (isLearnt) {
+        ls.learnt++;
+      } else if (isLearning) {
+        ls.learning++;
+      } else {
+        ls.newCount++;
+      }
+    }
+    // Count not-selected kanji per level (all kanji in that level minus
+    // those in the study pool).
+    for (final level in [5, 4, 3, 2, 1]) {
+      final allInLevel = jlptRepo.charsInLevels({level});
+      final selectedInLevel =
+          allInLevel.where((c) => characters.contains(c)).length;
+      jlptStats[level]!.notSelected = allInLevel.length - selectedInLevel;
+      jlptStats[level]!.total = allInLevel.length;
+    }
+    // Level 0 has no fixed "all kanji" count — total is just selected.
+    final l0 = jlptStats[0]!;
+    l0.total = l0.newCount + l0.learning + l0.learnt;
+    final jlptStatsList = [
+      for (final level in [5, 4, 3, 2, 1]) jlptStats[level]!,
+      if (l0.hasAny) l0,
+    ];
+
     if (!mounted) return;
     setState(() {
       _stats = stats;
@@ -93,6 +164,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       _dueDist = dueDist;
       _progress = progress;
       _wordsByCharacter = wordsByCharacter;
+      _compositaDotScore = compositaDots;
+      _jlptStats = jlptStatsList;
     });
   }
 
@@ -146,6 +219,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     final l = AppLocalizations.of(context)!;
     final stats = _stats;
     final composita = _compositaCoverage;
+    final colors = context.appColors;
     return Scaffold(
       appBar: AppBar(
         title: Text(l.statisticsTitle),
@@ -154,17 +228,23 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       body: stats == null || composita == null
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
-              child: SingleChildScrollView(
+              child: Scrollbar(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_dueDist != null) _buildDueOverview(l, _dueDist!),
-                    for (final cardType in CardType.values)
-                      _buildRow(l, _label(l, cardType), stats[cardType]!),
-                    _buildCompositaRow(l, composita),
                     if (_progress != null)
-                      _buildKanjiGrid(l),
+                      _buildSummaryPie(l, colors),
+                    if (_jlptStats != null)
+                      _buildJlptOverview(l, colors),
+                    if (_dueDist != null) _buildDueOverview(l, _dueDist!, colors),
+                    for (final cardType in CardType.values)
+                      _buildRow(l, _label(l, cardType), stats[cardType]!, colors),
+                    _buildCompositaRow(l, composita, colors),
+                    if (_progress != null)
+                      _buildKanjiGrid(l, colors),
                     const SizedBox(height: 24),
                     Center(
                       child: OutlinedButton(
@@ -175,18 +255,163 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ],
                 ),
               ),
+              ),
             ),
     );
   }
 
-  Widget _buildDueOverview(AppLocalizations l, Map<String, int> dist) {
+  // Main dot color: 0=grey, 1=orange, 2=green.
+  static int _mainDot(KanjiProgress? p) {
+    if (p != null &&
+        p.reading == CardProgress.known &&
+        p.writing == CardProgress.known) return 2;
+    if (p != null &&
+        (p.reading != CardProgress.none ||
+         p.writing != CardProgress.none)) return 1;
+    return 0;
+  }
+
+  Widget _buildSummaryPie(AppLocalizations l, AppColors colors) {
+    final scope = widget.deps.studyScope.scope.value;
+    final chars = _scopeCharacters(scope);
+    final learnt = chars.where((c) =>
+      _mainDot(_progress?[c]) == 2 &&
+      (!_compositaDotScore.containsKey(c) || _compositaDotScore[c] == 2),
+    ).length;
+    final kanjiOnly = chars.where((c) =>
+      _mainDot(_progress?[c]) == 2,
+    ).length;
+    final remaining = chars.length - learnt;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _PieChart(
+            values: [learnt.toDouble(), remaining.toDouble()],
+            colors: [colors.statusGreen, colors.statusGreyLight],
+            size: 100,
+          ),
+          const SizedBox(width: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l.statisticsLearnt(learnt, chars.length),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              if (kanjiOnly > learnt)
+                Text(
+                  l.statisticsLearntKanjiOnly(kanjiOnly, chars.length),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colors.textTertiary,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJlptOverview(AppLocalizations l, AppColors colors) {
+    final stats = _jlptStats!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l.statisticsJlptOverview,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          Table(
+            columnWidths: const {
+              0: FixedColumnWidth(36),
+              1: FlexColumnWidth(),
+              2: FlexColumnWidth(),
+              3: FlexColumnWidth(),
+              4: FlexColumnWidth(),
+              5: FlexColumnWidth(),
+            },
+            children: [
+              TableRow(
+                children: [
+                  const SizedBox.shrink(),
+                  _headerCell('#', colors),
+                  _headerCell(l.statisticsJlptNotSelected, colors),
+                  _headerCell(l.statisticsJlptNew, colors),
+                  _headerCell(l.statisticsJlptLearning, colors),
+                  _headerCell(l.statisticsJlptLearnt, colors),
+                ],
+              ),
+              for (final s in stats)
+                TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        s.level == 0 ? '—' : 'N${s.level}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    _dataCell(s.total, colors.textTertiary),
+                    _dataCell(s.notSelected, colors.statusGreyLight),
+                    _dataCell(s.newCount, colors.statusGreyLight),
+                    _dataCell(s.learning, colors.statusOrange),
+                    _dataCell(s.learnt, colors.statusGreen),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerCell(String text, AppColors colors) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: colors.textTertiary,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _dataCell(int value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        '$value',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 13,
+          color: value == 0 ? color : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDueOverview(AppLocalizations l, Map<String, int> dist, AppColors colors) {
     final buckets = [
-      (l.dueOverviewOverdue, dist['overdue']!, Colors.red),
-      (l.dueOverviewToday, dist['today']!, Colors.orange),
-      (l.dueOverviewTomorrow, dist['tomorrow']!, Colors.blue),
-      (l.dueOverviewThisWeek, dist['thisWeek']!, Colors.indigo),
-      (l.dueOverviewLater, dist['later']!, Colors.grey),
-      (l.dueOverviewNotStarted, dist['notStarted']!, Colors.grey.shade400),
+      (l.dueOverviewOverdue, dist['overdue']!, colors.statusRed),
+      (l.dueOverviewToday, dist['today']!, colors.statusOrange),
+      (l.dueOverviewTomorrow, dist['tomorrow']!, colors.statusBlue),
+      (l.dueOverviewThisWeek, dist['thisWeek']!, colors.statusIndigo),
+      (l.dueOverviewLater, dist['later']!, colors.statusGrey),
+      (l.dueOverviewNotStarted, dist['notStarted']!, colors.statusGreyLight),
     ];
     final maxValue = buckets.fold<int>(0, (m, b) => b.$2 > m ? b.$2 : m);
 
@@ -235,7 +460,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildRow(AppLocalizations l, String label, CardTypeStats s) {
+  Widget _buildRow(AppLocalizations l, String label, CardTypeStats s, AppColors colors) {
     final total = s.known + s.missed + s.notStarted;
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
@@ -256,20 +481,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   s.missed.toDouble(),
                   s.notStarted.toDouble(),
                 ],
-                colors: [Colors.green, Colors.orange, Colors.grey.shade400],
+                colors: [colors.statusGreen, colors.statusOrange, colors.statusGreyLight],
               ),
               const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _legendRow(l, l.statisticsKnown, s.known, Colors.green, total),
-                    _legendRow(l, l.statisticsMissed, s.missed, Colors.orange, total),
+                    _legendRow(l, l.statisticsKnown, s.known, colors.statusGreen, total),
+                    _legendRow(l, l.statisticsMissed, s.missed, colors.statusOrange, total),
                     _legendRow(
                       l,
                       l.statisticsNotStarted,
                       s.notStarted,
-                      Colors.grey.shade400,
+                      colors.statusGreyLight,
                       total,
                     ),
                   ],
@@ -304,7 +529,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   /// -- shown as its own "how much have I tested" row, split by direction,
   /// against however many composita words are actually testable under the
   /// current scope (a JLPT ceiling, or the custom set's hand-picked words).
-  Widget _buildCompositaRow(AppLocalizations l, CompositaCoverage c) {
+  Widget _buildCompositaRow(AppLocalizations l, CompositaCoverage c, AppColors colors) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Column(
@@ -317,7 +542,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           const SizedBox(height: 4),
           Text(
             l.statisticsTestableWords(c.testable),
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+            style: TextStyle(color: colors.textTertiary, fontSize: 12),
           ),
           const SizedBox(height: 8),
           Row(
@@ -328,6 +553,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   l.statisticsReadingTested,
                   c.testedReading,
                   c.testable,
+                  colors,
                 ),
               ),
               Expanded(
@@ -336,6 +562,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   l.statisticsWritingTested,
                   c.testedWriting,
                   c.testable,
+                  colors,
                 ),
               ),
             ],
@@ -345,15 +572,23 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildKanjiGrid(AppLocalizations l) {
+  Widget _buildKanjiGrid(AppLocalizations l, AppColors colors) {
     final scope = widget.deps.studyScope.scope.value;
     final chars = _scopeCharacters(scope).toList();
-    // Sort by RTK index (same order used for introduction).
+    // Sort by visual dot colors: grey(0) < orange(1) < green(2).
+    // Characters with no composita get score 2 (done).
     chars.sort((a, b) {
-      final ai = widget.deps.rtkIndex.indexOf(a) ?? 99999;
-      final bi = widget.deps.rtkIndex.indexOf(b) ?? 99999;
-      return ai.compareTo(bi);
+      final cA = _compositaDotScore.containsKey(a) ? _compositaDotScore[a]! : 2;
+      final cB = _compositaDotScore.containsKey(b) ? _compositaDotScore[b]! : 2;
+      final sa = _mainDot(_progress?[a]) * 3 + cA;
+      final sb = _mainDot(_progress?[b]) * 3 + cB;
+      return sa.compareTo(sb);
     });
+
+    final learntCount = chars.where((c) =>
+      _mainDot(_progress?[c]) == 2 &&
+      (!_compositaDotScore.containsKey(c) || _compositaDotScore[c] == 2),
+    ).length;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
@@ -364,24 +599,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             l.statisticsInspectAllKanji,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
+          Text(
+            l.statisticsLearnt(learntCount, chars.length),
+            style: TextStyle(color: colors.textTertiary, fontSize: 13),
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 2,
             runSpacing: 2,
             children: chars.map((char) {
-              final progress = _progress?[char];
-              final Color dotColor;
-              if (progress != null &&
-                  progress.reading == CardProgress.known &&
-                  progress.writing == CardProgress.known) {
-                dotColor = Colors.green;
-              } else if (progress != null &&
-                  (progress.reading != CardProgress.none ||
-                   progress.writing != CardProgress.none)) {
-                dotColor = Colors.orange;
-              } else {
-                dotColor = Colors.grey.shade300;
-              }
+              final dotColor = switch (_mainDot(_progress?[char])) {
+                2 => colors.statusGreen,
+                1 => colors.statusOrange,
+                _ => colors.statusGreyLight,
+              };
 
               // Second dot: composita progress per character.
               final eligibleWords = _wordsByCharacter?[char];
@@ -422,10 +653,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                           ),
                           if (hasComposita) ...[
                             const SizedBox(width: 2),
-                            _CompositaDot(
-                              character: char,
-                              eligibleWords: eligibleWords,
-                              reviewRepo: _reviewRepo,
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: switch (_compositaDotScore[char] ?? 0) {
+                                  2 => colors.statusGreen,
+                                  1 => colors.statusOrange,
+                                  _ => colors.statusGrey,
+                                },
+                              ),
                             ),
                           ],
                         ],
@@ -451,6 +689,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     if (!mounted) return;
     final l = AppLocalizations.of(context)!;
     final meaning = info?.meanings.join(', ') ?? '';
+    final colors = context.appColors;
 
     showDialog(
       context: context,
@@ -476,6 +715,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               detail.recognitionReps,
               KanjiProgressDetail.knownThreshold,
               l,
+              colors,
             ),
             const SizedBox(height: 8),
             _progressRow(
@@ -484,6 +724,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               detail.drawingReps,
               KanjiProgressDetail.knownThreshold,
               l,
+              colors,
             ),
             if (detail.compositaTestable > 0) ...[
               const SizedBox(height: 12),
@@ -495,6 +736,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 detail.compositaWritingTested,
                 detail.compositaTestable,
                 l,
+                colors,
               ),
             ],
           ],
@@ -529,17 +771,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     int reps,
     int threshold,
     AppLocalizations l,
+    AppColors colors,
   ) {
     final Icon icon;
     final String status;
     if (!started) {
-      icon = Icon(Icons.circle_outlined, color: Colors.grey.shade400, size: 18);
+      icon = Icon(Icons.circle_outlined, color: colors.statusGreyLight, size: 18);
       status = l.progressDetailNotStarted;
     } else if (reps >= threshold) {
-      icon = const Icon(Icons.check_circle, color: Colors.green, size: 18);
+      icon = Icon(Icons.check_circle, color: colors.statusGreen, size: 18);
       status = l.progressDetailStatus(reps, threshold);
     } else {
-      icon = const Icon(Icons.timelapse, color: Colors.orange, size: 18);
+      icon = Icon(Icons.timelapse, color: colors.statusOrange, size: 18);
       status = l.progressDetailStatus(reps, threshold);
     }
     return Row(
@@ -558,17 +801,18 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     int writingTested,
     int testable,
     AppLocalizations l,
+    AppColors colors,
   ) {
     final allDone =
         readingTested >= testable && writingTested >= testable;
     final anyStarted = readingTested > 0 || writingTested > 0;
     final Icon icon;
     if (allDone) {
-      icon = const Icon(Icons.check_circle, color: Colors.green, size: 18);
+      icon = Icon(Icons.check_circle, color: colors.statusGreen, size: 18);
     } else if (anyStarted) {
-      icon = const Icon(Icons.timelapse, color: Colors.orange, size: 18);
+      icon = Icon(Icons.timelapse, color: colors.statusOrange, size: 18);
     } else {
-      icon = Icon(Icons.circle_outlined, color: Colors.grey.shade400, size: 18);
+      icon = Icon(Icons.circle_outlined, color: colors.statusGreyLight, size: 18);
     }
     return Row(
       children: [
@@ -585,13 +829,13 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _compositaPie(AppLocalizations l, String label, int tested, int testable) {
+  Widget _compositaPie(AppLocalizations l, String label, int tested, int testable, AppColors colors) {
     final remaining = (testable - tested).clamp(0, testable);
     return Column(
       children: [
         _PieChart(
           values: [tested.toDouble(), remaining.toDouble()],
-          colors: [Colors.green, Colors.grey.shade300],
+          colors: [colors.statusGreen, colors.statusGreyLight],
           size: 56,
         ),
         const SizedBox(height: 6),
@@ -628,7 +872,7 @@ class _PieChart extends StatelessWidget {
         painter: total <= 0
             ? _PieChartPainter(
                 values: const [1],
-                colors: [Colors.grey.shade300],
+                colors: [context.appColors.statusGreyLight],
               )
             : _PieChartPainter(values: values, colors: colors),
       ),
@@ -662,61 +906,17 @@ class _PieChartPainter extends CustomPainter {
       oldDelegate.values != values || oldDelegate.colors != colors;
 }
 
-/// Async-loaded composita dot for the kanji grid. Queries composita progress
-/// for a single character and renders a colored dot: green if all eligible
-/// words tested in both directions, orange if at least one tested, grey
-/// otherwise.
-class _CompositaDot extends StatefulWidget {
-  final String character;
-  final Set<String> eligibleWords;
-  final ReviewRepository reviewRepo;
+class _JlptLevelStats {
+  final int level; // 1–5, or 0 for "no JLPT"
+  int total = 0; // all kanji in this JLPT level
+  int notSelected = 0;
+  int newCount = 0; // selected but not started
+  int learning = 0;
+  int learnt = 0;
 
-  const _CompositaDot({
-    required this.character,
-    required this.eligibleWords,
-    required this.reviewRepo,
-  });
+  _JlptLevelStats({required this.level});
 
-  @override
-  State<_CompositaDot> createState() => _CompositaDotState();
+  bool get hasAny =>
+      notSelected > 0 || newCount > 0 || learning > 0 || learnt > 0;
 }
 
-class _CompositaDotState extends State<_CompositaDot> {
-  Color _color = Colors.grey;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadColor();
-  }
-
-  Future<void> _loadColor() async {
-    final coverage = await widget.reviewRepo.compositaProgressFor({
-      widget.character: widget.eligibleWords,
-    });
-    if (!mounted) return;
-    final Color color;
-    if (coverage.testedReading >= coverage.testable &&
-        coverage.testedWriting >= coverage.testable &&
-        coverage.testable > 0) {
-      color = Colors.green;
-    } else if (coverage.testedReading > 0 || coverage.testedWriting > 0) {
-      color = Colors.orange;
-    } else {
-      color = Colors.grey;
-    }
-    setState(() => _color = color);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: _color,
-      ),
-    );
-  }
-}

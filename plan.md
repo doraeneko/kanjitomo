@@ -70,7 +70,7 @@ InAppPurchase integration exists. Free tier: 56 kanji limit.
 
 4. **Privacy policy** — Required by both stores. Needs to cover: what data is stored locally (review progress, personal notes), what's NOT collected (no analytics, no server communication), TTS usage.
 
-5. **Version number** — Currently `0.1.0+1`. Needs proper versioning before release.
+5. **Version number** — ~~Currently `0.1.0+1`. Needs proper versioning before release.~~ Done: bumped to `1.0.0+1`.
 
 ### Should-fix
 
@@ -80,7 +80,7 @@ InAppPurchase integration exists. Free tier: 56 kanji limit.
 
 8. **Old test files not deleted** — Tests for removed screens (`jlpt_edit_screen_test.dart`, `jlpt_edit_daily_cap_test.dart`, `custom_edit_screen_test.dart`, `custom_edit_daily_cap_test.dart`, `review_start_screen_learn_new_test.dart`, `review_session_learn_more_test.dart`) still exist.
 
-9. **Asset size optimization** — ~110 MB of bundled JSON is large. Consider: lazy loading, compression, or splitting into downloadable packs. The word_index.json alone is 35 MB.
+9. **Asset size optimization** — ~~~110 MB of bundled JSON is large. Consider: lazy loading, compression, or splitting into downloadable packs.~~ Partially done: deferred loading implemented. The 5 largest repos (~80MB) are now lazy-loaded on first access instead of blocking startup. The total bundle size is unchanged but startup time dropped from ~3-5s to ~1s. Further optimization (compression, downloadable packs) remains possible.
 
 10. **iOS testing** — Development has focused on Android. iOS build, permissions (TTS), and store setup need verification.
 
@@ -92,9 +92,11 @@ InAppPurchase integration exists. Free tier: 56 kanji limit.
 
 ### Nice-to-have (post-launch)
 
-14. **Backup/restore** — No way to export or import review progress. Users lose everything on reinstall.
+14. **Anki import (Android)** — ~~"Import from AnkiDroid" option in the Add screen.~~ Done. Reworked from 4-step flow (model → field → options → preview) to 3-step (deck → note type → preview). Kotlin side: added `queryNotesByDeck(deckName)` in `MainActivity.kt` using AnkiDroid's `deck:"<name>"` search syntax. Dart side: `anki_import_screen.dart` now queries decks first, filters models to those actually present in the selected deck, auto-detects the best field (most kanji), always extracts composita, and goes straight to preview. Steps auto-skip only when there's exactly one option (one deck or one model).
 
-15. **Dark mode** — Uses Material 3 with indigo seed color but no explicit dark theme support.
+15. **Backup/restore** — No way to export or import review progress. Users lose everything on reinstall.
+
+15. **Dark mode** — Uses Material 3 with indigo seed color but no explicit dark theme support. (Note: the native splash screen does have a dark variant configured via `flutter_native_splash`.)
 
 16. **Tablet layout** — Single-column phone layout only. No adaptive layout for tablets.
 

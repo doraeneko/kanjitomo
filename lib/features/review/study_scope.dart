@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../core/db/app_database.dart';
 
 /// Which characters are "in scope" for browsing and review -- a single
 /// unified pool of explicitly-added kanji. No automatic introduction;
@@ -60,109 +64,141 @@ class StudyScope {
   );
 }
 
-/// Persists [StudyScope] via shared_preferences and exposes it as a
-/// ValueNotifier so both the kanji-browser filter chips and the
-/// review-session launcher observe the same live value.
+/// Persists [StudyScope] in the SQLite database (scope_settings table) and
+/// exposes it as a ValueNotifier so both the kanji-browser filter chips and
+/// the review-session launcher observe the same live value.
+///
+/// On first load, migrates any existing SharedPreferences data into SQLite
+/// (one-time), so the pool and review progress always survive together.
 class StudyScopeRepository {
-  // New unified keys.
-  static const _charactersKey = 'study_scope.characters';
-  static const _compositaCeilingKey = 'study_scope.composita_ceiling';
-  static const _maxCompositaPerKanjiKey = 'study_scope.max_composita_per_kanji';
+  StudyScopeRepository(this._db);
 
-  // Old keys used for migration detection.
+  final AppDatabase _db;
+
+  // Old SharedPreferences keys -- used only for one-time migration.
+  static const _oldCharactersKey = 'study_scope.characters';
+  static const _oldCompositaCeilingKey = 'study_scope.composita_ceiling';
+  static const _oldMaxCompositaPerKanjiKey = 'study_scope.max_composita_per_kanji';
   static const _oldModeKey = 'study_scope.mode';
   static const _oldJlptLevelsKey = 'study_scope.jlpt_levels';
   static const _oldCustomCharactersKey = 'study_scope.custom_characters';
   static const _migratedKey = 'study_scope.migrated_to_unified';
+  static const _migratedToDbKey = 'study_scope.migrated_to_db';
 
   final ValueNotifier<StudyScope> scope = ValueNotifier(const StudyScope());
 
-  Future<void> load() async {
+  /// Loads the scope from SQLite. On first run, migrates any existing
+  /// SharedPreferences data (both old JLPT/Custom mode keys and the newer
+  /// unified keys) into the database.
+  ///
+  /// [charsInLevels] is needed only for the legacy JLPT→unified migration
+  /// (users who still had the old mode-based keys). Pass null on a fresh
+  /// install or when JLPT data isn't loaded yet -- the migration simply
+  /// skips the JLPT expansion in that case.
+  Future<void> load({
+    List<String> Function(Set<int> levels)? charsInLevels,
+  }) async {
+    // Try loading from the DB first.
+    final row = await _db.loadScope();
+    if (row != null) {
+      scope.value = _fromRow(row);
+      return;
+    }
+
+    // No DB row yet -- check SharedPreferences for data to migrate.
     final prefs = await SharedPreferences.getInstance();
 
-    // Already using the new format?
+    if (prefs.getBool(_migratedToDbKey) == true) {
+      // Already migrated but row missing (shouldn't happen) -- just save
+      // the default empty scope.
+      await _persist(scope.value);
+      return;
+    }
+
+    StudyScope migrated;
     if (prefs.getBool(_migratedKey) == true) {
-      scope.value = StudyScope(
+      // The newer unified SharedPreferences format -- read directly.
+      migrated = StudyScope(
         characters:
-            prefs.getStringList(_charactersKey)?.toSet() ?? const {},
-        compositaCeiling: prefs.getInt(_compositaCeilingKey),
-        maxCompositaPerKanji: prefs.getInt(_maxCompositaPerKanjiKey) ?? 4,
+            prefs.getStringList(_oldCharactersKey)?.toSet() ?? const {},
+        compositaCeiling: prefs.getInt(_oldCompositaCeilingKey),
+        maxCompositaPerKanji:
+            prefs.getInt(_oldMaxCompositaPerKanjiKey) ?? 4,
       );
-      return;
+    } else if (prefs.containsKey(_oldModeKey) ||
+        prefs.containsKey(_oldCustomCharactersKey)) {
+      // Legacy JLPT/Custom mode keys -- resolve into unified set.
+      migrated = _migrateFromLegacy(prefs, charsInLevels);
+    } else {
+      // Fresh install -- nothing to migrate.
+      migrated = const StudyScope();
     }
 
-    // Fresh install -- no old keys either.
-    if (!prefs.containsKey(_oldModeKey) &&
-        !prefs.containsKey(_oldCustomCharactersKey)) {
-      await prefs.setBool(_migratedKey, true);
-      return;
+    // Repair: if SharedPreferences was lost (e.g. debug reinstall) but
+    // SQLite review data survived, re-add any characters that have review
+    // progress but aren't in the pool.
+    final orphans = await _db.orphanedCharacters(migrated.characters);
+    if (orphans.isNotEmpty) {
+      migrated = migrated.copyWith(
+        characters: {...migrated.characters, ...orphans},
+      );
     }
 
-    // Migration needed -- will be completed in migrateIfNeeded().
-    // Load what we can for now (custom characters are directly usable).
-    final oldCustom =
-        prefs.getStringList(_oldCustomCharactersKey)?.toSet() ?? const <String>{};
-    final oldCeiling = prefs.getInt(_compositaCeilingKey);
-    // Also check for the old max-composita key from review prefs.
-    final oldMaxComposita = prefs.getInt('review.max_composita_per_kanji');
-    scope.value = StudyScope(
-      characters: oldCustom,
-      compositaCeiling: oldCeiling,
-      maxCompositaPerKanji: oldMaxComposita ?? 4,
-    );
+    scope.value = migrated;
+    await _persist(migrated);
+
+    // Mark done and clean up SharedPreferences keys.
+    await prefs.setBool(_migratedToDbKey, true);
+    for (final key in [
+      _oldCharactersKey,
+      _oldCompositaCeilingKey,
+      _oldMaxCompositaPerKanjiKey,
+      _oldModeKey,
+      _oldJlptLevelsKey,
+      _oldCustomCharactersKey,
+      _migratedKey,
+      'study_scope.rtk_max_index',
+      'review.max_composita_per_kanji',
+    ]) {
+      await prefs.remove(key);
+    }
   }
 
-  /// One-time migration from old JLPT/Custom mode-based keys to the unified
-  /// pool. Must be called after JSON repositories have loaded (needs
-  /// jlptLevels to resolve JLPT level selections into character sets).
-  Future<void> migrateIfNeeded({
-    required List<String> Function(Set<int> levels) charsInLevels,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool(_migratedKey) == true) return;
-
+  /// Resolves legacy JLPT/Custom mode SharedPreferences into a unified scope.
+  static StudyScope _migrateFromLegacy(
+    SharedPreferences prefs,
+    List<String> Function(Set<int> levels)? charsInLevels,
+  ) {
     final modeName = prefs.getString(_oldModeKey);
     final oldCustom =
         prefs.getStringList(_oldCustomCharactersKey)?.toSet() ?? const <String>{};
     final oldJlptLevels =
         prefs.getStringList(_oldJlptLevelsKey)?.map(int.parse).toSet() ??
         const <int>{};
-    final oldCeiling = prefs.getInt(_compositaCeilingKey);
+    final oldCeiling = prefs.getInt(_oldCompositaCeilingKey);
     final oldMaxComposita = prefs.getInt('review.max_composita_per_kanji');
 
     Set<String> characters;
     if (modeName == 'custom') {
-      // Custom mode: keep the hand-picked set.
       characters = oldCustom;
-    } else if (modeName == 'jlpt' && oldJlptLevels.isNotEmpty) {
-      // JLPT mode: resolve levels into actual characters.
+    } else if (modeName == 'jlpt' &&
+        oldJlptLevels.isNotEmpty &&
+        charsInLevels != null) {
       characters = charsInLevels(oldJlptLevels).toSet();
     } else {
-      // RTK or fresh -- start empty (RTK was hidden from UI anyway).
       characters = oldCustom;
     }
 
-    final migrated = StudyScope(
+    return StudyScope(
       characters: characters,
       compositaCeiling: oldCeiling,
       maxCompositaPerKanji: oldMaxComposita ?? 4,
     );
-    scope.value = migrated;
-    await _persist(prefs, migrated);
-    await prefs.setBool(_migratedKey, true);
-
-    // Clean up old keys.
-    await prefs.remove(_oldModeKey);
-    await prefs.remove(_oldJlptLevelsKey);
-    await prefs.remove(_oldCustomCharactersKey);
-    await prefs.remove('study_scope.rtk_max_index');
-    await prefs.remove('review.max_composita_per_kanji');
   }
 
   Future<void> update(StudyScope newScope) async {
     scope.value = newScope;
-    final prefs = await SharedPreferences.getInstance();
-    await _persist(prefs, newScope);
+    await _persist(newScope);
   }
 
   /// Convenience: add characters to the pool.
@@ -183,13 +219,20 @@ class StudyScopeRepository {
     ));
   }
 
-  static Future<void> _persist(SharedPreferences prefs, StudyScope s) async {
-    await prefs.setStringList(_charactersKey, s.characters.toList());
-    if (s.compositaCeiling == null) {
-      await prefs.remove(_compositaCeilingKey);
-    } else {
-      await prefs.setInt(_compositaCeilingKey, s.compositaCeiling!);
-    }
-    await prefs.setInt(_maxCompositaPerKanjiKey, s.maxCompositaPerKanji);
+  Future<void> _persist(StudyScope s) async {
+    await _db.saveScope(
+      characters: s.characters,
+      compositaCeiling: s.compositaCeiling,
+      maxCompositaPerKanji: s.maxCompositaPerKanji,
+    );
+  }
+
+  static StudyScope _fromRow(ScopeSetting row) {
+    final chars = (jsonDecode(row.characters) as List).cast<String>().toSet();
+    return StudyScope(
+      characters: chars,
+      compositaCeiling: row.compositaCeiling,
+      maxCompositaPerKanji: row.maxCompositaPerKanji,
+    );
   }
 }

@@ -401,6 +401,36 @@ void main() {
     expect(await repo.getNote('一'), 'A longer mnemonic.');
   });
 
+  test(
+    'countReviewedToday only counts passed cards — failed cards '
+    '(repetitions stays 0) do not consume the daily budget',
+    () async {
+      const scope = StudyScope(characters: {'一', '二'});
+      await repo.introduceNewCards(scope, CardType.drawFromMeaning, limit: 10);
+
+      // Grade 一 as a pass (quality >= 3 → repetitions bumps to 1).
+      await repo.gradeCard(
+        character: '一',
+        cardType: CardType.drawFromMeaning,
+        quality: 4,
+      );
+      // Grade 二 as a fail (quality < 3 → repetitions stays 0).
+      await repo.gradeCard(
+        character: '二',
+        cardType: CardType.drawFromMeaning,
+        quality: 1,
+      );
+
+      final count = await repo.countReviewedToday();
+      expect(
+        count,
+        1,
+        reason: 'only the passed card (一) should count; the failed card '
+            '(二, repetitions == 0) should not consume the daily budget',
+      );
+    },
+  );
+
   test('seedStories fills in unset keyword/story but never overwrites an existing row', () async {
     // 二 was already personally edited (or previously seeded) -- must survive.
     await repo.upsertNote('二', 'My own story');

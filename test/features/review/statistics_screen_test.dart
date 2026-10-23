@@ -23,7 +23,7 @@ void main() {
     final deps = AppDependencies(
       database: AppDatabase.forTesting(NativeDatabase.memory()),
     );
-    await tester.runAsync(() => deps.load());
+    await tester.runAsync(() => deps.load(loadAll: true));
     // Statistics is scoped to the current StudyScope (see
     // statistics_screen.dart) -- 一 needs to actually be in scope for its
     // readingCloze row to count. No compositaCeiling is set, so the

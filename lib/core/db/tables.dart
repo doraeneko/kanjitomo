@@ -141,9 +141,29 @@ class CustomComposita extends Table {
 /// composita). Each row is one sentence for one word; a word can have
 /// multiple user sentences. Converted to [ExampleSentence] objects with
 /// source: 'user' at review time.
+///
+/// **Reserved / unused** — the "Add Sentence" feature has been removed from the
+/// UI and repository layer. The table is kept in the schema to avoid a migration
+/// and to allow re-introduction later.
 class UserSentences extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get word => text()();
   TextColumn get sentence => text()();
   TextColumn get translation => text().nullable()();
+}
+
+/// Single-row table persisting the user's [StudyScope] -- which kanji are
+/// "in scope" for review. Stored in SQLite (not SharedPreferences) so the
+/// pool survives app reinstalls alongside the review progress it belongs to.
+class ScopeSettings extends Table {
+  /// Always 0 -- enforces the single-row invariant via the primary key.
+  IntColumn get id => integer().withDefault(const Constant(0))();
+  /// JSON-encoded list of characters in the study pool.
+  TextColumn get characters => text().withDefault(const Constant('[]'))();
+  IntColumn get compositaCeiling => integer().nullable()();
+  IntColumn get maxCompositaPerKanji =>
+      integer().withDefault(const Constant(4))();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../../app_dependencies.dart';
 import '../../core/canonicalize.dart';
+import '../../core/font_renderer.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/drawing_canvas.dart';
 import '../../core/kanji_mascot.dart';
 import '../../core/kanji_rasterizer.dart';
@@ -17,6 +19,7 @@ import '../review/review_repository.dart';
 import '../review/sentence_selection.dart'
     show isKanji, compositaWithinCeiling, selectCompositaForIntroduction;
 import '../../widgets/coffee_button.dart';
+import 'camera_ocr_screen.dart';
 
 /// Draw -> up to 3 non-reject matches (collapsed to just the top one when
 /// the recognizer is already confident, see [_confidentThreshold]) -> tap
@@ -58,6 +61,9 @@ class _LookupScreenState extends State<LookupScreen> {
 
   final List<Stroke> _strokes = [];
   Stroke? _currentStroke;
+  String? _injectedCharacter;
+  /// Remaining OCR picks from the camera (multi-select).
+  List<String> _ocrQueue = [];
 
   Float32List? _canonicalizedInput;
 
@@ -87,6 +93,7 @@ class _LookupScreenState extends State<LookupScreen> {
 
   void _onStrokeStart(Offset gridPoint) {
     setState(() {
+      _injectedCharacter = null;
       _currentStroke = Stroke()..points.add(gridPoint);
     });
   }
@@ -187,9 +194,71 @@ class _LookupScreenState extends State<LookupScreen> {
     setState(() {
       _strokes.clear();
       _currentStroke = null;
+      _injectedCharacter = null;
+      _ocrQueue = [];
       _canonicalizedInput = null;
       _predictions = null;
     });
+  }
+
+  Future<void> _undoLastStroke() async {
+    if (_strokes.isEmpty) return;
+    setState(() {
+      _strokes.removeLast();
+      _predictions = null;
+    });
+    if (_strokes.isEmpty) {
+      setState(() => _canonicalizedInput = null);
+      return;
+    }
+    await _updatePreview();
+    await _recognize();
+  }
+
+  Future<void> _openCameraOcr() async {
+    final items = await Navigator.push<List<String>>(
+      context,
+      MaterialPageRoute(builder: (_) => const CameraOcrScreen()),
+    );
+    if (items == null || items.isEmpty || !mounted) return;
+    setState(() => _ocrQueue = List.of(items));
+    await _recognizeInjectedCharacter(items.first);
+  }
+
+  void _pickFromOcrQueue(String character) {
+    _recognizeInjectedCharacter(character);
+  }
+
+  Future<void> _recognizeInjectedCharacter(String character) async {
+    setState(() {
+      _injectedCharacter = character;
+      _strokes.clear();
+      _currentStroke = null;
+      _predictions = null;
+    });
+
+    final image = await renderCharacterToImage(character, size: _supersampleSize);
+    final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final input = canonicalize(rgba!, image.width, image.height);
+    if (!mounted) return;
+    setState(() {
+      _canonicalizedInput = input;
+      _recognizing = true;
+    });
+
+    try {
+      final raw = await _recognizer.predictTopK(input, k: _candidateK);
+      final nonReject = raw.where((p) => !p.isReject).toList();
+      final shown =
+          (nonReject.isNotEmpty &&
+              nonReject.first.probability >= _confidentThreshold)
+          ? nonReject.take(1).toList()
+          : nonReject.take(_shownCandidates).toList();
+      if (!mounted) return;
+      setState(() => _predictions = shown);
+    } finally {
+      if (mounted) setState(() => _recognizing = false);
+    }
   }
 
   static bool _isKana(String char) {
@@ -234,20 +303,111 @@ class _LookupScreenState extends State<LookupScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    DrawingCanvas(
-                      displaySize: _displaySize,
-                      brushWidth: _brushWidth,
-                      strokes: _strokes,
-                      currentStroke: _currentStroke,
-                      onStrokeStart: _onStrokeStart,
-                      onStrokeUpdate: _onStrokeUpdate,
-                      onStrokeEnd: _onStrokeEnd,
+                    Stack(
+                      children: [
+                        DrawingCanvas(
+                          displaySize: _displaySize,
+                          brushWidth: _brushWidth,
+                          strokes: _strokes,
+                          currentStroke: _currentStroke,
+                          onStrokeStart: _onStrokeStart,
+                          onStrokeUpdate: _onStrokeUpdate,
+                          onStrokeEnd: _onStrokeEnd,
+                        ),
+                        if (_injectedCharacter != null)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: Center(
+                                child: Text(
+                                  _injectedCharacter!,
+                                  style: TextStyle(
+                                    fontSize: _displaySize * 0.7,
+                                    fontFamily: 'NotoSansJP',
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _clear,
-                      child: Text(l.lookupClearDrawing),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: _strokes.isEmpty ? null : _undoLastStroke,
+                          icon: const Icon(Icons.undo),
+                          label: Text(l.undoStroke),
+                        ),
+                        ElevatedButton(
+                          onPressed: _clear,
+                          child: Text(l.lookupClearDrawing),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: _openCameraOcr,
+                          icon: const Icon(Icons.camera_alt),
+                          label: Text(l.lookupCamera),
+                        ),
+                      ],
                     ),
+                    if (_ocrQueue.length > 1)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SizedBox(
+                          height: 40,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            shrinkWrap: true,
+                            itemCount: _ocrQueue.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 6),
+                            itemBuilder: (context, index) {
+                              final char = _ocrQueue[index];
+                              final isCurrent =
+                                  char == _injectedCharacter;
+                              return InkWell(
+                                onTap: () => _pickFromOcrQueue(char),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isCurrent
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .primaryContainer
+                                        : null,
+                                    border: Border.all(
+                                      color: isCurrent
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .outline,
+                                      width: isCurrent ? 2 : 1,
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    char,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontFamily: 'NotoSansJP',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     if (_recognizing)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -263,8 +423,8 @@ class _LookupScreenState extends State<LookupScreen> {
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           l.lookupModelFailed(_recognizerError!),
-                          style: const TextStyle(
-                            color: Colors.red,
+                          style: TextStyle(
+                            color: context.appColors.statusRed,
                             fontSize: 12,
                           ),
                         ),
@@ -327,7 +487,7 @@ class _LookupScreenState extends State<LookupScreen> {
                                                   _isHiragana(p.label) ? 'H' : 'K',
                                                   style: TextStyle(
                                                     fontSize: 11,
-                                                    color: Colors.grey.shade600,
+                                                    color: context.appColors.textTertiary,
                                                   ),
                                                 ),
                                               ),
@@ -343,7 +503,7 @@ class _LookupScreenState extends State<LookupScreen> {
                                             value: p.probability,
                                             minHeight: 12,
                                             backgroundColor:
-                                                Colors.grey.shade200,
+                                                context.appColors.progressBg,
                                           ),
                                         ),
                                       ),
@@ -398,6 +558,7 @@ class _AddToCustomButtonState extends State<_AddToCustomButton> {
   }
 
   void _addAndOpenComposita() async {
+    await widget.deps.ensureComposita();
     final char = widget.character;
     final scope = widget.deps.studyScope.scope.value;
     final reviewRepo = ReviewRepository(widget.deps.database);
@@ -439,7 +600,18 @@ class _AddToCustomButtonState extends State<_AddToCustomButton> {
     // there are composita to adjust).
     Navigator.of(context).pop();
 
-    if (bundled.isEmpty) return;
+    if (bundled.isEmpty) {
+      if (mounted) {
+        final l = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l.lookupAddedNoComposita(char)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
 
     final all = rankComposita(bundled);
     showModalBottomSheet<void>(

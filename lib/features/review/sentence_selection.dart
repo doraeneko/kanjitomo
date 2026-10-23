@@ -5,11 +5,12 @@ import 'package:characters/characters.dart';
 import '../../data/composita_repository.dart';
 import '../../data/kanji_info_repository.dart';
 import '../../data/sentences_repository.dart';
-import 'reading_splitter.dart' show katakanaToHiragana;
 import 'study_scope.dart';
 
 final _rng = Random();
 
+/// Rendaku variants of [reading]: toggles the first kana between
+/// unvoiced↔voiced (ka/sa/ta rows) and cycles the ha-row (は↔ば↔ぱ).
 /// Whether composita/sentence testing (C+D) is enabled at all for [scope].
 /// Requires the user to have explicitly picked a compositaCeiling -- null
 /// means "not opted in yet", not "unrestricted".
@@ -35,10 +36,16 @@ bool compositaWithinCeiling(
   if (composita.jlptLevel != null) {
     return composita.jlptLevel! >= ceiling;
   }
-  // Fall back to the inferred level (hardest kanji in the word).
-  // Don't use the character's own JLPT level as a proxy — a common N4
-  // kanji like 食 appears in N1 words like 飽食, and using the character's
-  // easy level would let those hard words through the ceiling.
+  // No real JLPT tag: exclude JMdict's rare/untagged bucket (frequencyRank
+  // 4) — same filter rankComposita uses for display. Words like 小肌
+  // (こはだ, gizzard shad) can have high zipfFreq but are too niche to
+  // auto-select for learners.
+  if (composita.frequencyRank >= 4) return false;
+  // Use zipfFreq as a primary gate (words must be reasonably common,
+  // >= 2.5 filters out truly rare words like 言い募る at 1.58 while
+  // keeping common unlisted words), and inferredJlptLevel as a secondary
+  // gate so words with kanji far above the ceiling are still excluded.
+  if (composita.zipfFreq < 2.5) return false;
   final level = composita.inferredJlptLevel;
   return level != null && level >= ceiling;
 }
@@ -166,7 +173,10 @@ String kanjiReadingIn(String char, Composita composita) {
   final kanjiCount = kanjiPositions.length;
   if (kanjiCount == 0 || kanjiReading.isEmpty) return reading;
 
-  // Split evenly among kanji.
+  // For single kanji, the entire reading belongs to it — no splitting needed.
+  if (kanjiCount == 1) return kanjiReading.join();
+
+  // Fallback: split evenly among kanji.
   final charsPerKanji = kanjiReading.length / kanjiCount;
   final start = (targetKanjiIndex * charsPerKanji).round();
   final end = ((targetKanjiIndex + 1) * charsPerKanji).round()
@@ -208,58 +218,28 @@ List<Composita> selectCompositaForIntroduction(
     if (seenWords.add(c.word)) deduped.add(c);
   }
   if (deduped.length <= limit) return deduped;
-
-  // Build set of known readings in hiragana (stripping okurigana markers)
-  // so the first pass can skip jukujikun words whose per-character split
-  // doesn't match any real reading.
-  final knownReadings = <String>{};
-  if (kanjiInfo != null) {
-    for (final on in kanjiInfo.on) {
-      knownReadings.add(katakanaToHiragana(on));
-    }
-    for (final kun in kanjiInfo.kun) {
-      // Strip okurigana after "." (e.g. "まな.ぶ" → "まな")
-      final dot = kun.indexOf('.');
-      knownReadings.add(dot >= 0 ? kun.substring(0, dot) : kun);
-    }
-    // Also strip trailing "-" bound-form marker (e.g. "かわ-" → "かわ")
-    knownReadings.addAll(
-      knownReadings.map((r) => r.endsWith('-') ? r.substring(0, r.length - 1) : r).toList(),
-    );
-  }
-
-  // Count how many eligible words use each reading. Readings that appear
-  // in only one word are likely rare/obscure — not worth chasing in the
-  // greedy diversity pass (they can still be selected in the frequency
-  // fill pass if they rank high enough).
-  final readingCounts = <String, int>{};
-  for (final c in deduped) {
-    final r = kanjiReadingIn(char, c);
-    if (knownReadings.isNotEmpty && !knownReadings.contains(r)) continue;
-    readingCounts[r] = (readingCounts[r] ?? 0) + 1;
-  }
+  // Sort by zipfFreq descending (higher = more common) so the most
+  // frequent words get priority in both the diversity and fill passes.
+  // Tiebreak by word length ascending — shorter words are more
+  // fundamental (e.g. 飛行 before 飛行機 at equal frequency).
+  deduped.sort((a, b) {
+    final zf = b.zipfFreq.compareTo(a.zipfFreq);
+    if (zf != 0) return zf;
+    return a.word.length.compareTo(b.word.length);
+  });
 
   final picked = <int>{};
   final seenReadings = <String>{};
 
-  // First pass: greedily cover distinct readings, skipping jukujikun
-  // and rare readings (those used by only a single eligible word).
+  // First pass: cover distinct readings (one word per unique reading).
   for (var i = 0; i < deduped.length && picked.length < limit; i++) {
     final reading = kanjiReadingIn(char, deduped[i]);
-    if (knownReadings.isNotEmpty && !knownReadings.contains(reading)) continue;
-    if ((readingCounts[reading] ?? 0) < 2) continue;
     if (seenReadings.add(reading)) picked.add(i);
   }
 
-  // Second pass: fill remaining slots with next most frequent, still
-  // skipping jukujikun words whose per-character reading doesn't match
-  // any known on/kun reading.
+  // Second pass: fill remaining slots with next most frequent.
   for (var i = 0; i < deduped.length && picked.length < limit; i++) {
-    if (knownReadings.isNotEmpty) {
-      final reading = kanjiReadingIn(char, deduped[i]);
-      if (!knownReadings.contains(reading)) continue;
-    }
-    picked.add(i); // add returns false for duplicates, set handles it
+    picked.add(i); // set ignores duplicates
   }
 
   // Return in original (frequency) order.

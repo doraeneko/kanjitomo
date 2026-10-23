@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app_dependencies.dart';
+import '../../core/theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import 'review_repository.dart';
 import 'review_session_screen.dart';
@@ -129,7 +130,7 @@ class _ReviewStartScreenState extends State<ReviewStartScreen> {
                                 _dueDist!['later']!,
                               ),
                               style: TextStyle(
-                                color: Colors.grey.shade600,
+                                color: context.appColors.textTertiary,
                                 fontSize: 13,
                               ),
                             ),
@@ -160,7 +161,7 @@ class _ReviewStartScreenState extends State<ReviewStartScreen> {
                           char,
                           style: TextStyle(
                             fontSize: 22,
-                            color: isDue ? null : Colors.grey.shade400,
+                            color: isDue ? null : context.appColors.border,
                           ),
                         );
                       }).toList(),

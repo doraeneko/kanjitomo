@@ -122,7 +122,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get helpFeatureRecognitionDesc =>
-      'Vẽ bất kỳ kanji nào để nhận dạng ngay lập tức ngoại tuyến — mạng nơ-ron, hơn 6.500 ký tự.';
+      'Vẽ bất kỳ kanji nào để nhận dạng ngay lập tức ngoại tuyến — mạng nơ-ron, hơn 6.500 ký tự. Hoặc chụp ảnh để tìm kanji trong chữ in.';
 
   @override
   String get helpFeatureSrsTitle => 'Lặp lại ngắt quãng (SRS)';
@@ -472,6 +472,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reviewGood => 'Tốt';
 
   @override
+  String get reviewEasy => 'Dễ';
+
+  @override
   String get reviewShowTranslation => 'Hiện bản dịch';
 
   @override
@@ -603,11 +606,31 @@ class AppLocalizationsVi extends AppLocalizations {
   String get statisticsWritingTested => 'Đã kiểm tra viết';
 
   @override
+  String get statisticsJlptOverview => 'Tổng quan JLPT';
+
+  @override
+  String get statisticsJlptNotSelected => 'Chưa chọn';
+
+  @override
+  String get statisticsJlptNew => 'Mới';
+
+  @override
+  String get statisticsJlptLearning => 'Đang học';
+
+  @override
+  String get statisticsJlptLearnt => 'Đã thuộc';
+
+  @override
   String get statisticsInspectAllKanji => 'Xem tất cả kanji';
 
   @override
   String statisticsLearnt(int count, int total) {
     return '$count / $total đã thuộc';
+  }
+
+  @override
+  String statisticsLearntKanjiOnly(int count, int total) {
+    return '$count / $total without composita';
   }
 
   @override
@@ -735,6 +758,43 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get reviewTypesTitle => 'Bạn muốn ôn tập gì?';
+
+  @override
+  String get reviewTypeKanjiRecall => 'Nhớ lại kanji';
+
+  @override
+  String get reviewTypeKanjiRecallHelp => 'Xem nghĩa, viết kanji';
+
+  @override
+  String get reviewTypeKanjiRecognition => 'Nhận biết kanji';
+
+  @override
+  String get reviewTypeKanjiRecognitionHelp =>
+      'Xem kanji, nhớ cách đọc và nghĩa';
+
+  @override
+  String get reviewTypeCompositaRecall => 'Nhớ lại từ ghép';
+
+  @override
+  String get reviewTypeCompositaRecallHelp => 'Viết kanji còn thiếu trong câu';
+
+  @override
+  String get reviewTypeCompositaRecognition => 'Nhận biết từ ghép';
+
+  @override
+  String get reviewTypeCompositaRecognitionHelp =>
+      'Đọc từ được đánh dấu trong câu';
+
+  @override
+  String reviewTypeDue(int count) {
+    return '$count đến hạn';
+  }
+
+  @override
+  String get reviewTypesStart => 'Bắt đầu';
+
+  @override
   String get learningQuiz => 'Câu đố kiểu JLPT';
 
   @override
@@ -829,7 +889,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ftdLookupMessage =>
-      'Vẽ bất kỳ kanji nào trên khung vẽ — mạng nơ-ron nhận dạng ngay lập tức, ngay cả với chữ viết tay lộn xộn. Hỗ trợ hơn 6.500 ký tự, hoàn toàn ngoại tuyến.\n\nChạm vào kết quả để xem cách đọc, nghĩa, thứ tự nét, câu ví dụ và từ ghép.\n\nThử ngay bây giờ — thu nhỏ thẻ này và vẽ thử!';
+      'Vẽ bất kỳ kanji nào trên khung vẽ — mạng nơ-ron nhận dạng ngay lập tức, ngay cả với chữ viết tay lộn xộn. Hỗ trợ hơn 6.500 ký tự, hoàn toàn ngoại tuyến.\n\nHoặc chạm nút Camera để chụp ảnh chữ Nhật in — chạm vào ký tự được nhận dạng để tra cứu ngay.\n\nChạm vào kết quả để xem cách đọc, nghĩa, thứ tự nét, câu ví dụ và từ ghép.\n\nThử ngay bây giờ — thu nhỏ thẻ này và vẽ thử!';
 
   @override
   String get ftdWordLookupTitle => 'Tra từ';
@@ -879,7 +939,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get welcomeTakeTour => 'Xem hướng dẫn';
 
   @override
-  String get welcomeSkip => 'Bỏ qua';
+  String get welcomeSkip => 'Để sau';
 
   @override
   String get welcomeDone => 'Bắt đầu học!';
@@ -1106,6 +1166,21 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String addRemoveGoThroughTitle(int count) {
+    return 'Đã thêm $count kanji';
+  }
+
+  @override
+  String get addRemoveGoThroughMessage =>
+      'Bạn có muốn xem qua ngay bây giờ không?';
+
+  @override
+  String get addRemoveGoThroughYes => 'Xem qua';
+
+  @override
+  String get addRemoveGoThroughNo => 'Để sau';
+
+  @override
   String get addRemoveSlideshowComposita => 'Composita đã chọn:';
 
   @override
@@ -1210,4 +1285,111 @@ class AppLocalizationsVi extends AppLocalizations {
   String modelSwitchFailed(String error) {
     return 'Không thể chuyển mô hình: $error';
   }
+
+  @override
+  String get lookupCamera => 'Camera';
+
+  @override
+  String get cameraOcrTitle => 'Tìm kanji trong ảnh';
+
+  @override
+  String get cameraOcrProcessing => 'Đang nhận dạng chữ...';
+
+  @override
+  String get cameraOcrNoText => 'Không tìm thấy chữ Nhật trong ảnh này.';
+
+  @override
+  String get cameraOcrInstruction => 'Chạm vào ký tự để tra cứu';
+
+  @override
+  String get cameraOcrFromCamera => 'Chụp ảnh';
+
+  @override
+  String get cameraOcrFromGallery => 'Chọn từ thư viện';
+
+  @override
+  String get cameraOcrTitleWord => 'Tìm từ trong ảnh';
+
+  @override
+  String get cameraOcrInstructionWord => 'Chạm vào từ để tra cứu';
+
+  @override
+  String get cameraOcrDone => 'Xong';
+
+  @override
+  String get ankiImportButton => 'Đồng bộ với AnkiDroid';
+
+  @override
+  String get ankiImportTitle => 'Đồng bộ với AnkiDroid';
+
+  @override
+  String get ankiImportSelectDeck => 'Chọn bộ thẻ';
+
+  @override
+  String get ankiImportSelectField => 'Trường nào chứa kanji?';
+
+  @override
+  String get ankiImportJlptFilter => 'Lọc theo cấp JLPT';
+
+  @override
+  String get ankiImportExtractComposita =>
+      'Trích xuất từ ghép từ nội dung trường';
+
+  @override
+  String get ankiImportExtractCompositaHelp =>
+      'Tra từ trong từ điển. Các từ khớp được thêm làm từ ghép bổ sung.';
+
+  @override
+  String get ankiImportPreview => 'Xem trước';
+
+  @override
+  String get ankiImportNoKanji => 'Không tìm thấy kanji trong trường đã chọn.';
+
+  @override
+  String get ankiImportNotInstalled =>
+      'AnkiDroid chưa được cài đặt trên thiết bị này.';
+
+  @override
+  String get ankiImportPermissionDenied =>
+      'Quyền đọc dữ liệu AnkiDroid bị từ chối.';
+
+  @override
+  String get ankiImportAlreadyAdded => 'đã thêm';
+
+  @override
+  String ankiImportConfirm(int count) {
+    return 'Nhập $count kanji';
+  }
+
+  @override
+  String get ankiImportOptions => 'Tùy chọn';
+
+  @override
+  String get ankiImportFilterOff => 'Tắt';
+
+  @override
+  String get ankiImportLoadingNotes => 'Đang đọc ghi chú từ AnkiDroid...';
+
+  @override
+  String get ankiImportRetry => 'Thử lại';
+
+  @override
+  String get ankiImportNoNotes => 'Không tìm thấy ghi chú trong AnkiDroid.';
+
+  @override
+  String get ankiImportSelectModel => 'Chọn loại ghi chú';
+
+  @override
+  String get learningEmptyPoolHint => 'Thêm kanji trước qua Thêm/Xóa';
+
+  @override
+  String get ankiImportUnknownError => 'Đã xảy ra lỗi. Vui lòng thử lại.';
+
+  @override
+  String lookupAddedNoComposita(String char) {
+    return 'Đã thêm $char — không có composita';
+  }
+
+  @override
+  String get learningSettingsUnlimitedHint => '0 = không giới hạn';
 }

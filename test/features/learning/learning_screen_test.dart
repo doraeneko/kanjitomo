@@ -1,6 +1,9 @@
 import '../../test_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:kanjitomo/core/db/tables.dart';
 
 import 'package:kanjitomo/features/learning/add_remove_screen.dart';
 import 'package:kanjitomo/features/learning/learning_screen.dart';
@@ -71,6 +74,69 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(StatisticsScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Review button opens the card-kind sheet and starts a filtered session',
+    (tester) async {
+      final oldHandler = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exception.toString().contains('overflowed')) return;
+        oldHandler?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = oldHandler);
+
+      final deps = await loadTestDeps(tester);
+      await deps.studyScope.update(const StudyScope(characters: {'一'}));
+      await ReviewRepository(deps.database).introduceCardsForCharacters({'一'});
+
+      await tester.pumpWidget(testApp(home: LearningScreen(deps: deps)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      await tester.pumpAndSettle();
+
+      // Only one review button now.
+      expect(find.byKey(const ValueKey('kanji-only')), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('review')));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pumpAndSettle();
+
+      // All four kinds offered, all ticked by default.
+      for (final type in CardType.values) {
+        final tile = find.byKey(ValueKey('review-type-${type.name}'));
+        expect(tile, findsOneWidget);
+        expect(tester.widget<CheckboxListTile>(tile).value, isTrue);
+      }
+
+      // Untick both composita kinds.
+      await tester.tap(find.byKey(const ValueKey('review-type-drawInSentence')));
+      await tester.tap(find.byKey(const ValueKey('review-type-readingCloze')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('review-start')));
+      // Sheet closes, then the selection is saved before the push.
+      for (var i = 0; i < 5; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+
+      final session = tester.widget<ReviewSessionScreen>(
+        find.byType(ReviewSessionScreen),
+      );
+      expect(session.cardTypes,
+          {CardType.drawFromMeaning, CardType.kanjiRecognition});
+
+      // Selection is remembered for next time.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getStringList('review.card_types')?.toSet(),
+          {'drawFromMeaning', 'kanjiRecognition'});
     },
   );
 }

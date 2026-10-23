@@ -61,6 +61,8 @@ class SentencesRepository {
   static const _asset = 'assets/sentences.json';
 
   Map<String, List<ExampleSentence>> _byWord = {};
+  bool _loaded = false;
+  bool get isLoaded => _loaded;
 
   Future<void> load() async {
     final raw =
@@ -73,6 +75,7 @@ class SentencesRepository {
             .toList(),
       ),
     );
+    _loaded = true;
   }
 
   /// Empty if this word has no level-appropriate sentence coverage (not

@@ -18,6 +18,6 @@ Future<AppDependencies> loadTestDeps(WidgetTester tester) async {
   final deps = AppDependencies(
     database: AppDatabase.forTesting(NativeDatabase.memory()),
   );
-  await tester.runAsync(() => deps.load());
+  await tester.runAsync(() => deps.load(loadAll: true));
   return deps;
 }

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Kanji Recognition</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+  }
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 800px;
+    width: 100%;
+  }
+  h1 {
+    font-size: 1em;
+    font-weight: 500;
+    color: #c4b5fd;
+  }
+  .text-output {
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 12px;
+    background: #2a2a4a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    font-size: 1.4em;
+    color: #fff;
+    word-break: break-all;
+    line-height: 1.6;
+    cursor: text;
+    user-select: all;
+  }
+  .text-output:empty::before {
+    content: 'Draw in the cells below...';
+    color: #555;
+    font-size: 0.7em;
+  }
+  .toolbar {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  button {
+    padding: 4px 12px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background: #2a2a4a;
+    color: #e0e0e0;
+    font-size: 0.75em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: #3a3a5a; }
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+  }
+  .cell {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .cell canvas {
+    width: 56px;
+    height: 56px;
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .cell.active {
+    outline: 2px solid #c4b5fd;
+    outline-offset: -1px;
+  }
+  .cell-label {
+    position: absolute;
+    bottom: 1px;
+    right: 3px;
+    font-size: 0.55em;
+    color: #aaa;
+    pointer-events: none;
+    background: rgba(255,255,255,0.7);
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  .status {
+    font-size: 0.7em;
+    color: #666;
+    min-height: 1em;
+  }
+  .candidates {
+    display: flex;
+    gap: 2px;
+    min-height: 32px;
+    align-items: center;
+  }
+  .candidate {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    background: #2a2a4a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #fff;
+    transition: background 0.15s;
+  }
+  .candidate:hover { background: #4a4a6a; }
+  .candidate.top { border-color: #c4b5fd; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Kanji Recognition</h1>
+  <div class="text-output" id="text-output"></div>
+  <div class="candidates" id="candidates"></div>
+  <div class="toolbar">
+    <button id="undo-stroke-btn">Undo stroke</button>
+    <button id="clear-cell-btn">Clear cell</button>
+    <button id="backspace-btn">Backspace</button>
+    <button id="space-btn">Space</button>
+    <button id="newline-btn">Newline</button>
+    <button id="copy-btn">Copy text</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="status" id="status">Loading model...</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/ort.min.js"></script>
+<script>
+// ── Config ───────────────────────────────────────────────────────────
+const CELL_SIZE = 80;
+const CELL_RES = 320;          // internal canvas resolution (4x for quality)
+const BRUSH_WIDTH = 6;         // at CELL_RES
+const SUPERSAMPLE = 256;
+const TARGET_SIZE = 64;
+const MARGIN_FRAC = 0.10;
+const INK_THRESHOLD = 200;
+const COLS = 10;
+const ROWS = 3;
+const NUM_CELLS = COLS * ROWS;
+
+// ── State ────────────────────────────────────────────────────────────
+let cells = [];          // {canvas, ctx, strokes, recognized}
+let activeCell = 0;
+let drawing = false;
+let currentStroke = [];
+let outputText = '';
+
+// ── Build grid ───────────────────────────────────────────────────────
+const gridEl = document.getElementById('grid');
+for (let i = 0; i < NUM_CELLS; i++) {
+  const cell = document.createElement('div');
+  cell.className = 'cell';
+  const canvas = document.createElement('canvas');
+  canvas.width = CELL_RES;
+  canvas.height = CELL_RES;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, CELL_RES, CELL_RES);
+
+  cell.appendChild(canvas);
+  gridEl.appendChild(cell);
+  cells.push({ canvas, ctx, strokes: [], recognized: null, el: cell });
+
+  cell.addEventListener('mousedown', (e) => { setActive(i); onStart(e); });
+  cell.addEventListener('touchstart', (e) => { setActive(i); onStart(e); }, { passive: false });
+}
+canvas_events();
+
+function setActive(idx) {
+  cells[activeCell].el.classList.remove('active');
+  activeCell = idx;
+  cells[activeCell].el.classList.add('active');
+  showCandidates();
+}
+cells[0].el.classList.add('active');
+
+// ── Drawing ──────────────────────────────────────────────────────────
+function canvas_events() {
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd, { passive: false });
+}
+
+function getPos(e) {
+  const canvas = cells[activeCell].canvas;
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: (clientX - rect.left) * (CELL_RES / rect.width),
+    y: (clientY - rect.top) * (CELL_RES / rect.height),
+  };
+}
+
+function redrawCell(idx) {
+  const c = cells[idx];
+  c.ctx.clearRect(0, 0, CELL_RES, CELL_RES);
+  c.ctx.fillStyle = '#fff';
+  c.ctx.fillRect(0, 0, CELL_RES, CELL_RES);
+  c.ctx.lineWidth = BRUSH_WIDTH;
+  c.ctx.strokeStyle = '#000';
+  c.ctx.lineCap = 'round';
+  c.ctx.lineJoin = 'round';
+  for (const stroke of c.strokes) {
+    if (stroke.length === 0) continue;
+    c.ctx.beginPath();
+    c.ctx.moveTo(stroke[0].x, stroke[0].y);
+    for (let i = 1; i < stroke.length; i++) {
+      c.ctx.lineTo(stroke[i].x, stroke[i].y);
+    }
+    c.ctx.stroke();
+  }
+}
+
+function onStart(e) {
+  e.preventDefault();
+  drawing = true;
+  currentStroke = [getPos(e)];
+  const ctx = cells[activeCell].ctx;
+  ctx.lineWidth = BRUSH_WIDTH;
+  ctx.strokeStyle = '#000';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
+}
+
+function onMove(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  const p = getPos(e);
+  currentStroke.push(p);
+  const ctx = cells[activeCell].ctx;
+  ctx.lineWidth = BRUSH_WIDTH;
+  ctx.strokeStyle = '#000';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+}
+
+function onEnd(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  drawing = false;
+  if (currentStroke.length > 0) {
+    cells[activeCell].strokes.push(currentStroke);
+    currentStroke = [];
+    recognizeCell(activeCell);
+  }
+}
+
+// ── Canonicalization ─────────────────────────────────────────────────
+function canonicalize(strokes) {
+  const tmp = document.createElement('canvas');
+  tmp.width = SUPERSAMPLE;
+  tmp.height = SUPERSAMPLE;
+  const tctx = tmp.getContext('2d');
+  tctx.fillStyle = '#fff';
+  tctx.fillRect(0, 0, SUPERSAMPLE, SUPERSAMPLE);
+  tctx.lineCap = 'round';
+  tctx.lineJoin = 'round';
+  tctx.lineWidth = BRUSH_WIDTH * (SUPERSAMPLE / CELL_RES);
+  tctx.strokeStyle = '#000';
+  const scale = SUPERSAMPLE / CELL_RES;
+  for (const stroke of strokes) {
+    if (stroke.length === 0) continue;
+    tctx.beginPath();
+    tctx.moveTo(stroke[0].x * scale, stroke[0].y * scale);
+    for (let i = 1; i < stroke.length; i++) {
+      tctx.lineTo(stroke[i].x * scale, stroke[i].y * scale);
+    }
+    tctx.stroke();
+  }
+  const imageData = tctx.getImageData(0, 0, SUPERSAMPLE, SUPERSAMPLE);
+  const rgba = imageData.data;
+  const gray = new Uint8Array(SUPERSAMPLE * SUPERSAMPLE);
+  for (let i = 0; i < gray.length; i++) gray[i] = rgba[i * 4];
+
+  let minX = SUPERSAMPLE, minY = SUPERSAMPLE, maxX = -1, maxY = -1;
+  for (let y = 0; y < SUPERSAMPLE; y++) {
+    for (let x = 0; x < SUPERSAMPLE; x++) {
+      if (gray[y * SUPERSAMPLE + x] < INK_THRESHOLD) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  let square, side;
+  if (maxX < 0) {
+    square = gray; side = SUPERSAMPLE;
+  } else {
+    const w = maxX - minX + 1, h = maxY - minY + 1;
+    side = Math.round((w > h ? w : h) * (1 + 2 * MARGIN_FRAC));
+    square = new Uint8Array(side * side).fill(255);
+    const yOff = Math.floor((side - h) / 2), xOff = Math.floor((side - w) / 2);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++)
+        square[(yOff + y) * side + (xOff + x)] = gray[(minY + y) * SUPERSAMPLE + (minX + x)];
+  }
+
+  const resized = resizeAreaAverage(square, side, side, TARGET_SIZE, TARGET_SIZE);
+  const out = new Float32Array(TARGET_SIZE * TARGET_SIZE);
+  for (let i = 0; i < resized.length; i++) {
+    out[i] = 1.0 - ((resized[i] < INK_THRESHOLD ? 0 : 255) / 255.0);
+  }
+  return out;
+}
+
+function resizeAreaAverage(src, srcW, srcH, dstW, dstH) {
+  const dst = new Uint8Array(dstW * dstH);
+  const scaleX = srcW / dstW, scaleY = srcH / dstH;
+  for (let y = 0; y < dstH; y++) {
+    const srcY0 = Math.floor(y * scaleY);
+    const srcY1 = Math.min(Math.max(Math.ceil((y + 1) * scaleY), srcY0 + 1), srcH);
+    for (let x = 0; x < dstW; x++) {
+      const srcX0 = Math.floor(x * scaleX);
+      const srcX1 = Math.min(Math.max(Math.ceil((x + 1) * scaleX), srcX0 + 1), srcW);
+      let sum = 0, count = 0;
+      for (let sy = srcY0; sy < srcY1; sy++)
+        for (let sx = srcX0; sx < srcX1; sx++) { sum += src[sy * srcW + sx]; count++; }
+      dst[y * dstW + x] = Math.round(sum / count);
+    }
+  }
+  return dst;
+}
+
+// ── ONNX Inference ──────────────────────────────────────────────────
+let session = null;
+let classes = [];
+let rejectIndex = -1;
+let rejectionThreshold = 0.5;
+
+async function loadModel() {
+  const statusEl = document.getElementById('status');
+  try {
+    ort.env.wasm.numThreads = 1;
+    const [sess, classesResp, configResp] = await Promise.all([
+      ort.InferenceSession.create('./model.onnx'),
+      fetch('./classes.json').then(r => r.json()),
+      fetch('./inference_config.json').then(r => r.json()),
+    ]);
+    session = sess;
+    classes = classesResp;
+    rejectIndex = configResp.reject_class_index;
+    rejectionThreshold = configResp.rejection_threshold || 0.5;
+    statusEl.textContent = `${classes.length} classes loaded`;
+  } catch (e) {
+    statusEl.textContent = `Failed: ${e.message}`;
+  }
+}
+
+async function recognizeCell(idx) {
+  if (!session || cells[idx].strokes.length === 0) return;
+  const input = canonicalize(cells[idx].strokes);
+  const tensor = new ort.Tensor('float32', input, [1, 1, TARGET_SIZE, TARGET_SIZE]);
+  try {
+    const results = await session.run({ image: tensor });
+    const logits = results.logits.data;
+    let maxLogit = -Infinity;
+    for (let i = 0; i < logits.length; i++) if (logits[i] > maxLogit) maxLogit = logits[i];
+    const exps = new Float32Array(logits.length);
+    let sumExp = 0;
+    for (let i = 0; i < logits.length; i++) { exps[i] = Math.exp(logits[i] - maxLogit); sumExp += exps[i]; }
+    const probs = exps.map(e => e / sumExp);
+    const indices = Array.from({ length: probs.length }, (_, i) => i);
+    indices.sort((a, b) => probs[b] - probs[a]);
+
+    // Store top candidates (skip reject, apply threshold)
+    const topProb = probs[indices[0]];
+    const candidates = [];
+    if (topProb >= rejectionThreshold || indices[0] !== rejectIndex) {
+      for (let i = 0; i < indices.length && candidates.length < 6; i++) {
+        if (indices[i] === rejectIndex) continue;
+        candidates.push({ char: classes[indices[i]], prob: probs[indices[i]] });
+      }
+    }
+    cells[idx].recognized = candidates;
+    showCandidates();
+    updateText();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function showCandidates() {
+  const el = document.getElementById('candidates');
+  const cands = cells[activeCell].recognized;
+  if (!cands || cands.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = cands.map((c, i) =>
+    `<div class="candidate ${i === 0 ? 'top' : ''}" data-idx="${i}" title="${(c.prob*100).toFixed(1)}%">${c.char}</div>`
+  ).join('');
+  el.querySelectorAll('.candidate').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ci = parseInt(btn.dataset.idx);
+      const cands = cells[activeCell].recognized;
+      // Swap selected to front
+      const picked = cands[ci];
+      cands.splice(ci, 1);
+      cands.unshift(picked);
+      cells[activeCell].recognized = cands;
+      showCandidates();
+      updateText();
+      // Advance to next cell
+      if (activeCell < NUM_CELLS - 1) setActive(activeCell + 1);
+    });
+  });
+}
+
+function updateText() {
+  let text = '';
+  for (const c of cells) {
+    if (c.recognized && c.recognized.length > 0) text += c.recognized[0].char;
+  }
+  outputText = text;
+  document.getElementById('text-output').textContent = text;
+}
+
+// ── Toolbar ─────────────────────────────────────────────────────────
+document.getElementById('undo-stroke-btn').addEventListener('click', () => {
+  const c = cells[activeCell];
+  c.strokes.pop();
+  redrawCell(activeCell);
+  if (c.strokes.length > 0) recognizeCell(activeCell);
+  else { c.recognized = null; showCandidates(); updateText(); }
+});
+
+document.getElementById('clear-cell-btn').addEventListener('click', () => {
+  const c = cells[activeCell];
+  c.strokes = [];
+  c.recognized = null;
+  redrawCell(activeCell);
+  showCandidates();
+  updateText();
+});
+
+document.getElementById('backspace-btn').addEventListener('click', () => {
+  // Clear last non-empty cell
+  for (let i = cells.length - 1; i >= 0; i--) {
+    if (cells[i].strokes.length > 0) {
+      cells[i].strokes = [];
+      cells[i].recognized = null;
+      redrawCell(i);
+      setActive(i);
+      updateText();
+      break;
+    }
+  }
+});
+
+document.getElementById('space-btn').addEventListener('click', () => {
+  outputText += ' ';
+  document.getElementById('text-output').textContent = outputText;
+});
+
+document.getElementById('newline-btn').addEventListener('click', () => {
+  outputText += '\n';
+  document.getElementById('text-output').textContent = outputText;
+});
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  navigator.clipboard.writeText(outputText).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy text', 1000);
+  });
+});
+
+// ── Keyboard shortcuts ──────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' && activeCell < NUM_CELLS - 1) setActive(activeCell + 1);
+  if (e.key === 'ArrowLeft' && activeCell > 0) setActive(activeCell - 1);
+  if (e.key === 'ArrowDown' && activeCell + COLS < NUM_CELLS) setActive(activeCell + COLS);
+  if (e.key === 'ArrowUp' && activeCell - COLS >= 0) setActive(activeCell - COLS);
+});
+
+loadModel();
+</script>
+</body>
+</html>

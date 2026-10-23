@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/kanji_recognizer.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/composita_repository.dart';
 import '../../data/word_index_repository.dart';
 import '../../l10n/app_localizations.dart';
@@ -215,7 +216,7 @@ class _CompositaPickerState extends State<CompositaPicker> {
         const SizedBox(height: 4),
         Text(
           l.compositaPickerDescription,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          style: TextStyle(color: context.appColors.textTertiary, fontSize: 12),
         ),
         const SizedBox(height: 8),
         if (selected == null)
@@ -262,7 +263,7 @@ class _CompositaPickerState extends State<CompositaPicker> {
             const SizedBox(height: 8),
             Text(
               _searchError!,
-              style: TextStyle(color: Colors.orange.shade700, fontSize: 12),
+              style: TextStyle(color: context.appColors.warningFg, fontSize: 12),
             ),
           ],
           if (_searchController.text.isNotEmpty &&
@@ -271,7 +272,7 @@ class _CompositaPickerState extends State<CompositaPicker> {
             const SizedBox(height: 8),
             Text(
               l.compositaPickerNoResults,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              style: TextStyle(color: context.appColors.textTertiary, fontSize: 12),
             ),
           ],
           for (final entry in _searchResults) ...[
@@ -303,7 +304,7 @@ class _CompositaPickerState extends State<CompositaPicker> {
                             ? ' [N${c.effectiveJlptLevel}?]'
                             : ' [N${c.effectiveJlptLevel}]',
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: context.appColors.textTertiary,
                           fontSize: 12,
                         ),
                       ),
@@ -547,7 +548,7 @@ class _DrawCompositaScreenState extends State<_DrawCompositaScreen> {
               if (entry.kanji.isNotEmpty)
                 Text(
                   entry.kana.join('、'),
-                  style: const TextStyle(color: Colors.black54),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                 ),
               const SizedBox(height: 4),
               Text(

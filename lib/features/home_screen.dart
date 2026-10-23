@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app_dependencies.dart';
+import '../core/theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import 'kanji_browser/kanji_browser_screen.dart';
 import 'learning/help_screen.dart';
@@ -79,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _beginTour() {
     final l = AppLocalizations.of(context)!;
-    final steps = tourSteps(l);
+    final steps = tourSteps(l, context);
     setState(() {
       _tourStep = 0;
       _tourMinimized = false;
@@ -91,6 +92,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(welcomeSeenKey, true);
     if (mounted) setState(() => _tourStep = null);
+  }
+
+  void _ensureDataForTab(int tabIndex) {
+    switch (tabIndex) {
+      case 1: // Words
+        widget.deps.ensureWordIndex();
+      case 2: // Learning
+        widget.deps.ensureReviewData();
+      case 3: // Browse
+        widget.deps.ensureBrowserData();
+    }
   }
 
   @override
@@ -117,32 +129,35 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIndex: _tabIndex,
         onDestinationSelected: _tourStep != null
             ? null // disable tab switching during tour
-            : (i) => setState(() => _tabIndex = i),
+            : (i) {
+                setState(() => _tabIndex = i);
+                _ensureDataForTab(i);
+              },
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.brush_outlined),
-            selectedIcon: Icon(Icons.brush, color: Colors.deepOrange.shade700),
+            selectedIcon: Icon(Icons.brush, color: context.appColors.navLookup),
             label: l.lookupHeading,
           ),
           NavigationDestination(
             icon: const _DoubleBrushIcon(color: null),
-            selectedIcon: _DoubleBrushIcon(color: Colors.teal.shade700),
+            selectedIcon: _DoubleBrushIcon(color: context.appColors.navWords),
             label: l.lookupWords,
           ),
           NavigationDestination(
             icon: const Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school, color: Colors.orange.shade700),
+            selectedIcon: Icon(Icons.school, color: context.appColors.navLearn),
             label: l.lookupLearn,
           ),
           NavigationDestination(
             icon: const Icon(Icons.grid_view_outlined),
-            selectedIcon: Icon(Icons.grid_view, color: Colors.indigo.shade700),
+            selectedIcon: Icon(Icons.grid_view, color: context.appColors.navBrowse),
             label: l.lookupBrowse,
           ),
           NavigationDestination(
             icon: const Icon(Icons.help_outline),
-            selectedIcon: Icon(Icons.help, color: Colors.grey.shade700),
+            selectedIcon: Icon(Icons.help, color: context.appColors.navHelp),
             label: l.lookupHelp,
           ),
         ],
@@ -151,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTourOverlay(AppLocalizations l) {
-    final steps = tourSteps(l);
+    final steps = tourSteps(l, context);
     final step = steps[_tourStep!];
     final isFirst = _tourStep == 0;
     final isLast = _tourStep == steps.length - 1;
@@ -182,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: GestureDetector(
         onTap: () {}, // absorb taps on the scrim
         child: Container(
-          color: Colors.black54,
+          color: Theme.of(context).colorScheme.onSurface,
           child: SafeArea(
             top: false,
             child: Padding(
@@ -214,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     shape: BoxShape.circle,
                                     color: i == _tourStep
                                         ? Theme.of(context).colorScheme.primary
-                                        : Colors.grey.shade300,
+                                        : context.appColors.borderSubtle,
                                   ),
                                 );
                               }),

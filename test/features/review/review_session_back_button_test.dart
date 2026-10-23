@@ -22,7 +22,7 @@ void main() {
       final deps = AppDependencies(
         database: AppDatabase.forTesting(NativeDatabase.memory()),
       );
-      await tester.runAsync(() => deps.load());
+      await tester.runAsync(() => deps.load(loadAll: true));
       await deps.studyScope.update(
         const StudyScope(characters: {'一'}),
       );

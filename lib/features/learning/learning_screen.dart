@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app_dependencies.dart';
+import '../../core/theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
 import '../quiz/quiz_start_screen.dart';
+import '../../core/db/tables.dart';
 import '../review/review_repository.dart';
 import '../review/review_session_screen.dart';
 import '../review/statistics_screen.dart';
 import '../review/study_scope.dart';
 import 'add_remove_screen.dart';
+import 'review_type_sheet.dart';
 import '../../widgets/coffee_button.dart';
 import '../../widgets/help_info_button.dart';
 
@@ -29,15 +32,14 @@ class LearningScreen extends StatefulWidget {
 class _LearningScreenState extends State<LearningScreen> {
   static const _newCardsPerSessionKey = 'review.new_cards_per_session';
   static const _maxReviewsPerDayKey = 'review.max_reviews_per_day';
+  static const _reviewCardTypesKey = 'review.card_types';
 
   late final ReviewRepository _reviewRepo;
   Timer? _refreshTimer;
   int? _seenCount;
   int? _dueCount;
   int? _waitingCount;
-  List<String>? _dueCharacters;
   Map<String, int>? _dueDist;
-  Map<String, DateTime> _addedDates = {};
 
   int _newCardsPerSession = 30;
   int _maxReviewsPerDay = 200;
@@ -76,21 +78,25 @@ class _LearningScreenState extends State<LearningScreen> {
 
   Future<void> _loadCounts() async {
     final scope = widget.deps.studyScope.scope.value;
-    final seen = await _reviewRepo.countSeenCharacters(scope);
-    final totalDue = await _reviewRepo.countDueCards(scope);
-    final neverReviewed = await _reviewRepo.cardsNeverReviewed(scope);
-    final neverReviewedCount = neverReviewed.length;
-    final reviewDue = totalDue - neverReviewedCount; // already-reviewed due
+    final results = await Future.wait([
+      _reviewRepo.countSeenCharacters(scope),       // 0
+      _reviewRepo.countDueCards(scope),              // 1
+      _reviewRepo.countNeverReviewed(scope),         // 2
+      _reviewRepo.countReviewedToday(),              // 3
+      _reviewRepo.dueDateDistribution(scope),        // 4
+    ]);
+    final seen = results[0] as int;
+    final totalDue = results[1] as int;
+    final neverReviewedCount = results[2] as int;
+    final reviewDue = totalDue - neverReviewedCount;
+    final reviewedToday = results[3] as int;
 
-    // Subtract cards already reviewed today from the daily budget.
-    final reviewedToday = await _reviewRepo.countReviewedToday();
     final dailyBudget = _maxReviewsPerDay <= 0
         ? reviewDue + neverReviewedCount
         : (_maxReviewsPerDay - reviewedToday).clamp(0, _maxReviewsPerDay);
     final cappedReviews = _maxReviewsPerDay <= 0
         ? reviewDue
         : reviewDue.clamp(0, dailyBudget);
-    // New cards fill remaining capacity after reviews.
     final remainingBudget = _maxReviewsPerDay <= 0
         ? (_newCardsPerSession <= 0 ? neverReviewedCount : _newCardsPerSession)
         : (dailyBudget - cappedReviews).clamp(0, dailyBudget);
@@ -101,32 +107,15 @@ class _LearningScreenState extends State<LearningScreen> {
     final effectiveDue = cappedReviews + cappedNew;
     final waiting = neverReviewedCount - cappedNew;
 
-    final chars = await _reviewRepo.dueCharacters(scope);
-    final dist = await _reviewRepo.dueDateDistribution(scope);
-    final added = await _reviewRepo.addedDates();
+    final dist = results[4] as Map<String, int>;
     if (mounted) {
       setState(() {
         _seenCount = seen;
         _dueCount = effectiveDue;
         _waitingCount = waiting;
-        _dueCharacters = chars;
         _dueDist = dist;
-        _addedDates = added;
       });
     }
-  }
-
-  List<String> _sortedPool(StudyScope scope) {
-    final pool = scope.characters.toList();
-    pool.sort((a, b) {
-      final da = _addedDates[a];
-      final db = _addedDates[b];
-      if (da == null && db == null) return 0;
-      if (da == null) return 1;
-      if (db == null) return -1;
-      return da.compareTo(db); // oldest first
-    });
-    return pool;
   }
 
   String _dueCountText(AppLocalizations l, int? dueCount) {
@@ -135,33 +124,55 @@ class _LearningScreenState extends State<LearningScreen> {
     return l.reviewStartDueNow(dueCount);
   }
 
-  void _updateCompositaCeiling(int? ceiling) {
-    final scope = widget.deps.studyScope.scope.value;
-    widget.deps.studyScope.update(
-      scope.copyWith(
-        compositaCeiling: ceiling,
-        clearCompositaCeiling: ceiling == null,
-      ),
-    );
-    setState(() {});
-  }
-
-  void _updateMaxComposita(int max) {
-    final scope = widget.deps.studyScope.scope.value;
-    widget.deps.studyScope.update(
-      scope.copyWith(maxCompositaPerKanji: max),
-    );
-    setState(() {});
-  }
-
   // ── Navigation ─────────────────────────────────────────────────────
 
-  void _openReview(BuildContext context) {
+  Future<void> _openReview(BuildContext context) async {
     final scope = widget.deps.studyScope.scope.value;
     if (scope.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_reviewCardTypesKey);
+    final initial = saved == null
+        ? CardType.values.toSet()
+        : CardType.values.where((t) => saved.contains(t.name)).toSet();
+    if (!context.mounted) return;
+
+    final selected = await showModalBottomSheet<Set<CardType>>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => ReviewTypeSheet(
+        initial: initial.isEmpty ? CardType.values.toSet() : initial,
+        dueCounts: _loadDueCountsByType(scope),
+      ),
+    );
+    if (selected == null || selected.isEmpty || !context.mounted) return;
+    await prefs.setStringList(
+      _reviewCardTypesKey,
+      [for (final t in selected) t.name],
+    );
+    if (!context.mounted) return;
+
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ReviewSessionScreen(deps: widget.deps)),
+      MaterialPageRoute(
+        builder: (_) => ReviewSessionScreen(
+          deps: widget.deps,
+          // All kinds selected = unfiltered session.
+          cardTypes: selected.length == CardType.values.length ? null : selected,
+        ),
+      ),
     ).then((_) => _loadCounts());
+  }
+
+  Future<Map<CardType, int>> _loadDueCountsByType(StudyScope scope) async {
+    final counts = await Future.wait([
+      for (final t in CardType.values)
+        _reviewRepo.countDueCards(scope, cardTypes: {t}),
+    ]);
+    return {
+      for (var i = 0; i < CardType.values.length; i++)
+        CardType.values[i]: counts[i],
+    };
   }
 
   void _openAddRemove(BuildContext context) {
@@ -232,6 +243,17 @@ class _LearningScreenState extends State<LearningScreen> {
                     ),
                   ),
                 ),
+                if (charCount == 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      l.learningEmptyPoolHint,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.appColors.textTertiary,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -267,7 +289,7 @@ class _LearningScreenState extends State<LearningScreen> {
                               TextSpan(
                                 text: ' · ${l.learningWaitingCards(_waitingCount!)}',
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: context.appColors.textTertiary,
                                   fontSize: 13,
                                 ),
                               ),
@@ -284,7 +306,7 @@ class _LearningScreenState extends State<LearningScreen> {
                               _dueDist!['later']!,
                             ),
                             style: TextStyle(
-                              color: Colors.grey.shade600,
+                              color: context.appColors.textTertiary,
                               fontSize: 13,
                             ),
                           ),
@@ -297,8 +319,8 @@ class _LearningScreenState extends State<LearningScreen> {
                             ),
                             const SizedBox(width: 8),
                             SizedBox(
-                              width: 56,
-                              height: 32,
+                              width: 64,
+                              height: 40,
                               child: TextField(
                                 key: const ValueKey('new-cards-per-session'),
                                 controller: TextEditingController(
@@ -342,8 +364,8 @@ class _LearningScreenState extends State<LearningScreen> {
                             ),
                             const SizedBox(width: 8),
                             SizedBox(
-                              width: 56,
-                              height: 32,
+                              width: 64,
+                              height: 40,
                               child: TextField(
                                 key: const ValueKey('max-reviews-per-day'),
                                 controller: TextEditingController(
@@ -378,46 +400,15 @@ class _LearningScreenState extends State<LearningScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        const Divider(),
-                        const SizedBox(height: 8),
-                        Text(l.addRemoveCompositaCeiling,
-                            style: const TextStyle(fontWeight: FontWeight.w500)),
-                        Text(l.addRemoveCompositaCeilingHelp,
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            ChoiceChip(
-                              label: Text(l.addRemoveCeilingOff),
-                              selected: scope.compositaCeiling == null,
-                              onSelected: (_) => _updateCompositaCeiling(null),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            l.learningSettingsUnlimitedHint,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: context.appColors.textTertiary,
                             ),
-                            for (final level in [5, 4, 3, 2])
-                              ChoiceChip(
-                                label: Text('N$level'),
-                                selected: scope.compositaCeiling == level,
-                                onSelected: (_) => _updateCompositaCeiling(level),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(l.addRemoveMaxComposita,
-                            style: const TextStyle(fontWeight: FontWeight.w500)),
-                        Text(l.addRemoveMaxCompositaHelp,
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            for (final n in [2, 3, 4, 5])
-                              ChoiceChip(
-                                label: Text('$n'),
-                                selected: scope.maxCompositaPerKanji == n,
-                                onSelected: (_) => _updateMaxComposita(n),
-                              ),
-                          ],
+                          ),
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
@@ -433,28 +424,6 @@ class _LearningScreenState extends State<LearningScreen> {
                     ),
                   ),
                 ),
-                if (charCount > 0) ...[
-                  const SizedBox(height: 24),
-                  Text(
-                    l.reviewStartPoolHeading(charCount),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: _sortedPool(scope).map((char) {
-                      final isDue = _dueCharacters?.contains(char) ?? false;
-                      return Text(
-                        char,
-                        style: TextStyle(
-                          fontSize: 22,
-                          color: isDue ? null : Colors.grey.shade400,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
               ],
             );
           },

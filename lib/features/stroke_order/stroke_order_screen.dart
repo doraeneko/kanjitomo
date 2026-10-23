@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../data/stroke_paths_repository.dart';
 import 'stroke_order_view.dart';
 
@@ -82,7 +83,7 @@ class _StrokeOrderScreenState extends State<StrokeOrderScreen> {
               else if (_error != null)
                 Text(
                   'Failed to load stroke data: $_error',
-                  style: const TextStyle(color: Colors.red),
+                  style: TextStyle(color: context.appColors.statusRed),
                 )
               else if (strokes == null)
                 const Text('No stroke data for this character.')

@@ -26,6 +26,9 @@ class Composita {
   /// Pre-computed per-character reading split (parallel to word's characters).
   /// Null when the build script couldn't split this word.
   final List<String>? splits;
+  /// Zipf frequency score from wordfreq (0.0–8.0, higher = more common).
+  /// 0.0 when unknown. Covers ~90% of entries vs nfRank's ~36%.
+  final double zipfFreq;
 
   const Composita({
     required this.word,
@@ -36,6 +39,7 @@ class Composita {
     required this.frequencyRank,
     this.nfRank,
     this.splits,
+    this.zipfFreq = 0.0,
   });
 
   /// The real tag if there is one, else the heuristic estimate, else null.
@@ -54,6 +58,7 @@ class Composita {
       frequencyRank: json['frequencyRank'] as int,
       nfRank: json['nfRank'] as int?,
       splits: (json['splits'] as List?)?.cast<String>(),
+      zipfFreq: (json['zipfFreq'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
@@ -65,6 +70,8 @@ class CompositaRepository {
   static const _asset = 'assets/composita.json';
 
   Map<String, List<Composita>> _byChar = {};
+  bool _loaded = false;
+  bool get isLoaded => _loaded;
 
   Future<void> load() async {
     final raw =
@@ -77,6 +84,7 @@ class CompositaRepository {
             .toList(),
       ),
     );
+    _loaded = true;
   }
 
   /// Empty for kana, REJECT, or any character with no JMdict coverage.
@@ -96,10 +104,12 @@ class CompositaRepository {
 List<Composita> rankComposita(List<Composita> all) {
   final common = all.where((c) => c.frequencyRank < 4).toList()
     ..sort((a, b) {
+      // Primary: zipfFreq descending (higher = more common).
+      final zf = b.zipfFreq.compareTo(a.zipfFreq);
+      if (zf != 0) return zf;
+      // Fallback for entries with equal/zero zipfFreq: coarse tier, then nfRank.
       final freq = a.frequencyRank.compareTo(b.frequencyRank);
       if (freq != 0) return freq;
-      // Within the same coarse tier, use the fine-grained nfXX rank
-      // (1-48, lower = more frequent). Words without nfRank sort last.
       final aNf = a.nfRank ?? 99;
       final bNf = b.nfRank ?? 99;
       final nf = aNf.compareTo(bNf);

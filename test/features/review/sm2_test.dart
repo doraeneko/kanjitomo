@@ -65,6 +65,34 @@ void main() {
     });
   });
 
+  group('computeNextReview easy', () {
+    test('fresh card answered easy skips to 4 days', () {
+      expect(computeNextReview(null, 5, easy: true).intervalDays, 4);
+      expect(computeNextReview(null, 4).intervalDays, 1);
+    });
+
+    test('second review answered easy beats good', () {
+      const state = Sm2State(easeFactor: 2.5, intervalDays: 1, repetitions: 1);
+      expect(computeNextReview(state, 5, easy: true).intervalDays, 8);
+      expect(computeNextReview(state, 4).intervalDays, 6);
+    });
+
+    test('established card gets the easy bonus and higher ease', () {
+      const state = Sm2State(easeFactor: 2.5, intervalDays: 10, repetitions: 3);
+      final easy = computeNextReview(state, 5, easy: true);
+      final good = computeNextReview(state, 4);
+      expect(easy.intervalDays, 33); // 10 * 2.5 * 1.3
+      expect(good.intervalDays, 25);
+      expect(easy.easeFactor, greaterThan(good.easeFactor));
+      expect(easy.repetitions, 4);
+    });
+
+    test('q=5 without the easy flag stays plain SM-2', () {
+      const state = Sm2State(easeFactor: 2.5, intervalDays: 10, repetitions: 3);
+      expect(computeNextReview(state, 5).intervalDays, 25);
+    });
+  });
+
   group('gradeDrawAndPick', () {
     const top3 = [
       RecognitionCandidate('一'),

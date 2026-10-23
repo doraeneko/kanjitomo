@@ -12,6 +12,7 @@ import '../review/review_repository.dart';
 import '../review/sentence_selection.dart'
     show isKanji, compositaWithinCeiling, selectCompositaForIntroduction;
 import '../../widgets/coffee_button.dart';
+import 'camera_ocr_screen.dart';
 
 /// Draw kanji/kana one character at a time to build up a word, then look it
 /// up in JMdict (via [WordIndexRepository], an exact-word index -- see
@@ -41,6 +42,8 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
   late final ReviewRepository _reviewRepo;
   // Words already added to review in this session (for disabling buttons).
   final Set<String> _addedWords = {};
+  /// OCR picks from the camera (multi-select).
+  List<String> _ocrQueue = [];
 
   @override
   void initState() {
@@ -67,6 +70,25 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
 
   void _clearWord() {
     _wordController.clear();
+    setState(() {
+      _drawKeyCounter++;
+      _ocrQueue = [];
+    });
+  }
+
+  Future<void> _openCameraOcr() async {
+    final items = await Navigator.push<List<String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CameraOcrScreen(
+          mode: CameraOcrMode.word,
+          wordIndex: widget.deps.wordIndex,
+        ),
+      ),
+    );
+    if (items == null || items.isEmpty || !mounted) return;
+    setState(() => _ocrQueue = List.of(items));
+    _wordController.text = items.first;
   }
 
   Future<void> _copyToClipboard(String word) async {
@@ -186,7 +208,11 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
     }
 
     if (!mounted) return;
-    setState(() => _addedWords.add(word));
+    setState(() {
+      _addedWords.add(word);
+      _drawKeyCounter++; // reset canvas
+    });
+    _wordController.clear(); // reset text field
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -312,6 +338,62 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (_ocrQueue.length > 1)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: SizedBox(
+                          height: 40,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _ocrQueue.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 6),
+                            itemBuilder: (context, index) {
+                              final word = _ocrQueue[index];
+                              final isCurrent =
+                                  _wordController.text == word;
+                              return InkWell(
+                                onTap: () {
+                                  _wordController.text = word;
+                                },
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  height: 36,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10),
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isCurrent
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .primaryContainer
+                                        : null,
+                                    border: Border.all(
+                                      color: isCurrent
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .outline,
+                                      width: isCurrent ? 2 : 1,
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    word,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontFamily: 'NotoSansJP',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     Row(
                       children: [
                         Expanded(
@@ -326,6 +408,11 @@ class _WordLookupScreenState extends State<WordLookupScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: _openCameraOcr,
+                          icon: const Icon(Icons.camera_alt),
+                          tooltip: l.lookupCamera,
+                        ),
                         IconButton(
                           onPressed: _wordController.text.isEmpty
                               ? null
