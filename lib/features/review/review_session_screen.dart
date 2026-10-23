@@ -101,6 +101,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   int _cardsDone = 0;
   bool _revealed = false;
   bool _translationRevealed = false;
+  bool _regradingEasy = false;
   bool _showFeedbackDetails = false;
   _ExampleSentenceRef? _currentSentence;
   _DrawFeedback? _feedback;
@@ -595,6 +596,33 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     });
   }
 
+  /// "Easy" on a correctly drawn card. The recognizer grade was already
+  /// persisted in [_onDrawPicked]; roll it back (state + log entry) and
+  /// re-grade with the easy bonus, so the log keeps one entry per answer
+  /// and undo still restores the pre-draw snapshot.
+  Future<void> _regradeEasyAndContinue() async {
+    final snap = _lastGradeSnapshot;
+    if (snap == null) return;
+    setState(() => _regradingEasy = true);
+    final card = snap.queueCard;
+    await _reviewRepo.undoGrade(
+      character: card.character,
+      cardType: card.cardType,
+      compositaWord: card.compositaWord,
+      snapshot: snap.dbSnapshot,
+    );
+    await _reviewRepo.gradeCard(
+      character: card.character,
+      cardType: card.cardType,
+      compositaWord: card.compositaWord,
+      quality: 5,
+      easy: true,
+    );
+    if (!mounted) return;
+    _regradingEasy = false;
+    _continueAfterFeedback();
+  }
+
   void _continueAfterFeedback() {
     final card = _currentCard;
     final requeued = card != null && _feedback != null && !_feedback!.correct;
@@ -1012,13 +1040,34 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
           child: KanjiDetailContent(character: feedback.target, deps: widget.deps),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _continueAfterFeedback,
-            child: Text(l.reviewContinue),
+        if (feedback.correct)
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  key: const ValueKey('draw-continue'),
+                  onPressed: _regradingEasy ? null : _continueAfterFeedback,
+                  child: Text(l.reviewContinue),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  key: const ValueKey('draw-easy'),
+                  onPressed: _regradingEasy ? null : _regradeEasyAndContinue,
+                  child: Text(l.reviewEasy),
+                ),
+              ),
+            ],
+          )
+        else
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _continueAfterFeedback,
+              child: Text(l.reviewContinue),
+            ),
           ),
-        ),
       ],
     );
   }
