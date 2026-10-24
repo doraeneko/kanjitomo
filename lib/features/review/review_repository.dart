@@ -108,6 +108,128 @@ class KanjiProgress {
   const KanjiProgress({required this.reading, required this.writing});
 }
 
+/// SharedPreferences keys for the review limits (set on the Learning
+/// screen) and the "learn more" extension (set on the queue-exhausted
+/// screen). Shared so every place that counts a session uses the same values.
+const kNewCardsPerSessionKey = 'review.new_cards_per_session';
+const kMaxReviewsPerDayKey = 'review.max_reviews_per_day';
+const kLearnMoreExtraKey = 'review.learn_more_extra';
+const kLearnMoreDateKey = 'review.learn_more_date';
+
+/// The limits that decide how much of the due pile one session loads.
+class SessionLimits {
+  final int maxReviewsPerDay; // <= 0: unlimited
+  final int newCardsPerSession; // <= 0: unlimited
+  final int reviewedToday;
+  /// Cards still owed from today's "learn more" commitment.
+  final int learnMoreRemaining;
+
+  const SessionLimits({
+    this.maxReviewsPerDay = 200,
+    this.newCardsPerSession = 30,
+    this.reviewedToday = 0,
+    this.learnMoreRemaining = 0,
+  });
+}
+
+/// What a review session loads: due reviews within the daily budget, new
+/// cards within what's left of it (and the per-session new-card cap), plus
+/// today's "learn more" extras.
+class SessionPlan {
+  final List<ReviewCard> reviews;
+  final List<ReviewCard> newCards;
+  final List<ReviewCard> extra;
+  /// All due cards that could have been loaded, before the limits.
+  final int available;
+
+  const SessionPlan({
+    required this.reviews,
+    required this.newCards,
+    required this.extra,
+    required this.available,
+  });
+
+  int get total => reviews.length + newCards.length + extra.length;
+  int get remainingBeyondCap => available - total;
+  List<ReviewCard> get cards => [...reviews, ...newCards, ...extra];
+}
+
+/// Applies [limits] to [reviews] (oldest due first) and [newCards]
+/// (already in introduction order, see [orderNewCards]).
+SessionPlan planSession({
+  required List<ReviewCard> reviews,
+  required List<ReviewCard> newCards,
+  required SessionLimits limits,
+}) {
+  final maxPerDay = limits.maxReviewsPerDay;
+  // Subtract cards already reviewed today so restarting a session doesn't
+  // reset the daily limit.
+  final dailyBudget = maxPerDay <= 0
+      ? reviews.length + newCards.length
+      : (maxPerDay - limits.reviewedToday).clamp(0, maxPerDay);
+  final cappedReviews = reviews.take(dailyBudget).toList();
+  final remainingBudget = maxPerDay <= 0
+      ? newCards.length
+      : (dailyBudget - cappedReviews.length).clamp(0, dailyBudget);
+  final newCap = limits.newCardsPerSession <= 0
+      ? remainingBudget
+      : remainingBudget.clamp(0, limits.newCardsPerSession);
+  final cappedNew = newCards.take(newCap).toList();
+
+  String key(ReviewCard c) => '${c.character}|${c.cardType.index}|${c.compositaWord}';
+  final loaded = {...cappedReviews.map(key), ...cappedNew.map(key)};
+  final extra = limits.learnMoreRemaining > 0
+      ? [...reviews, ...newCards]
+          .where((c) => !loaded.contains(key(c)))
+          .take(limits.learnMoreRemaining)
+          .toList()
+      : <ReviewCard>[];
+
+  return SessionPlan(
+    reviews: cappedReviews,
+    newCards: cappedNew,
+    extra: extra,
+    available: reviews.length + newCards.length,
+  );
+}
+
+/// Due cards for a session before the limits: reviews and new cards
+/// restricted to the selected composita, plus the limits themselves.
+/// [plan] then filters by card kind and applies the limits, so the
+/// Learning screen, the card-kind sheet and the session all agree.
+class SessionInputs {
+  final List<ReviewCard> reviews;
+  final List<ReviewCard> newCards;
+  final SessionLimits limits;
+
+  const SessionInputs({
+    required this.reviews,
+    required this.newCards,
+    required this.limits,
+  });
+
+  SessionPlan plan({Set<CardType>? cardTypes}) {
+    bool keep(ReviewCard c) => cardTypes == null || cardTypes.contains(c.cardType);
+    return planSession(
+      reviews: reviews.where(keep).toList(),
+      newCards: newCards.where(keep).toList(),
+      limits: limits,
+    );
+  }
+}
+
+/// Whether [card] belongs in a session: kanji (A/B) cards always,
+/// composita cards only while their word is in [customComposita] for that
+/// kanji. Cards can linger after the selection changed.
+bool isSelectedCompositaCard(
+  ReviewCard card,
+  Map<String, Set<String>> customComposita,
+) {
+  if (card.compositaWord.isEmpty) return true;
+  final selected = customComposita[card.character];
+  return selected != null && selected.contains(card.compositaWord);
+}
+
 /// Order in which never-reviewed cards are introduced (and so which new
 /// kanji make it under the per-session new-card cap).
 enum NewCardOrder { rtk, random }
@@ -224,6 +346,53 @@ class ReviewRepository {
     return cardTypes
         .map((t) => db.reviewCards.cardType.equalsValue(t))
         .reduce((a, b) => a | b);
+  }
+
+  /// Today's review limits from SharedPreferences (see [SessionLimits]).
+  Future<SessionLimits> loadSessionLimits() async {
+    final prefs = await SharedPreferences.getInstance();
+    final reviewedToday = await countReviewedToday();
+    final now = DateTime.now();
+    final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+    // "Learn more" stores a high-water mark of reviews committed to today;
+    // minus what's been reviewed, that's what's still owed.
+    final highWater = prefs.getString(kLearnMoreDateKey) == todayStr
+        ? (prefs.getInt(kLearnMoreExtraKey) ?? 0)
+        : 0;
+    return SessionLimits(
+      maxReviewsPerDay: prefs.getInt(kMaxReviewsPerDayKey) ?? 200,
+      newCardsPerSession: prefs.getInt(kNewCardsPerSessionKey) ?? 30,
+      reviewedToday: reviewedToday,
+      learnMoreRemaining:
+          highWater > 0 ? (highWater - reviewedToday).clamp(0, highWater) : 0,
+    );
+  }
+
+  /// Everything needed to plan a session for [scope] (see [SessionInputs]).
+  /// Doesn't run the session's one-off composita cleanup, so right after a
+  /// selection change it can count a few cards the session then drops.
+  Future<SessionInputs> loadSessionInputs(
+    StudyScope scope, {
+    NewCardOrder newCardOrder = NewCardOrder.rtk,
+    required int? Function(String character) rtkIndex,
+  }) async {
+    final results = await Future.wait([
+      customCompositaForCharacters(scope.characters),
+      dueCards(scope, excludeNeverReviewed: true),
+      cardsNeverReviewed(scope),
+    ]);
+    final custom = results[0] as Map<String, Set<String>>;
+    bool selected(ReviewCard c) => isSelectedCompositaCard(c, custom);
+    return SessionInputs(
+      reviews: (results[1] as List<ReviewCard>).where(selected).toList(),
+      newCards: orderNewCards(
+        (results[2] as List<ReviewCard>).where(selected).toList(),
+        newCardOrder,
+        rtkIndex: rtkIndex,
+      ),
+      limits: await loadSessionLimits(),
+    );
   }
 
   /// Existing due cards (see [_dueExpr]) within [scope]. Which cards make

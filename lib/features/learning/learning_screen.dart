@@ -30,8 +30,8 @@ class LearningScreen extends StatefulWidget {
 }
 
 class _LearningScreenState extends State<LearningScreen> {
-  static const _newCardsPerSessionKey = 'review.new_cards_per_session';
-  static const _maxReviewsPerDayKey = 'review.max_reviews_per_day';
+  static const _newCardsPerSessionKey = kNewCardsPerSessionKey;
+  static const _maxReviewsPerDayKey = kMaxReviewsPerDayKey;
   static const _reviewCardTypesKey = 'review.card_types';
   static const _newCardOrderKey = 'review.new_card_order';
 
@@ -80,43 +80,43 @@ class _LearningScreenState extends State<LearningScreen> {
   Future<void> _loadCounts() async {
     final scope = widget.deps.studyScope.scope.value;
     final results = await Future.wait([
-      _reviewRepo.countSeenCharacters(scope),       // 0
-      _reviewRepo.countDueCards(scope),              // 1
-      _reviewRepo.countNeverReviewed(scope),         // 2
-      _reviewRepo.countReviewedToday(),              // 3
-      _reviewRepo.dueDateDistribution(scope),        // 4
+      _reviewRepo.countSeenCharacters(scope),        // 0
+      _loadSessionInputs(scope),                     // 1
+      _reviewRepo.dueDateDistribution(scope),        // 2
+      _savedCardTypes(),                             // 3
     ]);
     final seen = results[0] as int;
-    final totalDue = results[1] as int;
-    final neverReviewedCount = results[2] as int;
-    final reviewDue = totalDue - neverReviewedCount;
-    final reviewedToday = results[3] as int;
-
-    final dailyBudget = _maxReviewsPerDay <= 0
-        ? reviewDue + neverReviewedCount
-        : (_maxReviewsPerDay - reviewedToday).clamp(0, _maxReviewsPerDay);
-    final cappedReviews = _maxReviewsPerDay <= 0
-        ? reviewDue
-        : reviewDue.clamp(0, dailyBudget);
-    final remainingBudget = _maxReviewsPerDay <= 0
-        ? (_newCardsPerSession <= 0 ? neverReviewedCount : _newCardsPerSession)
-        : (dailyBudget - cappedReviews).clamp(0, dailyBudget);
-    final newCardCap = _newCardsPerSession <= 0
-        ? remainingBudget
-        : remainingBudget.clamp(0, _newCardsPerSession);
-    final cappedNew = neverReviewedCount.clamp(0, newCardCap);
-    final effectiveDue = cappedReviews + cappedNew;
-    final waiting = neverReviewedCount - cappedNew;
-
-    final dist = results[4] as Map<String, int>;
+    // Same plan the session will load with the remembered card kinds, so
+    // "Review (N)" matches the session's own count.
+    final types = results[3] as Set<CardType>;
+    final plan = (results[1] as SessionInputs).plan(
+      cardTypes: types.length == CardType.values.length ? null : types,
+    );
+    final dist = results[2] as Map<String, int>;
     if (mounted) {
       setState(() {
         _seenCount = seen;
-        _dueCount = effectiveDue;
-        _waitingCount = waiting;
+        _dueCount = plan.total;
+        _waitingCount = plan.remainingBeyondCap;
         _dueDist = dist;
       });
     }
+  }
+
+  Future<SessionInputs> _loadSessionInputs(StudyScope scope) =>
+      _reviewRepo.loadSessionInputs(
+        scope,
+        rtkIndex: widget.deps.rtkIndex.indexOf,
+      );
+
+  /// Card kinds last chosen in the review sheet (all, if never chosen).
+  Future<Set<CardType>> _savedCardTypes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_reviewCardTypesKey);
+    final types = saved == null
+        ? CardType.values.toSet()
+        : CardType.values.where((t) => saved.contains(t.name)).toSet();
+    return types.isEmpty ? CardType.values.toSet() : types;
   }
 
   String _dueCountText(AppLocalizations l, int? dueCount) {
@@ -132,10 +132,7 @@ class _LearningScreenState extends State<LearningScreen> {
     if (scope.isEmpty) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getStringList(_reviewCardTypesKey);
-    final initial = saved == null
-        ? CardType.values.toSet()
-        : CardType.values.where((t) => saved.contains(t.name)).toSet();
+    final initial = await _savedCardTypes();
     final savedOrder = prefs.getString(_newCardOrderKey);
     final initialOrder = NewCardOrder.values.firstWhere(
       (o) => o.name == savedOrder,
@@ -148,9 +145,9 @@ class _LearningScreenState extends State<LearningScreen> {
       showDragHandle: true,
       isScrollControlled: true,
       builder: (_) => ReviewTypeSheet(
-        initial: initial.isEmpty ? CardType.values.toSet() : initial,
+        initial: initial,
         initialOrder: initialOrder,
-        dueCounts: _loadDueCountsByType(scope),
+        sessionInputs: _loadSessionInputs(scope),
       ),
     );
     if (options == null || options.cardTypes.isEmpty || !context.mounted) {
@@ -174,17 +171,6 @@ class _LearningScreenState extends State<LearningScreen> {
         ),
       ),
     ).then((_) => _loadCounts());
-  }
-
-  Future<Map<CardType, int>> _loadDueCountsByType(StudyScope scope) async {
-    final counts = await Future.wait([
-      for (final t in CardType.values)
-        _reviewRepo.countDueCards(scope, cardTypes: {t}),
-    ]);
-    return {
-      for (var i = 0; i < CardType.values.length; i++)
-        CardType.values[i]: counts[i],
-    };
   }
 
   void _openAddRemove(BuildContext context) {

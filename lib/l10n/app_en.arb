@@ -480,6 +480,10 @@
 
   "reviewGood": "Good",
   "@reviewGood": { "description": "Grade button for successful recall" },
+  "reviewRemoveKanjiTooltip": "Remove {char} from learning pool",
+  "@reviewRemoveKanjiTooltip": { "description": "Tooltip of the review app-bar button that removes the current kanji from the pool", "placeholders": { "char": { "type": "String" } } },
+  "reviewKanjiRemoved": "{char} removed from your learning pool",
+  "@reviewKanjiRemoved": { "description": "Snackbar after removing a kanji during review", "placeholders": { "char": { "type": "String" } } },
   "reviewEasy": "Easy",
   "@reviewEasy": { "description": "Grade button for effortless recall; schedules the card further out than Good" },
 
@@ -817,8 +821,10 @@
   "@reviewTypeCompositaRecognition": { "description": "Card kind: word highlighted in a sentence, user recalls its reading" },
   "reviewTypeCompositaRecognitionHelp": "Read the highlighted word in a sentence",
   "@reviewTypeCompositaRecognitionHelp": { "description": "Explanation of the composita recognition card kind" },
-  "reviewTypeDue": "{count} due",
-  "@reviewTypeDue": { "description": "Number of due cards of one card kind", "placeholders": { "count": { "type": "int" } } },
+  "reviewTypeCounts": "{due} due · {fresh} new",
+  "@reviewTypeCounts": { "description": "Due review cards and not-yet-studied cards of one card kind, before daily limits", "placeholders": { "due": { "type": "int" }, "fresh": { "type": "int" } } },
+  "reviewTypesStartCount": "Start ({count})",
+  "@reviewTypesStartCount": { "description": "Start button with the number of cards the session will load (daily limits applied)", "placeholders": { "count": { "type": "int" } } },
   "reviewNewCardOrder": "New cards",
   "@reviewNewCardOrder": { "description": "Label for the choice of order in which new kanji are introduced" },
   "reviewNewCardOrderRtk": "RTK order",

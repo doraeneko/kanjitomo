@@ -143,4 +143,48 @@ void main() {
       expect(prefs.getString('review.new_card_order'), 'random');
     },
   );
+
+  testWidgets(
+    'Review button, sheet Start button and session header show the same count',
+    (tester) async {
+      final oldHandler = FlutterError.onError;
+      FlutterError.onError = (details) {
+        if (details.exception.toString().contains('overflowed')) return;
+        oldHandler?.call(details);
+      };
+      addTearDown(() => FlutterError.onError = oldHandler);
+
+      final deps = await loadTestDeps(tester);
+      // 3 kanji x 2 kanji cards = 6 new cards, but the remembered selection
+      // is kanji recognition only -> 3. (The button used to count all kinds.)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList('review.card_types', ['kanjiRecognition']);
+      await deps.studyScope.update(const StudyScope(characters: {'一', '二', '三'}));
+      await ReviewRepository(deps.database)
+          .introduceCardsForCharacters({'一', '二', '三'});
+
+      await tester.pumpWidget(testApp(home: LearningScreen(deps: deps)));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Review (3)'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('review')));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Start (3)'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('review-start')));
+      for (var i = 0; i < 5; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 100)),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(find.text('Review \u2014 1/3 \u2014 New'), findsOneWidget);
+    },
+  );
 }

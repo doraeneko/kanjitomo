@@ -91,11 +91,6 @@ class ReviewSessionScreen extends StatefulWidget {
   State<ReviewSessionScreen> createState() => _ReviewSessionScreenState();
 }
 
-/// SharedPreferences key for the max new cards per session setting.
-const _newCardsPerSessionKey = 'review.new_cards_per_session';
-const _maxReviewsPerDayKey = 'review.max_reviews_per_day';
-const _learnMoreExtraKey = 'review.learn_more_extra';
-const _learnMoreDateKey = 'review.learn_more_date';
 
 class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
   late final ReviewRepository _reviewRepo;
@@ -168,6 +163,9 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       for (final kun in kanjiInfo.kun) {
         final dot = kun.indexOf('.');
         knownReadings.add(dot >= 0 ? kun.substring(0, dot) : kun);
+        // Also the full form with okurigana (つが.い → つがい), as in
+        // ひとつがい (一番), where the kanji covers the okurigana too.
+        if (dot >= 0) knownReadings.add(kun.replaceAll('.', ''));
       }
       knownReadings.addAll(
         knownReadings.map((r) => r.endsWith('-') ? r.substring(0, r.length - 1) : r).toList(),
@@ -176,15 +174,17 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
 
       final bundled = widget.deps.composita.lookup(char);
       final merged = mergeComposita(bundled, _userComposita[char]);
-      final compositaByWord = {for (final c in merged) c.word: c};
+      final homographsByWord = _groupByWord(merged);
 
       final selected = _customComposita[char];
       if (selected == null) continue;
       for (final word in selected.toList()) {
-        final composita = compositaByWord[word];
-        if (composita == null) continue;
-        final reading = kanjiReadingIn(char, composita);
-        if (!knownReadings.contains(reading)) {
+        final homographs = homographsByWord[word];
+        if (homographs == null) continue;
+        // A word can have several readings (一番: いちばん, ひとつがい) --
+        // it's only jukujikun if none of them uses a known reading.
+        if (!homographs.any(
+            (c) => knownReadings.contains(kanjiReadingIn(char, c)))) {
           jukujikunRemovals.add((char, word));
           selected.remove(word);
         }
@@ -202,15 +202,15 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     for (final char in _customComposita.keys.toList()) {
       final bundled = widget.deps.composita.lookup(char);
       final merged = mergeComposita(bundled, _userComposita[char]);
-      final compositaByWord = {for (final c in merged) c.word: c};
+      final homographsByWord = _groupByWord(merged);
       final charLevel = widget.deps.jlptLevels.levelOf(char);
       final selected = _customComposita[char];
       if (selected == null) continue;
       for (final word in selected.toList()) {
-        final composita = compositaByWord[word];
-        if (composita == null ||
-            !compositaWithinCeiling(composita, ceiling,
-                charJlptLevel: charLevel)) {
+        final homographs = homographsByWord[word];
+        if (homographs == null ||
+            !homographs.any((c) => compositaWithinCeiling(c, ceiling,
+                charJlptLevel: charLevel))) {
           staleCustomRemovals.add((char, word));
           selected.remove(word);
         }
@@ -254,59 +254,14 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       widget.newCardOrder,
       rtkIndex: widget.deps.rtkIndex.indexOf,
     );
-    // Apply max reviews/day cap across sessions: subtract cards already
-    // reviewed today so restarting a session doesn't reset the limit.
-    final prefs = await SharedPreferences.getInstance();
-    final maxReviewsPerDay = prefs.getInt(_maxReviewsPerDayKey) ?? 200;
-    final reviewedToday = await _reviewRepo.countReviewedToday();
-    final dailyBudget = maxReviewsPerDay <= 0
-        ? reviews.length + neverReviewed.length
-        : (maxReviewsPerDay - reviewedToday).clamp(0, maxReviewsPerDay);
-    final cappedReviews = dailyBudget <= 0
-        ? <ReviewCard>[]
-        : reviews.take(dailyBudget).toList();
-    final remainingBudget = maxReviewsPerDay <= 0
-        ? neverReviewed.length
-        : (dailyBudget - cappedReviews.length).clamp(0, dailyBudget);
-    final maxNewCardsPerDay = prefs.getInt(_newCardsPerSessionKey) ?? 30;
-    final newCardCap = maxNewCardsPerDay <= 0
-        ? remainingBudget
-        : remainingBudget.clamp(0, maxNewCardsPerDay);
-    final cappedNew = neverReviewed.take(newCardCap).toList();
-    // "Learn more" persistence: _learnMoreExtraKey stores a high-water
-    // mark — the total number of reviews the user has committed to today
-    // (including learn-more clicks). Subtracting reviewedToday gives the
-    // outstanding commitment that should survive leaving mid-session.
-    final todayStr = '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
-    final learnMoreDate = prefs.getString(_learnMoreDateKey);
-    final learnMoreHighWater = (learnMoreDate == todayStr)
-        ? (prefs.getInt(_learnMoreExtraKey) ?? 0)
-        : 0;
-    final learnMoreRemaining = learnMoreHighWater > 0
-        ? (learnMoreHighWater - reviewedToday).clamp(0, learnMoreHighWater)
-        : 0;
-    // Take extra cards from the combined pool (reviews first, then new),
-    // skipping what the caps already loaded.
-    final alreadyLoaded = <String>{};
-    for (final c in cappedReviews) {
-      alreadyLoaded.add('${c.character}|${c.cardType.index}|${c.compositaWord}');
-    }
-    for (final c in cappedNew) {
-      alreadyLoaded.add('${c.character}|${c.cardType.index}|${c.compositaWord}');
-    }
-    final extraPool = [...reviews, ...neverReviewed]
-        .where((c) => !alreadyLoaded.contains('${c.character}|${c.cardType.index}|${c.compositaWord}'))
-        .toList();
-    final extraCards = learnMoreRemaining > 0
-        ? extraPool.take(learnMoreRemaining).toList()
-        : <ReviewCard>[];
-    // ignore: avoid_print
-    print('[_loadQueue] cappedReviews=${cappedReviews.length} cappedNew=${cappedNew.length} '
-        'extraCards=${extraCards.length} learnMoreRemaining=$learnMoreRemaining '
-        'highWater=$learnMoreHighWater reviewedToday=$reviewedToday');
-    final totalAvailable = reviews.length + neverReviewed.length;
-    final totalLoaded = cappedReviews.length + cappedNew.length + extraCards.length;
-    final due = interleaveByCharacter([...cappedReviews, ...cappedNew, ...extraCards]);
+    // Daily review budget, new-card cap and "learn more" extras -- the same
+    // planning the Learning screen and the card-kind sheet count with.
+    final plan = planSession(
+      reviews: reviews,
+      newCards: neverReviewed,
+      limits: await _reviewRepo.loadSessionLimits(),
+    );
+    final due = interleaveByCharacter(plan.cards);
 
     final testedWords = await _reviewRepo.testedCompositaWordsFor(
       due.map((c) => c.character).toSet(),
@@ -321,7 +276,7 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       _index = 0;
       _loading = false;
       _lastGradeSnapshot = null;
-      _remainingBeyondCap = totalAvailable - totalLoaded;
+      _remainingBeyondCap = plan.remainingBeyondCap;
       _testedWords = testedWords;
       _seenCharacters = scope.characters;
       _prepareCurrentCard();
@@ -614,6 +569,60 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     _continueAfterFeedback();
   }
 
+  /// Removes the current card's kanji from the learning pool, same as
+  /// Add/Remove: deletes its cards (incl. its composita cards), review log,
+  /// composita progress and composita selection. Composita are stored per
+  /// kanji, so a word also selected for another pool kanji keeps that
+  /// kanji's cards. The kanji's remaining cards leave this session's queue.
+  Future<void> _removeCurrentKanji() async {
+    final card = _currentCard;
+    if (card == null) return;
+    final char = card.character;
+    final l = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.addRemoveConfirmRemoveTitle),
+        content: Text(l.addRemoveConfirmRemoveContent(char)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.dialogCancel),
+          ),
+          TextButton(
+            key: const ValueKey('review-remove-kanji-confirm'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l.addRemoveRemoveButton),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await _reviewRepo.deleteProgressForCharacters({char});
+    await widget.deps.studyScope.removeCharacters({char});
+    if (!mounted) return;
+    setState(() {
+      _queue = [
+        ..._queue.take(_index),
+        ..._queue.skip(_index).where((c) => c.character != char),
+      ];
+      // Undoing a grade now could recreate rows that were just deleted.
+      _lastGradeSnapshot = null;
+      _customComposita.remove(char);
+      _testedWords.remove(char);
+      _prepareCurrentCard();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l.reviewKanjiRemoved(char))),
+    );
+    if (_index >= _queue.length) {
+      _refreshRemainingCount();
+    } else {
+      _loadStoryForCurrentCard();
+    }
+  }
+
   void _continueAfterFeedback() {
     final card = _currentCard;
     final requeued = card != null && _feedback != null && !_feedback!.correct;
@@ -733,6 +742,13 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
                     : l.reviewHeader(_cardsDone + 1, _cardsDone + _queue.length - _index),
           ),
           actions: [
+            if (card != null)
+              IconButton(
+                key: const ValueKey('review-remove-kanji'),
+                icon: const Icon(Icons.remove_circle_outline),
+                tooltip: l.reviewRemoveKanjiTooltip(card.character),
+                onPressed: _removeCurrentKanji,
+              ),
             if (_lastGradeSnapshot != null &&
                 _feedback == null)
               IconButton(
@@ -769,14 +785,14 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     final prefs = await SharedPreferences.getInstance();
     final reviewedSoFar = await _reviewRepo.countReviewedToday();
     final todayStr = '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
-    final learnMoreDate = prefs.getString(_learnMoreDateKey);
+    final learnMoreDate = prefs.getString(kLearnMoreDateKey);
     final existingHighWater = (learnMoreDate == todayStr)
-        ? (prefs.getInt(_learnMoreExtraKey) ?? 0)
+        ? (prefs.getInt(kLearnMoreExtraKey) ?? 0)
         : 0;
     // High-water = max(previous high-water, current reviewed + new count).
     final newHighWater = (reviewedSoFar + count).clamp(existingHighWater, reviewedSoFar + count);
-    await prefs.setInt(_learnMoreExtraKey, newHighWater);
-    await prefs.setString(_learnMoreDateKey, todayStr);
+    await prefs.setInt(kLearnMoreExtraKey, newHighWater);
+    await prefs.setString(kLearnMoreDateKey, todayStr);
     // ignore: avoid_print
     print('[_loadMore] count=$count reviewedSoFar=$reviewedSoFar highWater=$newHighWater');
 
@@ -817,14 +833,22 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
     _loadStoryForCurrentCard();
   }
 
+  /// All entries per word -- several when a word has more than one reading
+  /// (一番: いちばん / ひとつがい). A plain word-keyed map would keep only the
+  /// last one and judge the word by its rarest reading.
+  static Map<String, List<Composita>> _groupByWord(List<Composita> all) {
+    final result = <String, List<Composita>>{};
+    for (final c in all) {
+      result.putIfAbsent(c.word, () => []).add(c);
+    }
+    return result;
+  }
+
   /// Whether [c] belongs in the queue: A/B cards always, composita cards
   /// only while their word is still in the custom selection. Cards can
   /// linger in review_cards after the user changed that selection.
-  bool _isSelectedComposita(ReviewCard c) {
-    if (c.compositaWord.isEmpty) return true;
-    final selected = _customComposita[c.character];
-    return selected != null && selected.contains(c.compositaWord);
-  }
+  bool _isSelectedComposita(ReviewCard c) =>
+      isSelectedCompositaCard(c, _customComposita);
 
   /// Due cards this session could still load: same card-kind filter and
   /// composita selection as [_loadQueue], so the queue-exhausted screen
@@ -1056,9 +1080,9 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  key: const ValueKey('draw-continue'),
+                  key: const ValueKey('draw-good'),
                   onPressed: _regradingEasy ? null : _continueAfterFeedback,
-                  child: Text(l.reviewContinue),
+                  child: Text(l.reviewGood),
                 ),
               ),
               const SizedBox(width: 12),

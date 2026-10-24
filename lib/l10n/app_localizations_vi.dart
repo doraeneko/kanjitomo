@@ -472,6 +472,16 @@ class AppLocalizationsVi extends AppLocalizations {
   String get reviewGood => 'Tốt';
 
   @override
+  String reviewRemoveKanjiTooltip(String char) {
+    return 'Xóa $char khỏi danh sách học';
+  }
+
+  @override
+  String reviewKanjiRemoved(String char) {
+    return 'Đã xóa $char khỏi danh sách học';
+  }
+
+  @override
   String get reviewEasy => 'Dễ';
 
   @override
@@ -790,8 +800,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đọc từ được đánh dấu trong câu';
 
   @override
-  String reviewTypeDue(int count) {
-    return '$count đến hạn';
+  String reviewTypeCounts(int due, int fresh) {
+    return '$due đến hạn · $fresh mới';
+  }
+
+  @override
+  String reviewTypesStartCount(int count) {
+    return 'Bắt đầu ($count)';
   }
 
   @override

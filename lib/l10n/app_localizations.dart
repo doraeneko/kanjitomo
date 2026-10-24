@@ -880,6 +880,18 @@ abstract class AppLocalizations {
   /// **'Good'**
   String get reviewGood;
 
+  /// Tooltip of the review app-bar button that removes the current kanji from the pool
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {char} from learning pool'**
+  String reviewRemoveKanjiTooltip(String char);
+
+  /// Snackbar after removing a kanji during review
+  ///
+  /// In en, this message translates to:
+  /// **'{char} removed from your learning pool'**
+  String reviewKanjiRemoved(String char);
+
   /// Grade button for effortless recall; schedules the card further out than Good
   ///
   /// In en, this message translates to:
@@ -1426,11 +1438,17 @@ abstract class AppLocalizations {
   /// **'Read the highlighted word in a sentence'**
   String get reviewTypeCompositaRecognitionHelp;
 
-  /// Number of due cards of one card kind
+  /// Due review cards and not-yet-studied cards of one card kind, before daily limits
   ///
   /// In en, this message translates to:
-  /// **'{count} due'**
-  String reviewTypeDue(int count);
+  /// **'{due} due · {fresh} new'**
+  String reviewTypeCounts(int due, int fresh);
+
+  /// Start button with the number of cards the session will load (daily limits applied)
+  ///
+  /// In en, this message translates to:
+  /// **'Start ({count})'**
+  String reviewTypesStartCount(int count);
 
   /// Label for the choice of order in which new kanji are introduced
   ///

@@ -27,9 +27,13 @@ A card is "known" at 2 consecutive passes (`repetitions >= 2`); Easy counts as k
 
 **Starting a review:** one Review button opens a sheet where the user ticks which of the four card kinds to include (with due counts per kind) and picks the new-card order (RTK or random, `orderNewCards`). Both are remembered (`review.card_types`, `review.new_card_order` in SharedPreferences). All four ticked = unfiltered session.
 
+**Session size:** `ReviewRepository.loadSessionInputs` + `planSession` (due reviews within the daily budget, new cards within the per-session cap, "learn more" extras, only selected composita) is the single count used by the Review (N) button, the sheet's Start (N) button and the session itself.
+
+**Removing a kanji during review:** app-bar button deletes the kanji's cards, log, composita progress and composita selection (same as Add/Remove); composita stored for other kanji are untouched.
+
 **Grading:**
 - Self-graded cards (B, C): Again (q=2) / Good (q=4) / Easy (q=5 + easy bonus).
-- Drawing cards (A, D): graded by the recognizer (`gradeDrawAndPick`, q=0–5). After a correct drawing the user can tap Continue (keep that grade) or Easy (rolled back and re-graded with the easy bonus — one review-log entry per answer, undo still works).
+- Drawing cards (A, D): graded by the recognizer (`gradeDrawAndPick`, q=0–5). After a correct drawing the user can tap Good (keep that grade) or Easy (rolled back and re-graded with the easy bonus — one review-log entry per answer, undo still works).
 - Easy bonus (`sm2.dart`): fresh card → 4 days (instead of 1), second review → 8 days (instead of 6), afterwards interval × ease × 1.3; repetitions set to at least 2 (known). Only applied when the user explicitly picks Easy.
 
 ### Composita system

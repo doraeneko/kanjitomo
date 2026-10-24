@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/db/tables.dart';
 import '../../l10n/app_localizations.dart';
-import '../review/review_repository.dart' show NewCardOrder;
+import '../review/review_repository.dart' show NewCardOrder, SessionInputs;
 
 /// What the user chose in [ReviewTypeSheet].
 class ReviewSessionOptions {
@@ -21,15 +21,15 @@ class ReviewTypeSheet extends StatefulWidget {
   final Set<CardType> initial;
   final NewCardOrder initialOrder;
 
-  /// Due cards per kind (raw count, before the daily caps the session
-  /// applies). Shown next to each option once loaded.
-  final Future<Map<CardType, int>> dueCounts;
+  /// Due cards and limits for planning the session; per-kind counts and
+  /// the exact session size are shown once loaded.
+  final Future<SessionInputs> sessionInputs;
 
   const ReviewTypeSheet({
     super.key,
     required this.initial,
     this.initialOrder = NewCardOrder.rtk,
-    required this.dueCounts,
+    required this.sessionInputs,
   });
 
   @override
@@ -47,15 +47,23 @@ class _ReviewTypeSheetState extends State<ReviewTypeSheet> {
 
   late final Set<CardType> _selected = {...widget.initial};
   late NewCardOrder _order = widget.initialOrder;
-  Map<CardType, int>? _dueCounts;
+  SessionInputs? _inputs;
 
   @override
   void initState() {
     super.initState();
-    widget.dueCounts.then((counts) {
-      if (mounted) setState(() => _dueCounts = counts);
+    widget.sessionInputs.then((inputs) {
+      if (mounted) setState(() => _inputs = inputs);
     }).ignore();
   }
+
+  /// Cards the session will load for the current selection -- daily
+  /// limits included, so it matches the session's own count.
+  int? get _plannedTotal => _inputs
+      ?.plan(
+        cardTypes: _selected.length == CardType.values.length ? null : _selected,
+      )
+      .total;
 
   (String, String) _labels(AppLocalizations l, CardType type) {
     switch (type) {
@@ -130,7 +138,9 @@ class _ReviewTypeSheetState extends State<ReviewTypeSheet> {
                           ),
                   icon: const Icon(Icons.play_circle_filled),
                   label: Text(
-                    l.reviewTypesStart,
+                    _plannedTotal == null || _selected.isEmpty
+                        ? l.reviewTypesStart
+                        : l.reviewTypesStartCount(_plannedTotal!),
                     style: const TextStyle(fontSize: 18),
                   ),
                 ),
@@ -144,7 +154,9 @@ class _ReviewTypeSheetState extends State<ReviewTypeSheet> {
 
   Widget _buildOption(AppLocalizations l, CardType type) {
     final (title, help) = _labels(l, type);
-    final due = _dueCounts?[type];
+    final inputs = _inputs;
+    final due = inputs?.reviews.where((c) => c.cardType == type).length;
+    final fresh = inputs?.newCards.where((c) => c.cardType == type).length;
     return CheckboxListTile(
       key: ValueKey('review-type-${type.name}'),
       value: _selected.contains(type),
@@ -156,7 +168,9 @@ class _ReviewTypeSheetState extends State<ReviewTypeSheet> {
         }
       }),
       title: Text(title),
-      subtitle: Text(due == null ? help : '$help · ${l.reviewTypeDue(due)}'),
+      subtitle: Text(
+        due == null ? help : '$help\n${l.reviewTypeCounts(due, fresh!)}',
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24),
     );
   }

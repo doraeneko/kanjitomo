@@ -471,6 +471,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewGood => 'Good';
 
   @override
+  String reviewRemoveKanjiTooltip(String char) {
+    return 'Remove $char from learning pool';
+  }
+
+  @override
+  String reviewKanjiRemoved(String char) {
+    return '$char removed from your learning pool';
+  }
+
+  @override
   String get reviewEasy => 'Easy';
 
   @override
@@ -792,8 +802,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Read the highlighted word in a sentence';
 
   @override
-  String reviewTypeDue(int count) {
-    return '$count due';
+  String reviewTypeCounts(int due, int fresh) {
+    return '$due due · $fresh new';
+  }
+
+  @override
+  String reviewTypesStartCount(int count) {
+    return 'Start ($count)';
   }
 
   @override

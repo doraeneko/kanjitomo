@@ -21,7 +21,7 @@ import 'package:kanjitomo/features/review/study_scope.dart';
 // AppDependencies load gets its own file.
 void main() {
   testWidgets(
-    'correct drawing offers Continue and Easy; Easy re-grades with the bonus',
+    'correct drawing offers Good and Easy; Easy re-grades with the bonus',
     (tester) async {
       SharedPreferences.setMockInitialValues({...ftdSuppressedPrefs});
       final deps = AppDependencies(
@@ -80,7 +80,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('draw-continue')), findsOneWidget);
+      expect(find.byKey(const ValueKey('draw-good')), findsOneWidget);
       expect(find.byKey(const ValueKey('draw-easy')), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('draw-easy')));
